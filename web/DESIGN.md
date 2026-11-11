@@ -1,6 +1,6 @@
-# PushNav design system — "Night Red"
+# Starlock design system — "Night Red"
 
-PushNav is used outdoors, in the dark, on a phone or tablet at minimum
+Starlock is used outdoors, in the dark, on a phone or tablet at minimum
 brightness, by someone with one hand on a telescope. Every rule here follows
 from that.
 

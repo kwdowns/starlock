@@ -1,24 +1,34 @@
 #!/bin/sh
-# pushnav-headless postinst
+# starlock-headless postinst
 set -e
 
-UNIT=pushnav-headless.service
+UNIT=starlock-headless.service
 
 if [ "$1" = "configure" ]; then
     # Unprivileged system user for the service; `video` gives it the camera.
-    if ! getent passwd pushnav >/dev/null; then
+    if ! getent passwd starlock >/dev/null; then
         adduser --quiet --system --group --no-create-home \
-            --home /var/lib/pushnav-headless \
-            --gecos "PushNav headless" pushnav
+            --home /var/lib/starlock-headless \
+            --gecos "Starlock headless" starlock
     fi
-    if ! id -nG pushnav | grep -qw video; then
-        adduser --quiet pushnav video
+    if ! id -nG starlock | grep -qw video; then
+        adduser --quiet starlock video
+    fi
+
+    # Starlock was called PushNav: on a first install, carry over the old
+    # package's config, calibration and logs if they are still there.
+    OLD_STATE=/var/lib/pushnav-headless
+    NEW_STATE=/var/lib/starlock-headless
+    if [ -z "$2" ] && [ -d "$OLD_STATE" ] && [ ! -e "$NEW_STATE" ]; then
+        if cp -a "$OLD_STATE" "$NEW_STATE"; then
+            chown -R starlock:starlock "$NEW_STATE" || true
+        fi
     fi
 
     if [ -d /run/systemd/system ]; then
         systemctl daemon-reload
         # Enable on first install only, so a later upgrade doesn't undo a
-        # `systemctl disable pushnav-headless` the user chose.
+        # `systemctl disable starlock-headless` the user chose.
         if [ -z "$2" ]; then
             systemctl enable "$UNIT" >/dev/null 2>&1 || true
         fi
@@ -29,10 +39,10 @@ if [ "$1" = "configure" ]; then
 
     ip=$(hostname -I 2>/dev/null | awk '{print $1}')
     echo ""
-    echo "PushNav headless is installed."
+    echo "Starlock headless is installed."
     echo "  Open on your phone (same Wi-Fi):  http://${ip:-<pi-ip>}:8780"
-    echo "  Service:  sudo systemctl status pushnav-headless"
-    echo "  Logs:     journalctl -u pushnav-headless -f"
+    echo "  Service:  sudo systemctl status starlock-headless"
+    echo "  Logs:     journalctl -u starlock-headless -f"
     echo ""
 fi
 

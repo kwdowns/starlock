@@ -123,14 +123,14 @@ describe("Targets / Search and Manual", () => {
   it("remembers the chosen segment", () => {
     render(<Targets state={payload()} />);
     fireEvent.click(screen.getByRole("radio", { name: "Manual" }));
-    expect(window.localStorage.getItem("pushnav.targets.tab")).toBe("manual");
+    expect(window.localStorage.getItem("starlock.targets.tab")).toBe("manual");
     cleanup();
     render(<Targets state={payload()} />);
     expect(screen.getByRole("radio", { name: "Manual" })).toBeChecked();
   });
 
   it("finds an NGC object and goes to it from its row", async () => {
-    window.localStorage.setItem("pushnav.targets.tab", "search");
+    window.localStorage.setItem("starlock.targets.tab", "search");
     render(<Targets state={payload()} />);
     const input = await screen.findByPlaceholderText(/M31/);
     fireEvent.change(input, { target: { value: "M31" } });
@@ -143,13 +143,13 @@ describe("Targets / Search and Manual", () => {
   });
 
   it("shows an empty state with no query", async () => {
-    window.localStorage.setItem("pushnav.targets.tab", "search");
+    window.localStorage.setItem("starlock.targets.tab", "search");
     render(<Targets state={payload()} />);
     expect(await screen.findByText("Search the sky")).toBeInTheDocument();
   });
 
   it("paginates search results with Show more", async () => {
-    window.localStorage.setItem("pushnav.targets.tab", "search");
+    window.localStorage.setItem("starlock.targets.tab", "search");
     render(<Targets state={payload()} />);
     fireEvent.change(await screen.findByPlaceholderText(/M31/), { target: { value: "NGC" } });
     const more = await screen.findByRole("button", { name: /^Show more/ });
@@ -161,7 +161,7 @@ describe("Targets / Search and Manual", () => {
   });
 
   it("validates manual coordinates and sets valid ones", async () => {
-    window.localStorage.setItem("pushnav.targets.tab", "manual");
+    window.localStorage.setItem("starlock.targets.tab", "manual");
     render(<Targets state={payload()} />);
     fireEvent.click(screen.getByRole("button", { name: "Go to" }));
     expect(screen.getAllByText(/Enter (RA|Dec)/)).toHaveLength(2);

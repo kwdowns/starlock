@@ -31,7 +31,7 @@ export function TopBar({ state, showStars, setShowStars }: Props) {
     <AppBar>
       <img
         src={`${import.meta.env.BASE_URL}inapp-title.png`}
-        alt="PushNav"
+        alt="Starlock"
         // A long badge matters more than the wordmark on a narrow phone.
         className={cn("h-8 w-auto shrink-0", badge.label.length > 7 && "max-sm:hidden")}
       />

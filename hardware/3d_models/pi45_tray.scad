@@ -1,27 +1,27 @@
 // Copyright (C) 2026 Arun Venkataswamy
 // Copyright (C) 2026 Kyle Downs
 //
-// This file is part of PushNav.
+// This file is part of Starlock.
 //
-// PushNav is free software: you can redistribute it and/or modify it
+// Starlock is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// PushNav is distributed in the hope that it will be useful, but
+// Starlock is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+// along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 // ============================================================
-// PushNav Pi 4 / Pi 5 Tube Tray
+// Starlock Pi 4 / Pi 5 Tube Tray
 // ============================================================
 //
 // An open tray that carries a Raspberry Pi 4 or 5 on the telescope
-// tube, for PushNav headless. Its base is curved to the tube like the
+// tube, for Starlock headless. Its base is curved to the tube like the
 // tube shoe (tube_shoe.scad), and it sticks on with 3M VHB tape; a
 // 25 mm Velcro strap through the end slots and round the tube is
 // optional insurance. Open sides keep every port reachable and let a

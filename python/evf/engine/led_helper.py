@@ -1,35 +1,35 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-"""Root helper that hands the Pi's LEDs to PushNav and gives them back.
+"""Root helper that hands the Pi's LEDs to Starlock and gives them back.
 
-Run by the pushnav-headless service as root, outside its sandbox:
+Run by the starlock-headless service as root, outside its sandbox:
 
-    ExecStartPre=+... -m evf.engine.led_helper take --group pushnav
+    ExecStartPre=+... -m evf.engine.led_helper take --group starlock
     ExecStopPost=+... -m evf.engine.led_helper restore
 
 `take` saves each LED's trigger, brightness and file ownership to /run
 (tmpfs, so it never outlives a boot), sets trigger=none and lets the
 group write `brightness`. `restore` puts everything back. ExecStopPost
-also runs after a crash, so the LEDs never stay frozen on a PushNav
+also runs after a crash, so the LEDs never stay frozen on a Starlock
 pattern.
 
 Both commands always exit 0: a missing or odd LED must never stop
-PushNav from starting.
+Starlock from starting.
 
 For development on the Pi: `sudo uv run python -m evf.engine.led_helper
 take --group "$(id -gn)"`, and `restore` when done.
@@ -49,7 +49,7 @@ from evf.engine.status_led import _LED_NAMES, LEDS_SYSFS
 
 logger = logging.getLogger("evf.led_helper")
 
-STATE_DIR = Path("/run/pushnav-headless-led")
+STATE_DIR = Path("/run/starlock-headless-led")
 
 
 def led_enabled(config_path: Path) -> bool:
@@ -138,7 +138,7 @@ def restore(root: Path, state_dir: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m evf.engine.led_helper")
     parser.add_argument("action", choices=["take", "restore"])
-    parser.add_argument("--group", default="pushnav")
+    parser.add_argument("--group", default="starlock")
     parser.add_argument("--root", type=Path, default=LEDS_SYSFS)
     parser.add_argument("--state-dir", type=Path, default=STATE_DIR)
     parser.add_argument("--config", type=Path,

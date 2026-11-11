@@ -1,19 +1,19 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Tests for scripts/make_pi_label.py (the 50 x 20 mm Pi label)."""
 
@@ -36,18 +36,18 @@ SVG_NS = "{http://www.w3.org/2000/svg}"
 
 
 def _info(**overrides):
-    values = dict(ssid="PushNav-3F2A", wifi_password="pushnav123", ip="192.168.77.1",
-                  port=8780, ssh_user="pi", ssh_password="pushnav")
+    values = dict(ssid="Starlock-3F2A", wifi_password="starlock123", ip="192.168.77.1",
+                  port=8780, ssh_user="pi", ssh_password="starlock")
     values.update(overrides)
     return label.LabelInfo(**values)
 
 
-@pytest.mark.parametrize("given", ["3F2A", "3f2a", "PushNav-3F2A", " 3f2A "])
+@pytest.mark.parametrize("given", ["3F2A", "3f2a", "Starlock-3F2A", " 3f2A "])
 def test_parse_suffix(given):
     assert label.parse_suffix(given) == "3F2A"
 
 
-@pytest.mark.parametrize("given", ["3F2", "3F2AB", "XYZ1", "PushNav-", "pushnav-3F2A"])
+@pytest.mark.parametrize("given", ["3F2", "3F2AB", "XYZ1", "Starlock-", "starlock-3F2A"])
 def test_parse_suffix_rejects(given):
     with pytest.raises(ValueError, match="4 characters"):
         label.parse_suffix(given)
@@ -55,18 +55,18 @@ def test_parse_suffix_rejects(given):
 
 def test_settings_from_repo_user_data():
     assert label.settings_from_user_data(label.DEFAULT_USER_DATA) == {
-        "wifi_password": "pushnav123",
+        "wifi_password": "starlock123",
         "ip": "192.168.77.1",
         "ssh_user": "pi",
-        "ssh_password": "pushnav",
+        "ssh_password": "starlock",
     }
 
 
 def test_settings_follow_edited_user_data(tmp_path):
     # Someone changed the passwords where user-data says CHANGE
     text = label.DEFAULT_USER_DATA.read_text()
-    text = text.replace('wifi-sec.psk "pushnav123"', 'wifi-sec.psk "dark-skies-42"')
-    text = text.replace("plain_text_passwd: pushnav ", "plain_text_passwd: s3cret ")
+    text = text.replace('wifi-sec.psk "starlock123"', 'wifi-sec.psk "dark-skies-42"')
+    text = text.replace("plain_text_passwd: starlock ", "plain_text_passwd: s3cret ")
     edited = tmp_path / "user-data"
     edited.write_text(text)
     settings = label.settings_from_user_data(edited)
@@ -87,10 +87,10 @@ def test_svg_is_50_by_20_mm_with_outlined_text():
     assert root.get("width") == "50mm"
     assert root.get("height") == "20mm"
     assert root.get("viewBox") == "0 0 50 20"
-    assert root.find(f"{SVG_NS}title").text == "PushNav label: PushNav-3F2A"
+    assert root.find(f"{SVG_NS}title").text == "Starlock label: Starlock-3F2A"
     # Text is drawn as shapes: no font needed wherever the label is printed
     assert root.find(f".//{SVG_NS}text") is None
-    assert "PushNav-3F2A" in root.find(f"{SVG_NS}desc").text
+    assert "Starlock-3F2A" in root.find(f"{SVG_NS}desc").text
 
 
 def _expected_qr():
@@ -173,7 +173,7 @@ def test_too_long_to_fit():
 def test_cli_writes_the_label(tmp_path, capsys):
     out = tmp_path / "label.svg"
     assert label.main(["3f2a", "-o", str(out), "--ssh-password", "s3cret"]) == 0
-    assert "PushNav label: PushNav-3F2A" in out.read_text()
+    assert "Starlock label: Starlock-3F2A" in out.read_text()
     assert "SSH pi / s3cret" in out.read_text()
     with Image.open(tmp_path / "label.png") as png:
         assert png.size == (591, 236)

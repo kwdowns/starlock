@@ -1,19 +1,19 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Tests for evf.network.local_ip (LAN address shown in the Connectivity panel)."""
 
@@ -89,7 +89,7 @@ def test_interface_ips_reads_loopback_on_linux():
 
 
 def test_web_url_follows_the_current_address(tmp_path, monkeypatch):
-    # The hotspot / Wi-Fi may come up after PushNav starts, so the URL in
+    # The hotspot / Wi-Fi may come up after Starlock starts, so the URL in
     # the Connectivity panel must not be fixed at server start.
     cfg = ConfigManager(config_dir=tmp_path / "cfg")
     ws = WebServer(PointingState(), StateMachine(), GotoTarget(), cfg)

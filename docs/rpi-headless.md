@@ -2,18 +2,18 @@
 title: Raspberry Pi (headless)
 ---
 
-# Running PushNav headless on a Raspberry Pi
+# Running Starlock headless on a Raspberry Pi
 
-PushNav runs headless on a Raspberry Pi 3A+, 4 or 5 as the `pushnav-headless`
-package. There is no window: PushNav runs in the background as a system
+Starlock runs headless on a Raspberry Pi 3A+, 4 or 5 as the `starlock-headless`
+package. There is no window: Starlock runs in the background as a system
 service, and you control it from a phone or laptop browser at
 `http://<pi-address>:8780`. The laptop builds (macOS `.dmg`, Windows
 installer, Linux AppImage) are separate and unchanged.
 
 !!! info "Where to get it"
-    The Pi package comes with the PushNav releases from `v0.3.0-beta7` on.
-    On the [releases page](https://github.com/meridianfield/pushnav/releases),
-    pick the newest release that lists `pushnav-headless_<version>_arm64.deb`
+    The Pi package comes with the Starlock releases from `v0.3.0-beta7` on.
+    On the [releases page](https://github.com/kwdowns/starlock/releases),
+    pick the newest release that lists `starlock-headless_<version>_arm64.deb`
     (it may be marked *Pre-release*). It sits next to `user-data`, which
     method B below uses. If no release lists it yet,
     [build the package yourself](#build-the-package).
@@ -24,7 +24,7 @@ installer, Linux AppImage) are separate and unchanged.
     ready-made SD card on the 3A+, and in clean Debian bookworm and trixie
     installs. The Pi 4 hasn't been tested yet but is expected to work, since
     it sits between the two. Please
-    [report problems](https://github.com/meridianfield/pushnav/issues).
+    [report problems](https://github.com/kwdowns/starlock/issues).
 
 ## Which way to install?
 
@@ -32,11 +32,11 @@ There are two ways to set up the Pi. Both install the same package, and
 everything after the install (status light, debug mode, updates) works
 the same.
 
-| | **A. Install with apt** | **B. Ready-made PushNav SD card** |
+| | **A. Install with apt** | **B. Ready-made Starlock SD card** |
 |---|---|---|
-| **Best for** | People used to setting up a Pi, or a Pi that also does other things | A dedicated PushNav box, with no command line needed |
-| **Network** | Your existing Wi-Fi or Ethernet | The Pi's own Wi-Fi hotspot, `PushNav-XXXX` (no internet needed) |
-| **Open PushNav at** | `http://<pi-address>:8780` | `http://192.168.77.1:8780` |
+| **Best for** | People used to setting up a Pi, or a Pi that also does other things | A dedicated Starlock box, with no command line needed |
+| **Network** | Your existing Wi-Fi or Ethernet | The Pi's own Wi-Fi hotspot, `Starlock-XXXX` (no internet needed) |
+| **Open Starlock at** | `http://<pi-address>:8780` | `http://192.168.77.1:8780` |
 | **Setup** | Flash the card the usual way, SSH in, `apt install` the package | Flash the card, copy two files onto it, boot |
 | **Raspberry Pi OS** | 64-bit, bookworm or trixie | 64-bit **Lite**, **trixie** only |
 
@@ -44,14 +44,14 @@ the same.
 
 - A **Raspberry Pi 3A+, 4 or 5** with **64-bit** Raspberry Pi OS. The Lite
   (no desktop) edition is enough. In Raspberry Pi Imager, pick a 64-bit
-  OS; the package doesn't install on 32-bit. PushNav uses about 150 MB of
+  OS; the package doesn't install on 32-bit. Starlock uses about 150 MB of
   memory, so even the 3A+'s 512 MB is enough.
 - **Speed:** a Pi 5 solves the sample frames in under a tenth of a second
   each. A Pi 3A+ manages about 2 solves per second, which is slower but
   still fine for push-to.
 - A [supported camera](hardware.md). The Waveshare, Arducam and DECXIN
   OV9281 USB modules are recognised automatically.
-- A phone, tablet or laptop to open PushNav in a browser.
+- A phone, tablet or laptop to open Starlock in a browser.
 - Optionally, for a Pi 3A+: the 3D-printed [Pi 3A+ mount and box](3d-models.md#pi-3a-mount-and-box-optional),
   which carries the Pi under the camera on the telescope's finder shoe.
 
@@ -62,52 +62,52 @@ For a Pi you set up yourself, on your own Wi-Fi or Ethernet.
 1. Set up the Pi as usual with 64-bit Raspberry Pi OS (bookworm or trixie),
    networking and SSH, for example with Raspberry Pi Imager's OS
    customisation.
-2. On the [releases page](https://github.com/meridianfield/pushnav/releases),
-   download `pushnav-headless_<version>_arm64.deb` onto the Pi. For
+2. On the [releases page](https://github.com/kwdowns/starlock/releases),
+   download `starlock-headless_<version>_arm64.deb` onto the Pi. For
    example, copy its link and run `wget <link>` on the Pi.
 3. Install it:
 
     ```bash
-    sudo apt install ./pushnav-headless_*_arm64.deb
+    sudo apt install ./starlock-headless_*_arm64.deb
     ```
 
     apt may print a notice that the download "is performed unsandboxed as
     root". That's normal for a local file and safe to ignore.
 
-4. The install starts PushNav straight away, and it starts again on every
+4. The install starts Starlock straight away, and it starts again on every
    boot. The last lines of the install show the address to open:
 
     ```text
-    PushNav headless is installed.
+    Starlock headless is installed.
       Open on your phone (same Wi-Fi):  http://192.168.0.111:8780
     ```
 
 5. Open that address on your phone. You can plug the camera in before or
-   after this; PushNav picks it up within about 10 seconds, and again if it
+   after this; Starlock picks it up within about 10 seconds, and again if it
    is unplugged and plugged back in.
 
 The package includes everything it needs, including its own Python, under
-`/usr/lib/pushnav-headless`. It doesn't touch the Pi's system Python.
+`/usr/lib/starlock-headless`. It doesn't touch the Pi's system Python.
 
-## B. Ready-made PushNav SD card
+## B. Ready-made Starlock SD card
 
-Turns a fresh SD card into a dedicated PushNav box with its own Wi-Fi
+Turns a fresh SD card into a dedicated Starlock box with its own Wi-Fi
 hotspot, so it works anywhere, with no router and no internet. You copy
 two files onto the card after flashing it, and the Pi sets itself up on
 the first boot.
 
 Use **Raspberry Pi OS Lite**: the box has no screen, so a desktop would
-only take memory away from PushNav (the 3A+ has just 512 MB) and slow the
+only take memory away from Starlock (the 3A+ has just 512 MB) and slow the
 boot. Lite is also what this setup was tested with.
 
 1. **Download two files** from the same release on the
-   [releases page](https://github.com/meridianfield/pushnav/releases):
-   `pushnav-headless_<version>_arm64.deb` and `user-data`.
+   [releases page](https://github.com/kwdowns/starlock/releases):
+   `starlock-headless_<version>_arm64.deb` and `user-data`.
 2. **Edit `user-data`** in a plain-text editor. Lines marked `CHANGE`:
     - the Wi-Fi **country code** (`IN` is India; use yours, e.g. `US`, `GB`,
       `DE`, `AU`). The wrong country can stop the hotspot from working.
-    - the hotspot password (`pushnav123`) and the login password
-      (`pushnav`), if other people may be within Wi-Fi range.
+    - the hotspot password (`starlock123`) and the login password
+      (`starlock`), if other people may be within Wi-Fi range.
 
     Keep the file name exactly `user-data`, with no `.txt` or other
     extension. Some editors add one when saving.
@@ -120,31 +120,31 @@ boot. Lite is also what this setup was tested with.
    `config.txt` and `cmdline.txt`) and copy both files to its **top
    level**, replacing the `user-data` that's already there.
 5. **Boot the Pi** with the card and, if you have it, the camera. The first
-   boot sets everything up and takes a few minutes. When PushNav is
+   boot sets everything up and takes a few minutes. When Starlock is
    running, the Pi's [status light](#status-light) blinks red slowly (no
    camera) or green slowly (ready).
-6. **Connect your phone** to the Wi-Fi network `PushNav-XXXX` (password
-   `pushnav123`, unless you changed it) and open
+6. **Connect your phone** to the Wi-Fi network `Starlock-XXXX` (password
+   `starlock123`, unless you changed it) and open
    **`http://192.168.77.1:8780`**. Your phone may warn that the network has
-   no internet: stay connected anyway. `http://pushnav.local:8780` also
+   no internet: stay connected anyway. `http://starlock.local:8780` also
    works on phones that support `.local` names (iPhones do; many Android
    phones don't).
 
 To log in to the Pi, connect to the hotspot and run `ssh pi@192.168.77.1`
-(password `pushnav`, unless you changed it).
+(password `starlock`, unless you changed it).
 
-To stick these details on the box, with a QR code that opens PushNav,
+To stick these details on the box, with a QR code that opens Starlock,
 print a label: see [Label for a ready-made Pi](#label-for-a-ready-made-pi).
 
 The setup in `user-data` runs **only on the first boot**. To install a
-newer PushNav later, see [For power users](#for-power-users-installing-a-deb-yourself),
+newer Starlock later, see [For power users](#for-power-users-installing-a-deb-yourself),
 or flash the card again with the new files.
 
 ## Connect planetarium apps
 
 Use the Pi's address: `192.168.77.1` with the ready-made SD card (B), or
 the Pi's address on your network with apt (A). The Connectivity section of
-the PushNav page shows the exact addresses to use.
+the Starlock page shows the exact addresses to use.
 
 - **SkySafari or Stellarium Mobile:** add a telescope of type *Meade LX200
   Classic* over Wi-Fi/TCP at the Pi's address, port `4030`. See
@@ -154,24 +154,24 @@ the PushNav page shows the exact addresses to use.
 
 ## Status light
 
-With no screen attached, the Pi's own LEDs show what PushNav is doing.
+With no screen attached, the Pi's own LEDs show what Starlock is doing.
 **Red means it needs your attention; green means it's working.**
 
 | What you see | What it means | What to do |
 |---|---|---|
-| Red, slow blink | No camera found, or PushNav is trying to reconnect to it | Check the camera cable |
-| Red, steady | The camera was unplugged while in use, and reconnecting failed | Plug the camera back in: PushNav finds it within about 10 seconds |
+| Red, slow blink | No camera found, or Starlock is trying to reconnect to it | Check the camera cable |
+| Red, steady | The camera was unplugged while in use, and reconnecting failed | Plug the camera back in: Starlock finds it within about 10 seconds |
 | Green, slow blink | Ready, needs a sync | Open the page and run the sync wizard |
 | Green, short flash every 3 seconds | Tracking, all good | Nothing: enjoy observing |
 | Green, fast blink | Lost the stars | Check where the scope points, or for dew on the lens |
-| Three quick green blinks, once | A phone, Stellarium or SkySafari just connected, or sent a target | Nothing: PushNav got it |
+| Three quick green blinks, once | A phone, Stellarium or SkySafari just connected, or sent a target | Nothing: Starlock got it |
 
 The "all good" flash is deliberately brief, so it doesn't spoil your
 night vision. After a target or a new connection's three quick blinks,
 the light goes back to its pattern.
 
-While the Pi boots, and whenever PushNav isn't running, the LEDs behave
-as they normally do on a Pi. When PushNav starts, they go dark for a few
+While the Pi boots, and whenever Starlock isn't running, the LEDs behave
+as they normally do on a Pi. When Starlock starts, they go dark for a few
 seconds (up to about 20 seconds on a Pi 3A+) until it's ready and the
 status light takes over.
 
@@ -181,35 +181,35 @@ a green double blink and "camera unplugged while in use" is steady green.
 Good to know:
 
 - Some Pi cases hide the LEDs. A case with a window or light pipe over
-  them makes the status light visible; the PushNav Pi 3A+ box has a
+  them makes the status light visible; the Starlock Pi 3A+ box has a
   window over them in its back wall.
-- While PushNav runs, the green LED no longer flickers with SD card
+- While Starlock runs, the green LED no longer flickers with SD card
   activity. On a Pi 4, the red LED also stops warning about a weak power
   supply.
 - To turn the status light off, set `"led": {"enabled": false}` in
   `config.json` (see below), then run
-  `sudo systemctl restart pushnav-headless`.
+  `sudo systemctl restart starlock-headless`.
 
 ## Power saving
 
 A plate solve takes a few tens of milliseconds, and the camera takes most
 of a second to deliver each frame, so the Pi spends nearly all its time
-waiting. PushNav sleeps between frames, and while it runs it caps the
+waiting. Starlock sleeps between frames, and while it runs it caps the
 CPU clock at 1200 MHz (a Pi 4 normally runs up to 1500 or 1800 MHz). The
-CPU still drops to its lowest clock when idle. Stopping PushNav puts the
+CPU still drops to its lowest clock when idle. Stopping Starlock puts the
 clock back as it was.
 
 To turn the cap off or on, use the **Power saving** switch in Settings;
 it takes effect at once and is remembered. To choose a different cap,
 set `"power": {"max_freq_mhz": 1000}` in `config.json` (see below), then
-run `sudo systemctl restart pushnav-headless`.
+run `sudo systemctl restart starlock-headless`.
 
 ## Debug mode
 
-Debug mode adds a Debug panel at the bottom of the PushNav page. Its
+Debug mode adds a Debug panel at the bottom of the Starlock page. Its
 sample star images stand in for the camera, so you can try the sync
 wizard indoors or check a setup without a clear sky. The panel can also
-save the current camera frame (to `/var/lib/pushnav-headless/Downloads`
+save the current camera frame (to `/var/lib/starlock-headless/Downloads`
 on the Pi).
 
 To turn it on, put a jumper across **pin 39 (GND) and pin 40 (GPIO21)**,
@@ -221,29 +221,29 @@ the last two pins of the 40-pin header, at the opposite end from pin 1:
                                GND  GPIO21
 ```
 
-Then restart PushNav: power-cycle the Pi, or run
-`sudo systemctl restart pushnav-headless`. To turn debug mode off, remove
-the jumper and restart again. PushNav checks the jumper only when it
+Then restart Starlock: power-cycle the Pi, or run
+`sudo systemctl restart starlock-headless`. To turn debug mode off, remove
+the jumper and restart again. Starlock checks the jumper only when it
 starts.
 
 - Use only pins 39 and 40. Never connect a GPIO pin to the 5 V pins.
 - A HAT that uses GPIO21 (some I2S audio boards do) leaves debug mode
-  off, because PushNav can't read the pin.
+  off, because Starlock can't read the pin.
 - To see what the Pi reads, run
-  `sudo /usr/lib/pushnav-headless/python/bin/python3 -m evf.engine.debug_pin --check`.
+  `sudo /usr/lib/starlock-headless/python/bin/python3 -m evf.engine.debug_pin --check`.
 
 ## Managing the service
 
 | Task | Command |
 |---|---|
-| Is it running? | `systemctl status pushnav-headless` |
-| Watch the log | `journalctl -u pushnav-headless -f` |
-| Stop / start / restart | `sudo systemctl stop pushnav-headless` (or `start` / `restart`) |
-| Don't start at boot | `sudo systemctl disable pushnav-headless` |
-| Start at boot again | `sudo systemctl enable pushnav-headless` |
+| Is it running? | `systemctl status starlock-headless` |
+| Watch the log | `journalctl -u starlock-headless -f` |
+| Stop / start / restart | `sudo systemctl stop starlock-headless` (or `start` / `restart`) |
+| Don't start at boot | `sudo systemctl disable starlock-headless` |
+| Start at boot again | `sudo systemctl enable starlock-headless` |
 
-PushNav runs as its own `pushnav` system user. Its files are in
-`/var/lib/pushnav-headless`:
+Starlock runs as its own `starlock` system user. Its files are in
+`/var/lib/starlock-headless`:
 
 - Settings and calibration: `config/electronic-viewfinder/config.json`
 - Log file: `state/electronic-viewfinder/logs/evf.log`
@@ -259,7 +259,7 @@ These work the same with both setups. Log in to the Pi over SSH first
 ### Get the .deb onto the Pi
 
 - **Over the network**, from a laptop on the same network or hotspot:
-  `scp pushnav-headless_<version>_arm64.deb pi@<pi-address>:`
+  `scp starlock-headless_<version>_arm64.deb pi@<pi-address>:`
 - **On the SD card**, from a PC: copy it to the boot partition. On the Pi
   it is then in `/boot/firmware/`.
 
@@ -271,11 +271,11 @@ below.
 
 | What | Command |
 |---|---|
-| Install, or update to a newer version | `sudo apt install ./pushnav-headless_<version>_arm64.deb` |
+| Install, or update to a newer version | `sudo apt install ./starlock-headless_<version>_arm64.deb` |
 | Install the same version again | add `--reinstall` |
 | Go back to an older version, or install a local build | add `--allow-downgrades` |
-| Install a copy from the boot partition | `sudo apt install /boot/firmware/pushnav-headless_<version>_arm64.deb` |
-| Which version is installed? | `dpkg-query -W pushnav-headless` |
+| Install a copy from the boot partition | `sudo apt install /boot/firmware/starlock-headless_<version>_arm64.deb` |
+| Which version is installed? | `dpkg-query -W starlock-headless` |
 
 Settings and calibration are kept, and if you disabled starting at boot,
 that stays disabled.
@@ -294,13 +294,13 @@ that stays disabled.
 - **Debug mode without the jumper:** add a systemd override.
 
     ```bash
-    sudo mkdir -p /etc/systemd/system/pushnav-headless.service.d
-    printf '[Service]\nEnvironment=PUSHNAV_DEBUG=1\n' | \
-        sudo tee /etc/systemd/system/pushnav-headless.service.d/debug.conf
-    sudo systemctl daemon-reload && sudo systemctl restart pushnav-headless
+    sudo mkdir -p /etc/systemd/system/starlock-headless.service.d
+    printf '[Service]\nEnvironment=STARLOCK_DEBUG=1\n' | \
+        sudo tee /etc/systemd/system/starlock-headless.service.d/debug.conf
+    sudo systemctl daemon-reload && sudo systemctl restart starlock-headless
     ```
 
-    To turn it off again, `sudo rm -r /etc/systemd/system/pushnav-headless.service.d`,
+    To turn it off again, `sudo rm -r /etc/systemd/system/starlock-headless.service.d`,
     then the same `daemon-reload` and `restart`.
 - **Status light off:** see [Status light](#status-light).
 
@@ -316,7 +316,7 @@ sudo nmcli con mod hotspot connection.autoconnect no
 sudo nmcli con up home    # the SSH session drops here
 ```
 
-The Pi is then on your home network, as `pushnav.local` or at the address
+The Pi is then on your home network, as `starlock.local` or at the address
 your router shows. When you're done, switch back to the hotspot:
 
 ```bash
@@ -328,22 +328,22 @@ sudo nmcli con up hotspot    # the SSH session drops again
 ## Uninstall
 
 ```bash
-sudo apt remove pushnav-headless   # remove PushNav, keep settings and calibration
-sudo apt purge pushnav-headless    # remove everything, including the pushnav user
+sudo apt remove starlock-headless   # remove Starlock, keep settings and calibration
+sudo apt purge starlock-headless    # remove everything, including the starlock user
 ```
 
 ## Troubleshooting
 
-**Ready-made card: no `PushNav-XXXX` network appears.** Give the first
+**Ready-made card: no `Starlock-XXXX` network appears.** Give the first
 boot a few minutes. Then check that the card has Raspberry Pi OS Lite
 (64-bit, trixie), that `user-data` is at the top level of `bootfs` with
 exactly that name (no `.txt`), and that the country code in it is right.
 
-**Ready-made card: the hotspot works but PushNav doesn't open.** If the
+**Ready-made card: the hotspot works but Starlock doesn't open.** If the
 Pi's LEDs show their normal behaviour instead of the
-[status light](#status-light), PushNav wasn't installed, usually because
+[status light](#status-light), Starlock wasn't installed, usually because
 the `.deb` wasn't on the card. Log in with `ssh pi@192.168.77.1`, check
-`sudo grep -n "PushNav .deb" /var/log/cloud-init-output.log`, and
+`sudo grep -n "Starlock .deb" /var/log/cloud-init-output.log`, and
 [install the `.deb` by hand](#for-power-users-installing-a-deb-yourself).
 
 **The log says "Waiting for camera".** No USB camera is detected. Check the
@@ -356,9 +356,9 @@ cable and run `lsusb`: a supported camera appears as `32e6:9251`,
 can fail until the next reboot. If `lsusb` lists nothing but hubs, check
 `journalctl -k | grep "HC died"`, then reboot.
 
-**"PushNav is already running on port 8780" when you run `pushnav-headless`
+**"Starlock is already running on port 8780" when you run `starlock-headless`
 by hand.** The service is already running. Stop it first with
-`sudo systemctl stop pushnav-headless`.
+`sudo systemctl stop starlock-headless`.
 
 **The phone can't open the address.** The phone and Pi must be on the same
 network. A Pi on Ethernet and a phone on Wi-Fi usually works on a home
@@ -372,7 +372,7 @@ usually has no speaker. That doesn't affect anything else.
 
 Not there yet:
 
-- No single ready-to-flash image: the [ready-made SD card](#b-ready-made-pushnav-sd-card)
+- No single ready-to-flash image: the [ready-made SD card](#b-ready-made-starlock-sd-card)
   needs two files copied onto it after flashing.
 - No shutdown button in the web UI: use `sudo shutdown now` over SSH.
 
@@ -383,8 +383,8 @@ Not there yet:
 ```bash
 sudo apt install -y gcc libjpeg-dev nodejs npm   # Node 20.19+ for the web build
 # install uv: https://docs.astral.sh/uv/getting-started/installation/
-git clone git@github.com:meridianfield/pushnav.git
-cd pushnav
+git clone git@github.com:kwdowns/starlock.git
+cd starlock
 uv sync --no-group desktop     # no pywebview / PyQt6 needed headless
 make -C camera/linux
 (cd web && npm install && npm run build)
@@ -393,7 +393,7 @@ uv run --no-group desktop python -m evf.main --no-window
 
 Your user needs to be in the `video` group to open the camera
 (`sudo usermod -aG video "$USER"`, then log out and back in). Stop the
-`pushnav-headless` service first if it's installed, because both use the
+`starlock-headless` service first if it's installed, because both use the
 same ports.
 
 A run from source leaves the LEDs alone, because only the service is
@@ -402,7 +402,7 @@ LEDs to your user first, then give them back when you're done:
 
 ```bash
 sudo .venv/bin/python -s -m evf.engine.led_helper take --group "$(id -gn)"
-# ... run PushNav as above ...
+# ... run Starlock as above ...
 sudo .venv/bin/python -s -m evf.engine.led_helper restore
 ```
 
@@ -427,24 +427,24 @@ The ready-made SD card's first-boot configuration is
 ### Label for a ready-made Pi
 
 `scripts/make_pi_label.py` makes a 50 × 20 mm label for the box: a QR
-code that opens PushNav on a phone, then the hotspot name and password,
+code that opens Starlock on a phone, then the hotspot name and password,
 the web address and the SSH login.
 
-![Example label: a QR code, then PushNav, Wi-Fi PushNav-3F2A, Pass pushnav123, Web 192.168.77.1:8780, SSH pi / pushnav](assets/pi-label.png){ width="420" style="border: 1px solid #9e9e9e; border-radius: 4px" }
+![Example label: a QR code, then Starlock, Wi-Fi Starlock-3F2A, Pass starlock123, Web 192.168.77.1:8780, SSH pi / starlock](assets/pi-label.png){ width="420" style="border: 1px solid #9e9e9e; border-radius: 4px" }
 
 It runs on any computer (it doesn't need a Pi), from a copy of this
 repository with [uv](https://docs.astral.sh/uv/getting-started/installation/)
 installed. `uv run` installs what it needs the first time.
 
 ```bash
-git clone https://github.com/meridianfield/pushnav.git
-cd pushnav
+git clone https://github.com/kwdowns/starlock.git
+cd starlock
 uv run python scripts/make_pi_label.py 3F2A
 ```
 
-`3F2A` is the end of the Pi's hotspot name (`PushNav-3F2A`), as the
-phone's Wi-Fi list shows it. The script writes `pushnav-label-3F2A.svg`
-and `pushnav-label-3F2A.png`, a 300 dpi image for apps that only take
+`3F2A` is the end of the Pi's hotspot name (`Starlock-3F2A`), as the
+phone's Wi-Fi list shows it. The script writes `starlock-label-3F2A.svg`
+and `starlock-label-3F2A.png`, a 300 dpi image for apps that only take
 pictures (`--dpi 600` for another resolution). It takes the passwords and
 the address from `packaging/headless/user-data`. If you changed them for
 your card, point it at your copy with `--user-data path/to/user-data`.

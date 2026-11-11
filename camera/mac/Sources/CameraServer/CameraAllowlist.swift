@@ -1,19 +1,19 @@
 // Copyright (C) 2026 Arun Venkataswamy
 //
-// This file is part of PushNav.
+// This file is part of Starlock.
 //
-// PushNav is free software: you can redistribute it and/or modify it
+// Starlock is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// PushNav is distributed in the hope that it will be useful, but
+// Starlock is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+// along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 // CameraAllowlist.swift — known USB cameras, matched by VID/PID.
 
@@ -36,13 +36,13 @@ let builtinCameras: [CameraID] = [
     CameraID(vid: 0x0C45, pid: 0x636D, label: "Innomaker U20CAM-9281M"),
 ]
 
-/// Built-in cameras plus any `PUSHNAV_CAMERA_IDS` entries — a comma-separated
+/// Built-in cameras plus any `STARLOCK_CAMERA_IDS` entries — a comma-separated
 /// list of `vid:pid` hex pairs (e.g. `"1bcf:2cd1,0c45:6366"`). Lets a user
 /// register a new camera at runtime without recompiling.
 func cameraAllowlist() -> [CameraID] {
     var list = builtinCameras
 
-    if let env = ProcessInfo.processInfo.environment["PUSHNAV_CAMERA_IDS"],
+    if let env = ProcessInfo.processInfo.environment["STARLOCK_CAMERA_IDS"],
        !env.isEmpty {
         let separators = CharacterSet(charactersIn: ", ;")
         for token in env.components(separatedBy: separators) where !token.isEmpty {
@@ -51,12 +51,12 @@ func cameraAllowlist() -> [CameraID] {
                   let vid = Int(hexDigits(parts[0]), radix: 16),
                   let pid = Int(hexDigits(parts[1]), radix: 16),
                   vid > 0, pid > 0 else {
-                logStderr("Ignoring malformed PUSHNAV_CAMERA_IDS entry '\(token)'\n")
+                logStderr("Ignoring malformed STARLOCK_CAMERA_IDS entry '\(token)'\n")
                 continue
             }
             if !list.contains(where: { $0.vid == vid && $0.pid == pid }) {
                 list.append(CameraID(vid: vid, pid: pid,
-                                     label: "user-configured (PUSHNAV_CAMERA_IDS)"))
+                                     label: "user-configured (STARLOCK_CAMERA_IDS)"))
             }
         }
     }

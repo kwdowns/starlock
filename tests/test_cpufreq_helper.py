@@ -149,6 +149,6 @@ def test_main_never_fails(tmp_path):
 
 def test_service_unit_takes_and_restores_the_clock():
     unit = (Path(__file__).resolve().parents[1]
-            / "packaging/headless/pushnav-headless.service").read_text()
-    assert "-m evf.engine.cpufreq_helper take --group pushnav" in unit
+            / "packaging/headless/starlock-headless.service").read_text()
+    assert "-m evf.engine.cpufreq_helper take --group starlock" in unit
     assert "ExecStopPost=+" in unit and "-m evf.engine.cpufreq_helper restore" in unit

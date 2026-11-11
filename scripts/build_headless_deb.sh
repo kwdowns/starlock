@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-# Build the pushnav-headless .deb (Raspberry Pi, arm64, always headless).
+# Build the starlock-headless .deb (Raspberry Pi, arm64, always headless).
 #
 # Usage:
 #   scripts/build_headless_deb.sh          # build in a Debian bookworm container (Docker)
@@ -28,14 +28,14 @@
 # qemu-user-static + binfmt-support). --host is for quick iteration on a
 # Pi and needs gcc, libjpeg-dev, Node 20.19+, curl and uv.
 #
-# Output: build/pushnav-headless_<version>_arm64.deb
+# Output: build/starlock-headless_<version>_arm64.deb
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # node:22-bookworm = Debian bookworm + Node 22 (Vite 8 needs Node 20.19+)
 # + gcc and libjpeg-dev from buildpack-deps.
-BUILD_IMAGE="${PUSHNAV_BUILD_IMAGE:-node:22-bookworm}"
+BUILD_IMAGE="${STARLOCK_BUILD_IMAGE:-node:22-bookworm}"
 UV_VERSION="0.12.23"
 
 MODE="${1:-docker}"
@@ -45,7 +45,7 @@ case "$MODE" in
         exec docker run --rm --platform linux/arm64 \
             -v "$REPO_ROOT:/src" -w /src \
             -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
-            -e PUSHNAV_DEB_REVISION \
+            -e STARLOCK_DEB_REVISION \
             "$BUILD_IMAGE" bash scripts/build_headless_deb.sh --in-container
         ;;
     --host|--in-container) ;;
@@ -53,7 +53,7 @@ case "$MODE" in
 esac
 
 if [ "$(uname -m)" != "aarch64" ]; then
-    echo "ERROR: pushnav-headless is arm64-only; this machine is $(uname -m)." >&2
+    echo "ERROR: starlock-headless is arm64-only; this machine is $(uname -m)." >&2
     echo "       Run without --host to build in an arm64 container." >&2
     exit 1
 fi
@@ -61,7 +61,7 @@ fi
 umask 022
 WORK="$REPO_ROOT/build/headless"
 STAGE="$WORK/root"
-APP="$STAGE/usr/lib/pushnav-headless"
+APP="$STAGE/usr/lib/starlock-headless"
 PKG_DIR="$REPO_ROOT/packaging/headless"
 
 rm -rf "$WORK"
@@ -149,30 +149,32 @@ cp marketing/inapp-title.png "$APP/marketing/"
 # -------------------------------------------------------------------------
 # Phase 5: launcher, systemd unit, docs, maintainer scripts
 # -------------------------------------------------------------------------
-install -D -m 755 "$PKG_DIR/pushnav-headless" "$STAGE/usr/bin/pushnav-headless"
-install -D -m 644 "$PKG_DIR/pushnav-headless.service" \
-    "$STAGE/usr/lib/systemd/system/pushnav-headless.service"
-install -d "$STAGE/usr/share/doc/pushnav-headless"
-cat > "$STAGE/usr/share/doc/pushnav-headless/copyright" <<'EOF'
+install -D -m 755 "$PKG_DIR/starlock-headless" "$STAGE/usr/bin/starlock-headless"
+install -D -m 644 "$PKG_DIR/starlock-headless.service" \
+    "$STAGE/usr/lib/systemd/system/starlock-headless.service"
+install -d "$STAGE/usr/share/doc/starlock-headless"
+cat > "$STAGE/usr/share/doc/starlock-headless/copyright" <<'EOF'
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: PushNav
-Source: https://github.com/meridianfield/pushnav
+Upstream-Name: Starlock
+Source: https://github.com/kwdowns/starlock
+Comment: Starlock is a fork of PushNav, https://github.com/meridianfield/pushnav
 
 Files: *
 Copyright: 2026 Arun Venkataswamy
+           2026 Kyle Downs
 License: GPL-3+
  On Debian systems the full text of the GNU General Public License
  version 3 is in /usr/share/common-licenses/GPL-3.
  .
  The bundled Python runtime and Python packages under
- /usr/lib/pushnav-headless/python keep their own licenses (see each
+ /usr/lib/starlock-headless/python keep their own licenses (see each
  package's *.dist-info directory). The OpenNGC and HYG catalogs bundled
  in the web UI are CC-BY-SA 4.0.
 EOF
 
 RAW_VERSION="$("$PY" -c "import json; print(json.load(open('data/VERSION.json'))['app_version'])")"
 # 0.3.0-beta -> 0.3.0~beta-1 ('~' sorts before the final 0.3.0)
-DEB_VERSION="${RAW_VERSION/-/\~}-${PUSHNAV_DEB_REVISION:-1}"
+DEB_VERSION="${RAW_VERSION/-/\~}-${STARLOCK_DEB_REVISION:-1}"
 
 chmod -R u+rwX,go+rX,go-w "$STAGE"
 install -d -m 755 "$STAGE/DEBIAN"
@@ -186,7 +188,7 @@ sed -e "s/@VERSION@/$DEB_VERSION/" -e "s/@INSTALLED_SIZE@/$INSTALLED_SIZE/" \
 # -------------------------------------------------------------------------
 # Phase 6: .deb
 # -------------------------------------------------------------------------
-DEB="$REPO_ROOT/build/pushnav-headless_${DEB_VERSION}_arm64.deb"
+DEB="$REPO_ROOT/build/starlock-headless_${DEB_VERSION}_arm64.deb"
 echo "==> Packing $(basename "$DEB")"
 rm -f "$DEB"
 dpkg-deb --root-owner-group -Zxz --build "$STAGE" "$DEB" >/dev/null

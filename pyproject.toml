@@ -18,7 +18,7 @@ dependencies = [
 [dependency-groups]
 # Desktop window (pywebview). Installed by default — `uv sync` and the
 # macOS / Windows / Linux-laptop builds are unchanged — but left out of the
-# headless Raspberry Pi package (`pushnav-headless`), which never opens a
+# headless Raspberry Pi package (`starlock-headless`), which never opens a
 # window. main.py imports webview only on the windowed path.
 desktop = [
     "pywebview>=5.0",

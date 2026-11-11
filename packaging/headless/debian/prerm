@@ -1,8 +1,8 @@
 #!/bin/sh
-# pushnav-headless prerm
+# starlock-headless prerm
 set -e
 
-UNIT=pushnav-headless.service
+UNIT=starlock-headless.service
 
 if [ -d /run/systemd/system ]; then
     case "$1" in

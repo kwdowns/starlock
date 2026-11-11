@@ -1,4 +1,4 @@
-# SPEC_BUILD_RELEASE.md — PushNav
+# SPEC_BUILD_RELEASE.md — Starlock
 
 Version: 2.1
 Status: Reflects Current Implementation
@@ -10,7 +10,7 @@ Target: macOS, Linux, Windows
 ## 1. Repository Layout
 
 ```
-pushnav/
+starlock/
   specs/start/
     SPEC_PRODUCT.md
     SPEC_ARCHITECTURE.md
@@ -49,7 +49,7 @@ pushnav/
   marketing/          # logo, in-app title images
 
   linux/
-    pushnav.desktop   # Linux desktop integration
+    starlock.desktop   # Linux desktop integration
 
   scripts/
     build_mac.sh
@@ -60,7 +60,7 @@ pushnav/
     run_dev_linux.sh
     run_dev_windows.bat
     run_mock_camera.sh
-    pushnav.iss       # Windows Inno Setup installer script
+    starlock.iss       # Windows Inno Setup installer script
     test_stellarium_live.py
 
   tests/
@@ -116,7 +116,7 @@ scripts/build_mac.sh
 
 Key Nuitka flags:
 - `--standalone` (NOT `--onefile` — `.dist/` directory approach)
-- `--output-filename=PushNav` (binary name; macOS/Linux) or `PushNav.exe`
+- `--output-filename=Starlock` (binary name; macOS/Linux) or `Starlock.exe`
   (Windows). The binary name matches the app/bundle name on purpose:
   macOS TCC reads it for the camera permission prompt, Windows Defender
   Firewall reads it (alongside the version-info `ProductName`) for the
@@ -131,15 +131,15 @@ Key Nuitka flags:
 
 ## 4. macOS Packaging (.app and .dmg)
 
-Final distributable: DMG containing `PushNav.app`
+Final distributable: DMG containing `Starlock.app`
 
 Expected `.app` layout:
 
 ```
-PushNav.app/
+Starlock.app/
   Contents/
     MacOS/
-      PushNav            # Nuitka standalone dist (CFBundleExecutable)
+      Starlock            # Nuitka standalone dist (CFBundleExecutable)
       camera_server      # Swift binary
       ...                # Nuitka support files
     Resources/
@@ -176,9 +176,9 @@ scripts/build_linux.sh
 Uses Nuitka `--standalone`. Post-build assembles an AppImage:
 - Downloads `appimagetool`
 - Creates AppDir with Nuitka dist, camera binary, data files
-- Includes `linux/pushnav.desktop` for desktop integration
-- Produces both `PushNav-linux-{ARCH}.tar.gz` (raw standalone dist) and
-  `PushNav-linux-{ARCH}.AppImage` (self-contained single-file distributable)
+- Includes `linux/starlock.desktop` for desktop integration
+- Produces both `Starlock-linux-{ARCH}.tar.gz` (raw standalone dist) and
+  `Starlock-linux-{ARCH}.AppImage` (self-contained single-file distributable)
 
 ---
 
@@ -199,9 +199,9 @@ scripts\build_windows.bat
 
 Uses Nuitka `--standalone`. Post-build:
 - Copies camera binary, data files, marketing assets
-- Produces `PushNav-windows-x64.zip` (raw standalone dist, always)
+- Produces `Starlock-windows-x64.zip` (raw standalone dist, always)
 - If Inno Setup is installed (`ISCC.exe` on PATH), also runs
-  `scripts/pushnav.iss` to build `PushNav-windows-x64-setup.exe`. The
+  `scripts/starlock.iss` to build `Starlock-windows-x64-setup.exe`. The
   installer step is skipped silently when Inno Setup is not present.
 
 DPI awareness is handled at runtime (not build-time) via Windows API calls in `main.py`.

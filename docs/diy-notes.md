@@ -28,8 +28,8 @@ The camera ships with a wide-angle lens that needs to be replaced with the 25mm 
 
 ## DIY Assembly
 
-- Finish the camera modifications as described above to get the camera ready for use with PushNav. This involves replacing the stock lens with the 25mm M12 lens and ensuring it is securely mounted and focused.
-- 3D print the [Camera Housing](3d-models.md#camera-housing-recommended): the camera housing, the hood and the low mount (the dust cap is optional). To run PushNav on a Raspberry Pi 3A+ instead of a laptop, print the [Pi 3A+ mount and box](3d-models.md#pi-3a-mount-and-box-optional) in place of the low mount.
+- Finish the camera modifications as described above to get the camera ready for use with Starlock. This involves replacing the stock lens with the 25mm M12 lens and ensuring it is securely mounted and focused.
+- 3D print the [Camera Housing](3d-models.md#camera-housing-recommended): the camera housing, the hood and the low mount (the dust cap is optional). To run Starlock on a Raspberry Pi 3A+ instead of a laptop, print the [Pi 3A+ mount and box](3d-models.md#pi-3a-mount-and-box-optional) in place of the low mount.
 - Secure the camera inside the housing base. Choice of adhesive depends on whether you want to remove the camera later:
     - **Hot glue gun.** Use if you may want to remove the camera to refit or reuse later. It's reversible (peels off with gentle prying), but the thick bead can introduce small alignment errors, so press the camera flat while the glue sets.
     - **Super glue (or other thin adhesives).** Use once you're satisfied with alignment and focus and don't plan to remove the camera. Thin adhesives give a much more precise, rigid bond with no alignment drift.
@@ -38,12 +38,12 @@ The camera ships with a wide-angle lens that needs to be replaced with the 25mm 
 - **IMPORTANT** focusing notes: 
     - Focus the camera by adjusting the position of the lens in its mount before attaching the hood. 
     - Focus is best done with the camera looking at real stars in the night sky.
-    - Use the PushNav app or any camera viewer software to see the live feed from the camera while adjusting focus.
+    - Use the Starlock app or any camera viewer software to see the live feed from the camera while adjusting focus.
     - Try to achive the best focus possible, as this will improve plate-solving performance. 
     - Once you have achieved good focus, tighten the M12 lock nut against the lens holder to secure the lens in place. This is an important step to prevent the lens from shifting due to vibrations while pushing the telescope, which would throw off focus and plate-solving. Remember that while locking the lens in place, the focus might shift slightly. Be aware of this and try to focus again by loosening the lock nut, adjusting focus, and re-tightening until you find the optimal focus position that is also securely locked.
     - *Note* : If you are focusing on a bright star, the star might not be pin point and could be a bit bloated even at optimal focus due to the brightness of the star. In this case, try focusing on a slightly dimmer star to get a better sense of the focus quality. 
 - Attach the hood to the base.
-- Ready to use with PushNav!
+- Ready to use with Starlock!
 
 ## Detailed Assembly Instructions
 

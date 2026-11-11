@@ -1,17 +1,17 @@
-# SPEC_PROTOCOL_LX200.md — PushNav
+# SPEC_PROTOCOL_LX200.md — Starlock
 
 Version: 1.0
 Status: Draft — not yet implemented
 Date: 2026-04-16
 Transport: TCP (default bind `0.0.0.0` so mobile apps on the LAN can reach it)
 Default Port: 4030 (SkyFi-compatible; picked up by SkySafari auto-detect)
-Direction: PushNav acts as TCP **server**; clients (SkySafari, Stellarium Mobile, INDI `indi_lx200basic`, ASCOM "Meade Generic") connect as **clients**
+Direction: Starlock acts as TCP **server**; clients (SkySafari, Stellarium Mobile, INDI `indi_lx200basic`, ASCOM "Meade Generic") connect as **clients**
 
 ---
 
 ## 1. Overview
 
-PushNav speaks a minimal subset of the Meade **LX200 Classic** serial command set over TCP. The same byte stream unlocks four ecosystems without a custom driver on any of them:
+Starlock speaks a minimal subset of the Meade **LX200 Classic** serial command set over TCP. The same byte stream unlocks four ecosystems without a custom driver on any of them:
 
 | Client | How it connects |
 |--------|----------------|
@@ -24,9 +24,9 @@ Because the same protocol serves all four, this spec is the *only* external-cont
 
 ### 1.1 One-way data flow rule
 
-**Pointing state is owned by PushNav; third-party clients cannot mutate it.**
+**Pointing state is owned by Starlock; third-party clients cannot mutate it.**
 
-PushNav performs its own internal body-frame calibration (wizard Sync step → `config.sync_d_body`) and reports the *corrected* pointing outward. Any command from a client that looks like a sync/align/calibrate is treated as informational only — never as state input. Specifically:
+Starlock performs its own internal body-frame calibration (wizard Sync step → `config.sync_d_body`) and reports the *corrected* pointing outward. Any command from a client that looks like a sync/align/calibrate is treated as informational only — never as state input. Specifically:
 
 - `:CM#` (SkySafari "Align") — reply the canonical "Coordinates matched" string, **do nothing else**. No writes to `config.sync_d_body`, no change to `PointingState`, no re-derivation of `finder_rotation`.
 - `:Sr` / `:Sd` / `:MS#` (goto target) — store in `GotoTarget` for on-screen navigation guidance only. Never modifies pointing; push-to has no motor.
@@ -43,7 +43,7 @@ LX200 is ASCII. Commands from the client are framed as `:<cmd>#` (leading colon,
 
 - **Fixed-width ASCII** terminated by `#` for getters (`:GR#`, `:GD#`, `:GVP#`, …)
 - **A single ASCII digit with no terminator** for target-set acknowledgments (`:Sr`, `:Sd`) — `1` = accepted, `0` = parse failed.
-- For `:MS#`, **either** a single `0` (slew started — both pending RA and Dec were set) **or** a `#`-terminated objection string of the form `1<msg>#` (the only objection PushNav currently emits is `1<no target set>#` when one or both pending values are missing).
+- For `:MS#`, **either** a single `0` (slew started — both pending RA and Dec were set) **or** a `#`-terminated objection string of the form `1<msg>#` (the only objection Starlock currently emits is `1<no target set>#` when one or both pending values are missing).
 - **A single ASCII char with no terminator** for the `ACK` (`0x06`) alignment-mode query — see §3.4. This is *not* `:`-framed; it is a bare byte.
 - **Nothing at all** for fire-and-forget commands (`:Q#`, `:U#`, unknown commands)
 
@@ -64,7 +64,7 @@ Minimum set required by all four client families. Unsupported commands are **sil
 | `:GR#` | `HH:MM:SS#` | `HH:MM.T#` |
 | `:GD#` | `sDD*MM:SS#` | `sDD*MM#` |
 | `:GVP#` | `LX200 Classic#` *(identity — used for auto-detect)* | — |
-| `:GVN#` | `PushNav <app version from VERSION.json>#` | — |
+| `:GVN#` | `Starlock <app version from VERSION.json>#` | — |
 | `:GVD#` | build-date string, e.g. `Apr 16 2026#` *(today's date; harmless placeholder)* | — |
 | `:GVT#` | build-time string, e.g. `12:34:56#` *(current local time; harmless placeholder)* | — |
 
@@ -126,7 +126,7 @@ A real Meade mount answers the `ACK` byte with its alignment mode — `A` (AltAz
 than connect via a saved scope-type preset) use this as the LX200 "are you
 there?" probe: they send `0x06` and treat any of `A`/`L`/`P` as confirmation.
 
-PushNav answers **`P`** (Polar) because it reports equatorial RA/Dec; the value
+Starlock answers **`P`** (Polar) because it reports equatorial RA/Dec; the value
 is cosmetic — any valid char confirms LX200. The byte is **not** `#`-framed, so
 `Lx200Server` answers it directly in its receive loop (one reply per ACK byte),
 not through `dispatch()`. One ACK per `0x06` mirrors a real mount.
@@ -386,7 +386,7 @@ Trade-off: two simultaneous clients both issuing gotos will race (last `:Sr`/`:S
          erase an already-committed navigation target)
 :U#   → toggle this client's precision mode (per-connection); no reply
 :GVP# → reply "LX200 Classic#"
-:GVN# → reply "PushNav <app version from VERSION.json>#"
+:GVN# → reply "Starlock <app version from VERSION.json>#"
 unknown :XX# → consume, no reply, log DEBUG
 ```
 
@@ -466,7 +466,7 @@ slew-status reply flips.
 2. Fill in:
    - **Mount Type**: AltAz GoTo (the "GoTo" part matters — see above)
    - **Scope Type**: Meade LX200 Classic
-   - **IP Address**: PushNav host (shown in PushNav's Settings panel)
+   - **IP Address**: Starlock host (shown in Starlock's Settings panel)
    - **Port**: `4030` (default is fine)
 3. Tap **Check Connection Now** → "Connection verified"
 4. **Save Preset**
@@ -492,7 +492,7 @@ server level (§6.2.1) precisely because of this.
 
 ### 8.2 Stellarium Mobile PLUS
 - Menu → Observing Tools → Telescope → Add
-- Connection: **Network (TCP)**; IP = PushNav host; Port = **4030**
+- Connection: **Network (TCP)**; IP = Starlock host; Port = **4030**
 - Protocol: leave on **auto-detect**. Stellarium probes NexStar first (we ignore
   it → times out) then LX200 via the `ACK` (`0x06`) handshake (§3.4), which we
   answer with the alignment-mode char. That `ACK` reply is what makes
@@ -504,19 +504,19 @@ On the desktop:
 indiserver -v indi_lx200basic
 ```
 In KStars → Ekos → Profile Editor → Mount: **LX200 Basic**. Then in the
-driver's Connection tab: **TCP**, Host = PushNav host, Port = 4030. Ekos
+driver's Connection tab: **TCP**, Host = Starlock host, Port = 4030. Ekos
 is the device-management panel used to connect the mount whether you're
 observing visually or imaging.
 
 ### 8.4 ASCOM (Windows)
 Most ASCOM clients (N.I.N.A., SharpCap, APT) are astrophotography workflows
 that expect a motorized mount and aren't a natural fit for a push-to. The
-practical ASCOM use case for PushNav is **Stellarium on Windows via its ASCOM
+practical ASCOM use case for Starlock is **Stellarium on Windows via its ASCOM
 telescope plugin**, or **TheSkyX** as a planetarium.
 
 - Install [ASCOM Platform 6.6+](https://ascom-standards.org/) and the Meade LX200 driver.
 - Chooser → **Meade Generic** (preferred) or **Meade Classic and Autostar I**.
-- Properties → COM Port → set to the driver's **TCP mode**; Host = PushNav host, Port = 4030.
+- Properties → COM Port → set to the driver's **TCP mode**; Host = Starlock host, Port = 4030.
 - If the connection hangs on the `:ED#` probe, tick **"Do not bypass Intro prompts"** in the newer Meade Generic (v1.3.9.482+) — or rely on §3.3 (we silently consume `:ED#`).
 
 ### 8.5 ASCOM Alpaca (future)
@@ -537,11 +537,11 @@ Out of scope for v1 of this spec. A native Alpaca `ITelescopeV3` HTTP endpoint u
 
 End-to-end, pointed at a known target (tests/samples/ + goto targets):
 
-1. **SkySafari position** — with tracking locked, SkySafari crosshair follows PushNav's pointing within ≤1 poll (≤2 s). RA/Dec in SkySafari match PushNav's on-screen RA/Dec within 1 arcmin.
-2. **SkySafari goto** — right-click an object in SkySafari → GoTo. PushNav logs `LX200 GOTO received: RA=…h Dec=…°`, `GotoTarget` is set, ack sound plays, navigation guidance chevrons appear.
+1. **SkySafari position** — with tracking locked, SkySafari crosshair follows Starlock's pointing within ≤1 poll (≤2 s). RA/Dec in SkySafari match Starlock's on-screen RA/Dec within 1 arcmin.
+2. **SkySafari goto** — right-click an object in SkySafari → GoTo. Starlock logs `LX200 GOTO received: RA=…h Dec=…°`, `GotoTarget` is set, ack sound plays, navigation guidance chevrons appear.
 3. **Stellarium Mobile PLUS position** — same check as (1) on iOS or Android.
-4. **INDI / KStars** — `indi_lx200basic` connects; KStars' Sky Map shows the telescope crosshair at PushNav's pointing; crosshair updates at the INDI poll rate (default 1 Hz).
-5. **ASCOM / N.I.N.A.** — "Meade Generic" connects via TCP; N.I.N.A.'s mount tab shows RA/Dec matching PushNav.
+4. **INDI / KStars** — `indi_lx200basic` connects; KStars' Sky Map shows the telescope crosshair at Starlock's pointing; crosshair updates at the INDI poll rate (default 1 Hz).
+5. **ASCOM / N.I.N.A.** — "Meade Generic" connects via TCP; N.I.N.A.'s mount tab shows RA/Dec matching Starlock.
 6. **Silent ignore** — sending `:ED#` (or any other unsupported command) does not break the session; the next `:GR#` still returns the current position.
 7. **Multi-client** — SkySafari *and* KStars attached at once; both see consistent position; goto from either is logged and stored.
 8. **Unit tests** — round-trip `format_ra_hi(parse_ra_hms(x)) == x` across the full range; malformed `:Sr BAD#` replies `0`; epoch conversion round-trip (`jnow_to_j2000(j2000_to_jnow(x))`) is symmetric to <1 mas; cross-check `j2000_to_jnow` against an independent source (e.g. astropy in the test env only, not in the shipped bundle) for a handful of stars at a fixed epoch — agreement within 1″.
@@ -551,8 +551,8 @@ End-to-end, pointed at a known target (tests/samples/ + goto targets):
 
 ## 11. Non-Goals
 
-- Mount motion control — PushNav is push-to; `:MS#` is acknowledged with `0` when both pending RA and Dec are set (stored to `GotoTarget` for navigation guidance only), never by actually moving a motor. The only non-zero reply is `1<no target set>#` when the preceding `:Sr`/`:Sd` handshake was incomplete.
-- Sync / alignment input from clients — per §1.1, `:CM#` and any sync-like command is acknowledge-only. PushNav's calibration is owned internally (wizard Sync step).
+- Mount motion control — Starlock is push-to; `:MS#` is acknowledged with `0` when both pending RA and Dec are set (stored to `GotoTarget` for navigation guidance only), never by actually moving a motor. The only non-zero reply is `1<no target set>#` when the preceding `:Sr`/`:Sd` handshake was incomplete.
+- Sync / alignment input from clients — per §1.1, `:CM#` and any sync-like command is acknowledge-only. Starlock's calibration is owned internally (wizard Sync step).
 - Focuser, rotator, filter wheel commands — out of scope.
 - LX200 GPS-only commands (`:GG#`, `:Gg#`, etc. site/lat/long queries) — consume silently; a future revision may proxy these to the Stellarium Remote Control observer data we already fetch.
 - SkyFi UDP auto-discovery (port 4031) — optional future enhancement.

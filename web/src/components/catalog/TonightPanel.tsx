@@ -12,7 +12,7 @@ import { TimeControl } from "./TimeControl";
 import { ALT_THRESHOLD_DEG, tonightRows, type SortKey } from "./tonight";
 
 const objects = objectsData as CatalogObject[];
-const SORT_KEY = "pushnav.catalog.sort";
+const SORT_KEY = "starlock.catalog.sort";
 
 const SORT_OPTIONS = [
   { value: "type", label: "Type" },

@@ -1,4 +1,4 @@
-// PushNav component library — see web/DESIGN.md. Live reference: ?gallery
+// Starlock component library — see web/DESIGN.md. Live reference: ?gallery
 export { ActionBar, AppBar } from "./app-bar"
 export { Alert } from "./alert"
 export type { AlertVariant } from "./alert"

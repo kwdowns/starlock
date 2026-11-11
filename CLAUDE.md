@@ -1,4 +1,4 @@
-# PushNav (EVF) — Plate-Solving Push-To System
+# Starlock (EVF) — Plate-Solving Push-To System
 
 ## Project Overview
 
@@ -62,16 +62,16 @@ camera\windows\build.bat            :: Windows — C/DirectShow camera server (r
 scripts/build_mac.sh                # macOS — Nuitka → .app → .dmg
 scripts/build_linux.sh              # Linux — Nuitka standalone
 scripts/build_windows.bat           # Windows — Nuitka → Inno Setup installer
-scripts/build_headless_deb.sh       # Raspberry Pi — pushnav-headless .deb (arm64, bookworm container)
+scripts/build_headless_deb.sh       # Raspberry Pi — starlock-headless .deb (arm64, bookworm container)
 scripts/smoke_test_headless_deb.sh  # install + run the .deb in clean bookworm / trixie containers
 ```
 
-The Raspberry Pi build is **always headless** and named `pushnav-headless` to
+The Raspberry Pi build is **always headless** and named `starlock-headless` to
 keep it distinct from the Linux PC/laptop build. It bundles a standalone
-Python under `/usr/lib/pushnav-headless` without the `desktop` dependency
-group (no pywebview / PyQt6), runs as the `pushnav-headless` systemd service
-(user `pushnav`, state in `/var/lib/pushnav-headless`), and the launcher sets
-`PUSHNAV_ROOT` so `evf/paths.py` uses the Linux release layout. With
+Python under `/usr/lib/starlock-headless` without the `desktop` dependency
+group (no pywebview / PyQt6), runs as the `starlock-headless` systemd service
+(user `starlock`, state in `/var/lib/starlock-headless`), and the launcher sets
+`STARLOCK_ROOT` so `evf/paths.py` uses the Linux release layout. With
 `--no-window` the engine runs a camera watchdog that keeps retrying the
 camera in the background, and shows its status on the Pi's ACT/PWR LEDs
 (`evf/engine/status_led.py`), plus a brief green flash when a client
@@ -80,14 +80,14 @@ and `GotoTarget` changes). The LEDs are only writable because the
 unit's `ExecStartPre=+`/`ExecStopPost=+` run `evf.engine.led_helper
 take`/`restore` as root; `led.enabled` in config.json turns it off.
 The same way, `evf.engine.cpufreq_helper take`/`restore` saves the CPU's
-cpufreq `scaling_max_freq` and lets group pushnav write it; the engine
+cpufreq `scaling_max_freq` and lets group starlock write it; the engine
 (`evf/engine/cpufreq.py`) then caps the clock at `power.max_freq_mhz`
 (default 1200, governor untouched) while `power.cpu_cap` is on, switchable
 from the Settings panel's Power saving switch.
 A jumper from GPIO21 (pin 40) to GND (pin 39) turns on debug mode on the Pi
 without environment variables: another root `ExecStartPre=+` step,
-`evf.engine.debug_pin`, reads the pin and creates `/run/pushnav-headless/debug`
-(in the unit's `RuntimeDirectory=`), which `main.py` treats like `PUSHNAV_DEBUG=1`.
+`evf.engine.debug_pin`, reads the pin and creates `/run/starlock-headless/debug`
+(in the unit's `RuntimeDirectory=`), which `main.py` treats like `STARLOCK_DEBUG=1`.
 
 ### Running tests
 
@@ -182,22 +182,22 @@ hardware/                       # 3D-printable mechanical designs (OpenSCAD)
     vendor/                     # threads.scad (CC0), YAPP_Box (MIT)
     stls/                       # pre-built STL files ready for printing
 marketing/                      # app branding assets (logo, in-app title)
-linux/                          # Linux desktop integration (pushnav.desktop)
-packaging/headless/             # pushnav-headless .deb: launcher, systemd unit, debian/ maintainer scripts,
+linux/                          # Linux desktop integration (starlock.desktop)
+packaging/headless/             # starlock-headless .deb: launcher, systemd unit, debian/ maintainer scripts,
                                 #   and user-data (first-boot config for the ready-made SD card, attached to releases)
 build/                          # build output (gitignored)
 scripts/                        # build and dev scripts
   build_mac.sh                  # macOS Nuitka build → .app/.dmg
   build_linux.sh                # Linux Nuitka build
   build_windows.bat             # Windows Nuitka + Inno Setup build
-  build_headless_deb.sh         # Raspberry Pi pushnav-headless .deb build
+  build_headless_deb.sh         # Raspberry Pi starlock-headless .deb build
   smoke_test_headless_deb.sh    # container install/run test for the .deb
   build_camera_mac.sh           # compile Swift camera server
   run_dev.sh                    # dev launch (macOS)
   run_dev_linux.sh              # dev launch (Linux)
   run_dev_windows.bat           # dev launch (Windows)
   run_mock_camera.sh            # launch mock camera for testing
-  pushnav.iss                   # Inno Setup installer script (Windows)
+  starlock.iss                   # Inno Setup installer script (Windows)
   sync_catalog.py               # vendor objects.json from ~/Devel/Github/stargazing-buddy-site
   make_pwa_icons.py             # regenerate web/public PWA/apple-touch icons from marketing/logo.png (red on #0a0000)
   make_pi_label.py              # 50 x 20 mm SVG + PNG label for a ready-made Pi (QR + hotspot details)
@@ -277,8 +277,9 @@ resolution). The `.bin` is regenerated by `scripts/build_tetra3rs_catalog.py` fr
 
 ## Licensing and copyright headers
 
-This is a fork of meridianfield/pushnav (GPL-3.0-or-later, original author
-Arun Venkataswamy), maintained by Kyle Downs.
+Starlock is a fork of PushNav, meridianfield/pushnav (GPL-3.0-or-later,
+original author Arun Venkataswamy), maintained by Kyle Downs and renamed in
+November 2026. Keep that credit in the README and CONTRIBUTING.md.
 
 - Never remove or change an existing copyright line or licence header.
 - When making a substantial change (roughly 15+ lines) to a file that has a

@@ -2,7 +2,7 @@
 //
 // No service worker on purpose: the app is useless without the live engine,
 // the page is served over plain HTTP (service workers need a secure context),
-// and Chrome's install criteria do not require one. See docs/using-pushnav.md.
+// and Chrome's install criteria do not require one. See docs/using-starlock.md.
 
 /** True when launched from the home screen / installed app, not a browser tab. */
 export function isStandalone(): boolean {

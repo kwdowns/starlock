@@ -1,19 +1,19 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """LX200 Classic ASCII command parsing and dispatch.
 
@@ -160,7 +160,7 @@ class Lx200Context:
 # to auto-detect the controller and expects the mount's alignment-mode char
 # back: 'A'=AltAz, 'L'=Land, 'P'=Polar. The value is cosmetic for detection —
 # any valid char confirms "this is an LX200". We answer 'P' (Polar) because
-# PushNav reports equatorial RA/Dec. Stellarium Mobile PLUS's protocol probe
+# Starlock reports equatorial RA/Dec. Stellarium Mobile PLUS's protocol probe
 # relies on this; without it, LX200 auto-detection fails. The ACK is not
 # '#'-framed, so Lx200Server answers it directly (see _handle_client_data),
 # not through dispatch().
@@ -205,7 +205,7 @@ def dispatch(cmd: bytes, state: Lx200ClientState, ctx: Lx200Context) -> bytes | 
     if body == "GVP":
         return b"LX200 Classic#"
     if body == "GVN":
-        return f"PushNav {ctx.app_version}#".encode("ascii")
+        return f"Starlock {ctx.app_version}#".encode("ascii")
     if body == "GVD":
         # Firmware date (Meade format). Today's date is a harmless placeholder;
         # the protocol doesn't require it to match any real build date.

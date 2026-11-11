@@ -1,20 +1,20 @@
 # Copyright (C) 2026 Arun Venkataswamy
 # Copyright (C) 2026 Kyle Downs
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Configuration manager — JSON persistence with defaults and versioning."""
 
@@ -175,7 +175,7 @@ class ConfigManager:
         """Additional USB camera allowlist entries as 'vid:pid' hex strings.
 
         Appended to the camera servers' built-in allowlist via the
-        PUSHNAV_CAMERA_IDS env var, so a new camera model can be registered
+        STARLOCK_CAMERA_IDS env var, so a new camera model can be registered
         without recompiling the native camera server.
         """
         return self.get("camera", "extra_camera_ids") or []

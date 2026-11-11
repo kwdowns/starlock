@@ -1,24 +1,24 @@
 // Copyright (C) 2026 Arun Venkataswamy
 //
-// This file is part of PushNav.
+// This file is part of Starlock.
 //
-// PushNav is free software: you can redistribute it and/or modify it
+// Starlock is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// PushNav is distributed in the hope that it will be useful, but
+// Starlock is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+// along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 use <housing_v3.scad>       // camera housing and hood, unchanged — preview only
 
 // ============================================================
-// PushNav Camera Housing v4 — Raspberry Pi 3A+ standalone unit
+// Starlock Camera Housing v4 — Raspberry Pi 3A+ standalone unit
 // ============================================================
 //
 // v3's camera on a taller mount, with a Raspberry Pi 3A+ in a slim box

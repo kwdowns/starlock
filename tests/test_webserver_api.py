@@ -1,20 +1,20 @@
 # Copyright (C) 2026 Arun Venkataswamy
 # Copyright (C) 2026 Kyle Downs
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Tests for POST /api/* action endpoints."""
 
@@ -236,8 +236,8 @@ async def test_pwa_manifest_and_icons_served(server_and_actions, tmp_path, monke
     ws.stop()  # restart with a fake build dir (web_dist_dir is read at start)
     dist = tmp_path / "dist"
     dist.mkdir()
-    (dist / "index.html").write_text("<!doctype html><title>PushNav</title>")
-    (dist / "manifest.webmanifest").write_text('{"name": "PushNav"}')
+    (dist / "index.html").write_text("<!doctype html><title>Starlock</title>")
+    (dist / "manifest.webmanifest").write_text('{"name": "Starlock"}')
     (dist / "icon-192.png").write_bytes(b"\x89PNG\r\n\x1a\n")
     monkeypatch.setattr("evf.webserver.server.web_dist_dir", lambda: dist)
     ws._port = None
@@ -251,7 +251,7 @@ async def test_pwa_manifest_and_icons_served(server_and_actions, tmp_path, monke
         async with s.get(f"{base}/static/manifest.webmanifest") as r:
             assert r.status == 200
             assert r.headers["Content-Type"].startswith("application/manifest+json")
-            assert (await r.json(content_type=None))["name"] == "PushNav"
+            assert (await r.json(content_type=None))["name"] == "Starlock"
         async with s.get(f"{base}/static/icon-192.png") as r:
             assert r.status == 200
             assert r.headers["Content-Type"] == "image/png"

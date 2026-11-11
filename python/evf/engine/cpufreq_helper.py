@@ -1,26 +1,26 @@
 # Copyright (C) 2026 Arun Venkataswamy
 # Copyright (C) 2026 Kyle Downs
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-"""Root helper that lets PushNav cap the Pi's CPU clock, and undoes it.
+"""Root helper that lets Starlock cap the Pi's CPU clock, and undoes it.
 
-Run by the pushnav-headless service as root, outside its sandbox:
+Run by the starlock-headless service as root, outside its sandbox:
 
-    ExecStartPre=+... -m evf.engine.cpufreq_helper take --group pushnav
+    ExecStartPre=+... -m evf.engine.cpufreq_helper take --group starlock
     ExecStopPost=+... -m evf.engine.cpufreq_helper restore
 
 `take` saves each cpufreq policy's `scaling_max_freq` and its file
@@ -31,7 +31,7 @@ cap from the Settings panel. `restore` puts everything back; ExecStopPost
 also runs after a crash.
 
 Both commands always exit 0: a missing or odd cpufreq interface must
-never stop PushNav from starting.
+never stop Starlock from starting.
 
 For development on the Pi: `sudo uv run python -m evf.engine.cpufreq_helper
 take --group "$(id -gn)" --config ~/.config/electronic-viewfinder/config.json`,
@@ -51,7 +51,7 @@ from evf.engine.cpufreq import CPUFREQ_SYSFS, cap_policy
 
 logger = logging.getLogger("evf.cpufreq_helper")
 
-STATE_DIR = Path("/run/pushnav-headless-cpufreq")
+STATE_DIR = Path("/run/starlock-headless-cpufreq")
 
 
 def power_config(config_path: Path) -> tuple[bool, int]:
@@ -136,7 +136,7 @@ def restore(root: Path, state_dir: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m evf.engine.cpufreq_helper")
     parser.add_argument("action", choices=["take", "restore"])
-    parser.add_argument("--group", default="pushnav")
+    parser.add_argument("--group", default="starlock")
     parser.add_argument("--root", type=Path, default=CPUFREQ_SYSFS)
     parser.add_argument("--state-dir", type=Path, default=STATE_DIR)
     parser.add_argument("--config", type=Path,

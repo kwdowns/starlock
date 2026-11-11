@@ -33,5 +33,5 @@ web/.vite/
 .cache/
 
 # Labels written by scripts/make_pi_label.py
-pushnav-label-*.svg
-pushnav-label-*.png
+starlock-label-*.svg
+starlock-label-*.png

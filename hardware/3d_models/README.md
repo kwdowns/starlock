@@ -1,6 +1,6 @@
-# PushNav 3D Models
+# Starlock 3D Models
 
-3D-printable parts for PushNav. All models are written in [OpenSCAD](https://openscad.org/) for FDM printing, and ready-to-print STLs are in [`stls/`](stls/).
+3D-printable parts for Starlock. All models are written in [OpenSCAD](https://openscad.org/) for FDM printing, and ready-to-print STLs are in [`stls/`](stls/).
 
 <p>
   <img src="../../docs/assets/3d_model_v3.png" width="49%" alt="The camera on the low mount, for use with a laptop">
@@ -24,7 +24,7 @@ Everyone prints the camera housing and hood. Then print the mount for your setup
 | Setup | Print |
 |-------|-------|
 | **With a laptop** — the camera's USB cable goes straight to the computer | Camera housing, hood, **low mount** (`housing_v3.scad`) |
-| **Standalone on a Raspberry Pi 3A+** (optional) — for [PushNav headless](../../docs/rpi-headless.md), with the Pi carried on the telescope | Camera housing, hood, **Pi mount, box base and box lid** (`housing_v4.scad`) |
+| **Standalone on a Raspberry Pi 3A+** (optional) — for [Starlock headless](../../docs/rpi-headless.md), with the Pi carried on the telescope | Camera housing, hood, **Pi mount, box base and box lid** (`housing_v4.scad`) |
 
 The dust cap is optional in both.
 
@@ -49,7 +49,7 @@ The threads come from Ryan Colyer's [`threads.scad`](vendor/threads.scad) (CC0).
 
 #### Pi 3A+ mount and box (`housing_v4.scad`) — optional
 
-Only for running PushNav headless on a **Raspberry Pi 3A+**; the box is sized for the 3A+ and no other model. A taller mount lifts the camera over a slim box for the Pi, so the camera, Pi and mount make one self-contained unit. With a laptop, use the low mount instead.
+Only for running Starlock headless on a **Raspberry Pi 3A+**; the box is sized for the 3A+ and no other model. A taller mount lifts the camera over a slim box for the Pi, so the camera, Pi and mount make one self-contained unit. With a laptop, use the low mount instead.
 
 ![Pi mount and box, exploded](../../docs/assets/3d_model_v4_parts.png)
 
@@ -97,7 +97,7 @@ A second finder shoe, for scopes whose only shoe is taken by the finder. It is a
 
 ### Pi 4 / Pi 5 Tube Tray (`pi45_tray.scad`)
 
-An open tray that carries a Raspberry Pi 4 or 5 on the tube for [PushNav headless](../../docs/rpi-headless.md), with the same curved VHB base as the tube shoe and slots for an optional 25 mm Velcro strap round the tube. The open sides keep every port reachable. On a Pi 5, fit the Active Cooler.
+An open tray that carries a Raspberry Pi 4 or 5 on the tube for [Starlock headless](../../docs/rpi-headless.md), with the same curved VHB base as the tube shoe and slots for an optional 25 mm Velcro strap round the tube. The open sides keep every port reachable. On a Pi 5, fit the Active Cooler.
 
 **Hardware:** 4 × M2.5 × 6 screws (self-tapping into 2.2 mm pilots), VHB tape about 90 × 50 mm, and optionally a 25 mm Velcro strap.
 
@@ -274,4 +274,4 @@ openscad -o stls/housing_cap.stl \
 
 ## Website images
 
-The renders on this page and on the [3D Models](https://meridianfield.github.io/pushnav/3d-models/) site page are made from the STLs by [`scripts/render_3d_models.py`](../../scripts/render_3d_models.py). After changing a design, re-export its STLs, then run `uv run scripts/render_3d_models.py` from the repo root.
+The renders on this page and on the [3D Models](https://kwdowns.github.io/starlock/3d-models/) site page are made from the STLs by [`scripts/render_3d_models.py`](../../scripts/render_3d_models.py). After changing a design, re-export its STLs, then run `uv run scripts/render_3d_models.py` from the repo root.

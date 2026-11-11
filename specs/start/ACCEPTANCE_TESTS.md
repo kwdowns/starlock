@@ -1,4 +1,4 @@
-# ACCEPTANCE_TESTS.md — PushNav
+# ACCEPTANCE_TESTS.md — Starlock
 
 Version: 2.1
 Status: Reflects Current Implementation
@@ -317,9 +317,9 @@ See `specs/start/SPEC_PROTOCOL_LX200.md` §10 for the authoritative list.
 Summary of verification points:
 
 - **L1** — SkySafari (iOS/Android/macOS) connected via Settings → Telescope → Presets → Add Device → Other, with Mount Type **AltAz GoTo** and Scope Type **Meade LX200 Classic**, pointed at host:4030: crosshair follows pointing within 2 s; RA/Dec match on-screen within 1 arcmin. (Push-To mount types do not drive the Stop/GoTo button transitions correctly — use AltAz GoTo.)
-- **L2** — SkySafari GoTo: tap object → tap GoTo; PushNav logs the GOTO, navigation chevrons appear; SkySafari's button flips from "Stop" to "GoTo" via the `:D#` slew-status reply when plate-solve lands within 0.5° of target.
+- **L2** — SkySafari GoTo: tap object → tap GoTo; Starlock logs the GOTO, navigation chevrons appear; SkySafari's button flips from "Stop" to "GoTo" via the `:D#` slew-status reply when plate-solve lands within 0.5° of target.
 - **L3** — Stellarium Mobile PLUS: TCP connection to host:4030 auto-detects LX200; position tracks pointing.
-- **L4** — INDI `indi_lx200basic` with Connection → TCP host:4030: KStars crosshair matches PushNav pointing.
+- **L4** — INDI `indi_lx200basic` with Connection → TCP host:4030: KStars crosshair matches Starlock pointing.
 - **L5** — ASCOM "Meade Generic" driver TCP mode to host:4030: N.I.N.A. mount tab shows matching RA/Dec.
 - **L6** — Sending `:ED#` does not break the session; subsequent `:GR#` still works.
 - **L7** — SkySafari + KStars attached simultaneously; both see consistent position.
@@ -369,6 +369,6 @@ Summary of verification points:
 - [ ] Panning is disabled.
 
 ### M7. Offline-safe (no network requests)
-- [ ] Disconnect from the internet, restart PushNav, enter TRACKING.
+- [ ] Disconnect from the internet, restart Starlock, enter TRACKING.
 - [ ] No CDN requests are made (DevTools Network tab is silent).
 - [ ] Cardinal labels and the target name render correctly.

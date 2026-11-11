@@ -1,9 +1,9 @@
-# PushNav — Architecture Specification
+# Starlock — Architecture Specification
 
 Version: 2.0
 Status: Reflects Current Implementation
 Target: macOS, Linux, Windows, Raspberry Pi (headless)
-Headless mode: `--no-window`, shipped for the Pi as the `pushnav-headless` .deb
+Headless mode: `--no-window`, shipped for the Pi as the `starlock-headless` .deb
 
 ---
 
@@ -680,7 +680,7 @@ Must not log per-frame failures at INFO level.
 Architecture must allow:
 
 - Headless mode (engine without UI). Implemented: `--no-window`; the
-  Raspberry Pi `pushnav-headless` package adds a background camera
+  Raspberry Pi `starlock-headless` package adds a background camera
   retry and status on the Pi's LEDs (`evf/engine/status_led.py`)
 - Additional planetarium protocols
 - INDI driver

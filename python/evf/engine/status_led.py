@@ -1,27 +1,27 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Engine status on the Raspberry Pi's built-in LEDs (headless only).
 
 A headless Pi has no screen, so the green ACT and red PWR LEDs show
-whether PushNav needs attention (red) or is making progress (green).
-The LEDs must already be writable: the pushnav-headless service's root
+whether Starlock needs attention (red) or is making progress (green).
+The LEDs must already be writable: the starlock-headless service's root
 helper (evf.engine.led_helper) sets trigger=none and grants write
-access before PushNav starts, and restores them when it stops.
+access before Starlock starts, and restores them when it stops.
 
 Blinking is driven from this thread, not the kernel `timer` trigger, so
 a crashed process can't leave a blinking "all good" behind.

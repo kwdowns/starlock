@@ -1,19 +1,19 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """EVF — Electronic Viewfinder main entry point.
 
@@ -48,12 +48,12 @@ _VP_HEIGHT = 820
 
 
 def _vite_running(port: int = 5173) -> bool:
-    """True if **PushNav's** Vite dev server is reachable on localhost:`port`.
+    """True if **Starlock's** Vite dev server is reachable on localhost:`port`.
 
     A bare TCP probe isn't enough (the port can be squatted on — macOS uses
     5000 for AirPlay Receiver, for instance) and a generic Vite marker
     like `/@vite/client` would also succeed against an *unrelated* Vite
-    running someone else's project. Probe a PushNav-specific public asset
+    running someone else's project. Probe a Starlock-specific public asset
     instead: `web/public/inapp-title.png` is served at
     `/static/inapp-title.png` because of `vite.config.ts`'s
     `base: "/static/"`. A foreign Vite (default base `"/"`) 404s the path
@@ -73,10 +73,10 @@ def _vite_running(port: int = 5173) -> bool:
 
 
 def _check_single_instance(port: int) -> None:
-    """Exit cleanly if another PushNav (or anything) is already on `port`.
+    """Exit cleanly if another Starlock (or anything) is already on `port`.
 
     Runs before any engine threads, port binds, or pywebview windows
-    open. Distinguishes "another PushNav" from "another app on the
+    open. Distinguishes "another Starlock" from "another app on the
     port" by hitting our /api/version identifier endpoint, so the
     error message can tell the user what to do.
     """
@@ -90,33 +90,33 @@ def _check_single_instance(port: int) -> None:
         return  # port free, fine to start
 
     # Port is busy. Identify the occupant.
-    is_pushnav = False
+    is_starlock = False
     try:
         with urllib.request.urlopen(
             f"http://127.0.0.1:{port}/api/version", timeout=0.5
         ) as r:
             if r.status == 200:
                 payload = json.loads(r.read(512))
-                is_pushnav = payload.get("app") == "pushnav"
+                is_starlock = payload.get("app") == "starlock"
     except (urllib.error.URLError, OSError, TimeoutError, json.JSONDecodeError):
         pass
 
-    if is_pushnav and os.environ.get("PUSHNAV_ROOT"):
-        # pushnav-headless .deb: the other instance is almost always the service.
+    if is_starlock and os.environ.get("STARLOCK_ROOT"):
+        # starlock-headless .deb: the other instance is almost always the service.
         msg = (
-            f"PushNav is already running on port {port} "
-            f"(probably the pushnav-headless service).\n"
-            f"Stop it first with: sudo systemctl stop pushnav-headless"
+            f"Starlock is already running on port {port} "
+            f"(probably the starlock-headless service).\n"
+            f"Stop it first with: sudo systemctl stop starlock-headless"
         )
-    elif is_pushnav:
+    elif is_starlock:
         msg = (
-            f"PushNav is already running on port {port}.\n"
+            f"Starlock is already running on port {port}.\n"
             f"Close the existing window before launching another instance."
         )
     else:
         msg = (
             f"Port {port} is in use by another application.\n"
-            f"Close it, or change webserver.port in your PushNav config "
+            f"Close it, or change webserver.port in your Starlock config "
             f"(see logs for the config file location)."
         )
     print(msg, file=sys.stderr)
@@ -124,7 +124,7 @@ def _check_single_instance(port: int) -> None:
 
 
 def main() -> None:
-    # PUSHNAV_DEBUG=1 / --dev toggles in-app dev features only (sample
+    # STARLOCK_DEBUG=1 / --dev toggles in-app dev features only (sample
     # injection, frame capture, DebugPanel). On the headless Pi a jumper
     # from GPIO21 to GND does the same (evf.engine.debug_pin). Opening the
     # webview's inspector is a separate opt-in via WEBVIEW_DEBUG=1: on
@@ -134,7 +134,7 @@ def main() -> None:
     # by default even in dev_mode.
     dev_mode = (
         "--dev" in sys.argv
-        or os.environ.get("PUSHNAV_DEBUG") == "1"
+        or os.environ.get("STARLOCK_DEBUG") == "1"
         or debug_flag_set()
     )
     webview_debug = os.environ.get("WEBVIEW_DEBUG") == "1"
@@ -200,7 +200,7 @@ def main() -> None:
     # don't desync the two sides.
     web_port = engine.config.web_port
     # Append a per-launch cache-buster to the entry URL. WKWebView keeps a
-    # persistent HTTP cache under ~/Library/Caches/com.pushnav.evf and
+    # persistent HTTP cache under ~/Library/Caches/com.starlock.evf and
     # aiohttp's FileResponse sends no Cache-Control, so heuristic freshness
     # can keep serving a stale index.html past Cmd-Q + restart and the
     # webview keeps booting an old JS bundle. A unique query per launch
@@ -211,7 +211,7 @@ def main() -> None:
         f"http://localhost:5173{cache_buster}" if _vite_running()
         else f"http://localhost:{web_port}/{cache_buster}"
     )
-    title = f"PushNav {engine.app_version}"
+    title = f"Starlock {engine.app_version}"
 
     # background_color paints the native window dark *before* the page renders,
     # so the WebView2 / WKWebView frame doesn't flash white on startup while the

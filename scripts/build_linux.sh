@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-# Build PushNav Linux release (tar.gz + AppImage)
+# Build Starlock Linux release (tar.gz + AppImage)
 # Usage: ./scripts/build_linux.sh
 #
 # Prerequisites:
@@ -27,7 +27,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$REPO_ROOT/build"
-APP_NAME="PushNav-linux"
+APP_NAME="Starlock-linux"
 APP_DIR="$BUILD_DIR/$APP_NAME"
 
 cd "$REPO_ROOT"
@@ -82,7 +82,7 @@ uv run python -m nuitka \
     --standalone \
     --enable-plugin=pyqt6 \
     --output-dir="$BUILD_DIR" \
-    --output-filename=PushNav \
+    --output-filename=Starlock \
     --include-package=numpy \
     --include-package=PIL \
     --include-package=playsound3 \
@@ -131,7 +131,7 @@ echo "==> Release directory assembled at $APP_DIR"
 # Phase 4: Create tar.gz
 # -------------------------------------------------------------------------
 ARCH="$(uname -m)"
-TAR_NAME="PushNav-linux-${ARCH}.tar.gz"
+TAR_NAME="Starlock-linux-${ARCH}.tar.gz"
 TAR_PATH="$BUILD_DIR/$TAR_NAME"
 echo "==> Creating $TAR_NAME"
 tar czf "$TAR_PATH" -C "$BUILD_DIR" "$APP_NAME"
@@ -141,15 +141,15 @@ tar czf "$TAR_PATH" -C "$BUILD_DIR" "$APP_NAME"
 # -------------------------------------------------------------------------
 echo "==> Building AppImage"
 
-APPDIR="$BUILD_DIR/PushNav.AppDir"
+APPDIR="$BUILD_DIR/Starlock.AppDir"
 rm -rf "$APPDIR"
 
 # Copy entire release directory into AppDir
 cp -a "$APP_DIR" "$APPDIR"
 
 # Add AppImage metadata
-cp "$REPO_ROOT/linux/pushnav.desktop" "$APPDIR/pushnav.desktop"
-cp "$REPO_ROOT/marketing/logo.png" "$APPDIR/pushnav.png"
+cp "$REPO_ROOT/linux/starlock.desktop" "$APPDIR/starlock.desktop"
+cp "$REPO_ROOT/marketing/logo.png" "$APPDIR/starlock.png"
 
 # Bundle libjpeg for camera_server
 LIBJPEG="$(ldd "$APPDIR/camera_server" | grep libjpeg | awk '{print $3}')"
@@ -163,7 +163,7 @@ cat > "$APPDIR/AppRun" <<'APPRUN'
 #!/bin/bash
 HERE="$(dirname "$(readlink -f "$0")")"
 export LD_LIBRARY_PATH="${HERE}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-exec "${HERE}/PushNav" "$@"
+exec "${HERE}/Starlock" "$@"
 APPRUN
 chmod +x "$APPDIR/AppRun"
 
@@ -177,7 +177,7 @@ if [ ! -x "$APPIMAGETOOL" ]; then
     chmod +x "$APPIMAGETOOL"
 fi
 
-APPIMAGE_PATH="$BUILD_DIR/PushNav-${ARCH}.AppImage"
+APPIMAGE_PATH="$BUILD_DIR/Starlock-${ARCH}.AppImage"
 ARCH="$ARCH" "$APPIMAGETOOL" "$APPDIR" "$APPIMAGE_PATH"
 
 echo "==> Build complete!"

@@ -1,13 +1,13 @@
-# Contributing to PushNav (kwdowns fork)
+# Contributing to Starlock
 
-This is a fork of [meridianfield/pushnav](https://github.com/meridianfield/pushnav)
+Starlock is a fork of [PushNav](https://github.com/meridianfield/pushnav)
 by Arun Venkataswamy, maintained by Kyle Downs. The original project is not
 accepting code contributions, so changes are developed here instead.
 
 ## Bug reports and issues
 
 Please report problems with this fork at
-[kwdowns/pushnav](https://github.com/kwdowns/pushnav/issues), not upstream.
+[kwdowns/starlock](https://github.com/kwdowns/starlock/issues), not upstream.
 This fork has diverged from the original, so a bug you see here may not
 exist there.
 

@@ -1,4 +1,4 @@
-# SPEC_PROTOCOL_STELLARIUM.md — PushNav
+# SPEC_PROTOCOL_STELLARIUM.md — Starlock
 
 Version: 2.1
 Status: Reflects Current Implementation
@@ -13,13 +13,13 @@ Direction: App acts as TCP **server**; Stellarium connects as **client**
 
 ## 1. Overview
 
-PushNav broadcasts its current pointing position to Stellarium using the **Stellarium Telescope Control** binary protocol. This enables a real-time crosshair overlay in Stellarium showing where the camera is pointed.
+Starlock broadcasts its current pointing position to Stellarium using the **Stellarium Telescope Control** binary protocol. This enables a real-time crosshair overlay in Stellarium showing where the camera is pointed.
 
 Stellarium's "External software or a remote computer" telescope type connects to our TCP server and expects periodic position updates.
 
 Incoming GOTO commands are decoded and stored for navigation guidance.
 
-All coordinates exchanged over this protocol are **J2000** — PushNav's internal canonical form — with no precession applied. Stellarium's telescope-plugin configuration must be set to "J2000 (default)"; see the docs site (`docs/stellarium-setup.md`) for the UI walkthrough.
+All coordinates exchanged over this protocol are **J2000** — Starlock's internal canonical form — with no precession applied. Stellarium's telescope-plugin configuration must be set to "J2000 (default)"; see the docs site (`docs/stellarium-setup.md`) for the UI walkthrough.
 
 ---
 
@@ -193,7 +193,7 @@ off when the client disconnects.
 
 ## 7. Stellarium Configuration
 
-To connect Stellarium to PushNav:
+To connect Stellarium to Starlock:
 
 1. Open Stellarium → Configuration → Plugins → Telescope Control.
 2. Enable plugin, restart Stellarium if needed.

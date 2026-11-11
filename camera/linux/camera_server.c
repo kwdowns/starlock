@@ -2,20 +2,20 @@
  * Copyright (C) 2026 Arun Venkataswamy
  * Copyright (C) 2026 Kyle Downs
  *
- * This file is part of PushNav.
+ * This file is part of Starlock.
  *
- * PushNav is free software: you can redistribute it and/or modify it
+ * Starlock is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * PushNav is distributed in the hope that it will be useful, but
+ * Starlock is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+ * along with Starlock. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /*
@@ -23,7 +23,7 @@
  *
  * Self-contained C replacement for camera_server.py.  Captures MJPEG frames
  * from a supported USB camera (see the allowlist below; extendable at runtime
- * via the PUSHNAV_CAMERA_IDS env var) via V4L2 mmap and serves them over TCP
+ * via the STARLOCK_CAMERA_IDS env var) via V4L2 mmap and serves them over TCP
  * using the same binary protocol as the macOS Swift camera server
  * (see specs/start/SPEC_PROTOCOL_CAMERA.md).
  *
@@ -91,8 +91,8 @@ static unsigned int capture_h = 800;
 /* macOS (camera/mac/.../UVCController.swift) servers.                  */
 /*                                                                     */
 /* Users can register additional cameras at runtime WITHOUT            */
-/* recompiling, via the PUSHNAV_CAMERA_IDS env var: a comma-separated  */
-/* list of vid:pid hex pairs, e.g. PUSHNAV_CAMERA_IDS=1bcf:2cd1,abc:12 */
+/* recompiling, via the STARLOCK_CAMERA_IDS env var: a comma-separated  */
+/* list of vid:pid hex pairs, e.g. STARLOCK_CAMERA_IDS=1bcf:2cd1,abc:12 */
 /* ------------------------------------------------------------------ */
 
 typedef struct {
@@ -126,14 +126,14 @@ static void allowlist_add(unsigned int vid, unsigned int pid, const char *label)
     g_allowlist_count++;
 }
 
-/* Seed built-ins, then append any PUSHNAV_CAMERA_IDS entries. */
+/* Seed built-ins, then append any STARLOCK_CAMERA_IDS entries. */
 static void init_allowlist(void)
 {
     for (size_t i = 0; i < NUM_BUILTIN_CAMERAS; i++)
         allowlist_add(BUILTIN_CAMERAS[i].vid, BUILTIN_CAMERAS[i].pid,
                       BUILTIN_CAMERAS[i].label);
 
-    const char *env = getenv("PUSHNAV_CAMERA_IDS");
+    const char *env = getenv("STARLOCK_CAMERA_IDS");
     if (env && *env) {
         const char *p = env;
         while (*p) {
@@ -144,11 +144,11 @@ static void init_allowlist(void)
             unsigned int vid = 0, pid = 0;
             int n = 0;
             if (sscanf(p, "%x:%x%n", &vid, &pid, &n) == 2 && vid && pid) {
-                allowlist_add(vid, pid, "user-configured (PUSHNAV_CAMERA_IDS)");
+                allowlist_add(vid, pid, "user-configured (STARLOCK_CAMERA_IDS)");
                 p += n;
             } else {
                 fprintf(stderr,
-                        "Ignoring malformed PUSHNAV_CAMERA_IDS entry near '%s'\n", p);
+                        "Ignoring malformed STARLOCK_CAMERA_IDS entry near '%s'\n", p);
                 while (*p && *p != ',' && *p != ' ' && *p != ';')
                     p++;
             }
@@ -1398,7 +1398,7 @@ int main(void)
     /* Ignore SIGPIPE (handle send errors via return codes) */
     signal(SIGPIPE, SIG_IGN);
 
-    /* Build the camera allowlist (built-ins + PUSHNAV_CAMERA_IDS) */
+    /* Build the camera allowlist (built-ins + STARLOCK_CAMERA_IDS) */
     init_allowlist();
 
     /* Find camera device */
@@ -1407,7 +1407,7 @@ int main(void)
         fprintf(stderr,
                 "No allowlisted V4L2 camera found. Check the USB connection, that "
                 "the user is in the 'video' group, and — if this is a new camera "
-                "model — add its vid:pid to PUSHNAV_CAMERA_IDS.\n");
+                "model — add its vid:pid to STARLOCK_CAMERA_IDS.\n");
         return 1;
     }
 

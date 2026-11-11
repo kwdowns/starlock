@@ -66,7 +66,7 @@ export function Splash({ state }: Props) {
             <DialogTitle>Camera not found</DialogTitle>
             <DialogDescription>
               Plug in the USB camera and press Retry detection. If that
-              doesn't work, quit PushNav completely and start it again; the
+              doesn't work, quit Starlock completely and start it again; the
               camera is looked for once at startup. You can also close this
               to browse targets and use connected apps without
               plate-solving.

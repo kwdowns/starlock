@@ -19,7 +19,7 @@ export interface TargetsProps {
 }
 
 type Tab = "tonight" | "search" | "manual";
-const TAB_KEY = "pushnav.targets.tab";
+const TAB_KEY = "starlock.targets.tab";
 const TAB_OPTIONS = [
   { value: "tonight", label: "Tonight" },
   { value: "search", label: "Search" },

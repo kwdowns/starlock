@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-"""Make a 50 x 20 mm label for a ready-made PushNav Raspberry Pi.
+"""Make a 50 x 20 mm label for a ready-made Starlock Raspberry Pi.
 
 The label has a QR code for the web app on the left, and on the right the
 hotspot name and password, the web address and the SSH login. The
@@ -24,11 +24,11 @@ passwords and the hotspot address come from the SD card's user-data file,
 so a card whose passwords were changed gets a matching label.
 
     uv run python scripts/make_pi_label.py 3F2A
-    uv run python scripts/make_pi_label.py PushNav-3F2A --user-data ~/my-user-data
+    uv run python scripts/make_pi_label.py Starlock-3F2A --user-data ~/my-user-data
 
 The argument is the hotspot name's 4-character suffix (from the Pi's
 serial number), as the phone's Wi-Fi list shows it. The label is written
-as pushnav-label-<suffix>.svg, plus a .png next to it (300 dpi unless
+as starlock-label-<suffix>.svg, plus a .png next to it (300 dpi unless
 --dpi says otherwise); -o picks another SVG name. All text is converted to
 outlines (Atkinson Hyperlegible, from scripts/fonts/), so the label looks
 the same in any app, with no font to install.
@@ -65,7 +65,7 @@ QR_SIZE = 16.0
 QR_X = QR_Y = 2.0                  # the QR code's white surround (~3 modules)
 TEXT_GAP = 2.2                     # QR code to text
 RIGHT_MARGIN = 1.5
-TITLE_SIZE = 4.6                   # font size (em) of "PushNav"
+TITLE_SIZE = 4.6                   # font size (em) of "Starlock"
 BODY_MAX, BODY_MIN = 3.0, 2.0      # font size range of the four lines
 WORD_GAP = 1.1                     # "Wi-Fi" to its value
 LINE_PITCH = 1.12                  # line spacing, in ems
@@ -102,11 +102,11 @@ class Layout:
 
 
 def parse_suffix(value: str) -> str:
-    """'3f2a' or 'PushNav-3F2A' -> '3F2A'."""
-    m = re.fullmatch(r"(?:PushNav-)?([0-9A-Fa-f]{4})", value.strip())
+    """'3f2a' or 'Starlock-3F2A' -> '3F2A'."""
+    m = re.fullmatch(r"(?:Starlock-)?([0-9A-Fa-f]{4})", value.strip())
     if not m:
         raise ValueError(
-            f"{value!r}: expected the 4 characters after 'PushNav-' in the "
+            f"{value!r}: expected the 4 characters after 'Starlock-' in the "
             "hotspot name, e.g. 3F2A"
         )
     return m.group(1).upper()
@@ -232,7 +232,7 @@ def _draw(info: LabelInfo, qr_pen, text_pen) -> Layout:
     last_base = QR_Y + QR_SIZE
     pitch = size * LINE_PITCH
     _draw_qr(qr_pen, info.url)
-    bold.draw(text_pen, "PushNav", tx - 0.15, title_base, TITLE_SIZE)
+    bold.draw(text_pen, "Starlock", tx - 0.15, title_base, TITLE_SIZE)
     for i, (word, value) in enumerate(rows):
         base = last_base - pitch * (len(rows) - 1 - i)
         bold.draw(text_pen, word, tx, base, size)
@@ -254,7 +254,7 @@ def make_label(info: LabelInfo) -> tuple[str, Layout]:
         '<svg xmlns="http://www.w3.org/2000/svg" '
         f'width="{_num(WIDTH)}mm" height="{_num(HEIGHT)}mm" '
         f'viewBox="0 0 {_num(WIDTH)} {_num(HEIGHT)}">\n'
-        f"  <title>PushNav label: {info.ssid}</title>\n"
+        f"  <title>Starlock label: {info.ssid}</title>\n"
         f"  <desc>QR code: {info.url}; {_xml_escape(desc)}</desc>\n"
         f'  <rect width="{_num(WIDTH)}" height="{_num(HEIGHT)}" fill="#fff"/>\n'
         f'  <path id="qr" fill="#000" d="{qr.getCommands()}"/>\n'
@@ -285,8 +285,8 @@ def _xml_escape(s: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Make a 50 x 20 mm SVG label for a ready-made PushNav Pi.")
-    p.add_argument("suffix", help="the 4 characters after 'PushNav-' in the hotspot "
+        description="Make a 50 x 20 mm SVG label for a ready-made Starlock Pi.")
+    p.add_argument("suffix", help="the 4 characters after 'Starlock-' in the hotspot "
                                   "name (e.g. 3F2A), or the whole name")
     p.add_argument("--user-data", type=Path, default=DEFAULT_USER_DATA,
                    help="the SD card's user-data file, for the passwords and "
@@ -299,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="web app port (default: %(default)s)")
     p.add_argument("-o", "--output", type=Path,
                    help="SVG file to write; the PNG goes next to it "
-                        "(default: pushnav-label-<suffix>.svg)")
+                        "(default: starlock-label-<suffix>.svg)")
     p.add_argument("--dpi", type=int, default=DEFAULT_DPI,
                    help="PNG resolution (default: %(default)s)")
     args = p.parse_args(argv)
@@ -312,10 +312,10 @@ def main(argv: list[str] | None = None) -> int:
                 settings[key] = getattr(args, key)
         if not 72 <= args.dpi <= 2400:
             raise ValueError(f"--dpi {args.dpi}: use 72 to 2400")
-        info = LabelInfo(ssid=f"PushNav-{suffix}", port=args.port, **settings)
+        info = LabelInfo(ssid=f"Starlock-{suffix}", port=args.port, **settings)
         svg, _ = make_label(info)
         png = make_png(info, args.dpi)
-        out = args.output or Path(f"pushnav-label-{suffix}.svg")
+        out = args.output or Path(f"starlock-label-{suffix}.svg")
         png_out = out.with_suffix(".png")
         out.write_text(svg)
         png.save(png_out, dpi=(args.dpi, args.dpi))

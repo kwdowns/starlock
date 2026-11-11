@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=PushNav
+Name=Starlock
 Comment=Plate-solving push-to telescope navigation
-Exec=PushNav
-Icon=pushnav
+Exec=Starlock
+Icon=starlock
 Categories=Education;Science;Astronomy;
 Terminal=false

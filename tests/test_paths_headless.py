@@ -1,4 +1,4 @@
-"""PUSHNAV_ROOT (pushnav-headless launcher) resolves paths into the install root.
+"""STARLOCK_ROOT (starlock-headless launcher) resolves paths into the install root.
 
 evf.paths resolves at import time, so each case runs in a fresh interpreter.
 """
@@ -12,7 +12,7 @@ import sys
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    platform.system() != "Linux", reason="PUSHNAV_ROOT is a Linux headless install"
+    platform.system() != "Linux", reason="STARLOCK_ROOT is a Linux headless install"
 )
 
 _PROBE = """
@@ -36,17 +36,17 @@ print(json.dumps({
 
 def _resolve(env_root: str | None) -> dict:
     env = dict(os.environ)
-    env.pop("PUSHNAV_ROOT", None)
+    env.pop("STARLOCK_ROOT", None)
     if env_root is not None:
-        env["PUSHNAV_ROOT"] = env_root
+        env["STARLOCK_ROOT"] = env_root
     out = subprocess.run(
         [sys.executable, "-c", _PROBE], env=env, capture_output=True, text=True, check=True
     )
     return json.loads(out.stdout)
 
 
-def test_pushnav_root_uses_release_layout(tmp_path):
-    root = tmp_path / "pushnav-headless"
+def test_starlock_root_uses_release_layout(tmp_path):
+    root = tmp_path / "starlock-headless"
     (root / "data" / "samples").mkdir(parents=True)
     (root / "camera_server").touch()
     p = _resolve(str(root))
@@ -61,7 +61,7 @@ def test_pushnav_root_uses_release_layout(tmp_path):
     }
 
 
-def test_without_pushnav_root_stays_in_repo(tmp_path):
+def test_without_starlock_root_stays_in_repo(tmp_path):
     p = _resolve(None)
     assert "camera/linux/camera_server" in p["camera"]
     assert p["web"].endswith("web/dist")

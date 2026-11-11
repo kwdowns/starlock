@@ -1,20 +1,20 @@
 // Copyright (C) 2026 Arun Venkataswamy
 // Copyright (C) 2026 Kyle Downs
 //
-// This file is part of PushNav.
+// This file is part of Starlock.
 //
-// PushNav is free software: you can redistribute it and/or modify it
+// Starlock is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// PushNav is distributed in the hope that it will be useful, but
+// Starlock is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+// along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 // CaptureManager.swift — AVFoundation capture session with MJPEG JPEG extraction.
 //
@@ -60,7 +60,7 @@ class CaptureManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     func start(allowlist: [CameraID]) -> Bool {
         guard let camera = findCamera(allowlist: allowlist) else {
             fputs("ERROR: No allowlisted camera found in AVFoundation. If this is "
-                  + "a new camera model, add its vid:pid to PUSHNAV_CAMERA_IDS.\n",
+                  + "a new camera model, add its vid:pid to STARLOCK_CAMERA_IDS.\n",
                   stderr)
             return false
         }
@@ -97,7 +97,7 @@ class CaptureManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         session.commitConfiguration()
 
         // Observe disconnect / runtime error / interruption so a yanked USB
-        // cable causes us to exit. The parent process (PushNav engine)
+        // cable causes us to exit. The parent process (Starlock engine)
         // watches our TCP socket; when we exit it spawns a fresh server.
         activeDevice = camera
         let nc = NotificationCenter.default

@@ -1,4 +1,4 @@
-# PushNav — Product Specification
+# Starlock — Product Specification
 
 Version: 2.0
 Status: Reflects Current Implementation
@@ -8,7 +8,7 @@ Target: macOS, Linux, Windows
 
 # 1. Product Overview
 
-PushNav is a cross-platform telescope pointing system that:
+Starlock is a cross-platform telescope pointing system that:
 
 - Streams live camera video for telescope alignment and focus.
 - Continuously plate-solves frames when tracking is enabled.
@@ -177,7 +177,7 @@ If solve fails:
 
 # 5. External Integrations
 
-PushNav exposes pointing to external clients over three independent TCP servers,
+Starlock exposes pointing to external clients over three independent TCP servers,
 all running in-process: Stellarium (binary protocol, J2000), LX200 (SkySafari /
 Stellarium Mobile / INDI / ASCOM, JNow), and a mobile-web interface (HTTP +
 WebSocket).
@@ -203,17 +203,17 @@ See `SPEC_PROTOCOL_STELLARIUM.md`.
   Stellarium Mobile PLUS, INDI `indi_lx200basic`, and ASCOM "Meade Generic" /
   "Meade Classic and Autostar I" drivers.
 - Request/response only — never emits unsolicited bytes.
-- Reports pointing in JNow (the LX200 convention); PushNav's internal
+- Reports pointing in JNow (the LX200 convention); Starlock's internal
   canonical form remains J2000. Precession is applied at the LX200 boundary
   via `pyerfa` (IAU 2006).
 - `:MS#` (slew-to-target) stores the received target in `GotoTarget` for
   on-screen navigation guidance — same advisory path as the Stellarium GOTO.
 - `:CM#` (align/sync) is acknowledge-only per the one-way data flow rule
-  (SPEC_PROTOCOL_LX200.md §1.1): external clients never mutate PushNav's
+  (SPEC_PROTOCOL_LX200.md §1.1): external clients never mutate Starlock's
   calibration.
 - `:D#` (slew-status) reports "on target" when the plate-solve is within
   0.5° of the committed goto target, so SkySafari's "Stop"/"GoTo" button
-  transitions correctly even though PushNav has no motor.
+  transitions correctly even though Starlock has no motor.
 
 See `SPEC_PROTOCOL_LX200.md`.
 
@@ -231,7 +231,7 @@ See `SPEC_PROTOCOL_LX200.md`.
   firewall, and the concurrent-client cap below.
 - The Settings panel shows the LAN URL plus a QR code for scan-to-connect.
   The URL is looked up on every update, so it follows the network coming up
-  after PushNav starts.
+  after Starlock starts.
 - `local_ip()` uses the default-route interface's address. A Pi running its
   own hotspot has no default route, so it then falls back to the address of
   a Wi-Fi or Ethernet interface (Linux only).

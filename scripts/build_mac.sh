@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-# Build PushNav.app macOS bundle + .dmg
+# Build Starlock.app macOS bundle + .dmg
 # Usage: ./scripts/build_mac.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$REPO_ROOT/build"
-APP_NAME="PushNav"
+APP_NAME="Starlock"
 APP_DIR="$BUILD_DIR/$APP_NAME.app"
 CONTENTS="$APP_DIR/Contents"
 MACOS="$CONTENTS/MacOS"
@@ -101,13 +101,13 @@ uv run python -m nuitka \
     `# attributes camera/network/etc. permission prompts to the binary` \
     `# at Contents/MacOS/<name> and falls back to that name when` \
     `# CFBundleExecutable doesn't line up with CFBundleName — so using` \
-    `# 'evf' here makes the camera prompt say 'evf' instead of 'PushNav'.` \
-    --output-filename=PushNav \
+    `# 'evf' here makes the camera prompt say 'evf' instead of 'Starlock'.` \
+    --output-filename=Starlock \
     --macos-app-name="$APP_NAME" \
     --macos-app-version="$APP_VERSION" \
     --macos-app-icon="$ICON_PATH" \
-    --macos-signed-app-name="com.pushnav.evf" \
-    --macos-app-protected-resource="NSCameraUsageDescription:PushNav uses the camera to capture telescope finder images for plate solving." \
+    --macos-signed-app-name="com.starlock.evf" \
+    --macos-app-protected-resource="NSCameraUsageDescription:Starlock uses the camera to capture telescope finder images for plate solving." \
     --include-package=numpy \
     --include-package=PIL \
     --include-package=playsound3 \
@@ -171,8 +171,8 @@ DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
 echo "==> Creating styled $DMG_PATH"
 rm -f "$DMG_PATH"
 
-PUSHNAV_APP_PATH="$APP_DIR" \
-PUSHNAV_BG_PATH="$REPO_ROOT/marketing/dmg-background.png" \
+STARLOCK_APP_PATH="$APP_DIR" \
+STARLOCK_BG_PATH="$REPO_ROOT/marketing/dmg-background.png" \
 uv run dmgbuild \
     -s "$SCRIPT_DIR/dmgbuild_settings.py" \
     "$APP_NAME" \

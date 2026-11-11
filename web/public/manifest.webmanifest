@@ -1,6 +1,6 @@
 {
-  "name": "PushNav",
-  "short_name": "PushNav",
+  "name": "Starlock",
+  "short_name": "Starlock",
   "description": "Plate-solving push-to navigation for manual telescopes",
   "start_url": "/",
   "scope": "/",

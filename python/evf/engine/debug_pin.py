@@ -1,32 +1,32 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Debug mode from a jumper on the Raspberry Pi header (headless only).
 
-A jumper between GPIO21 (pin 40) and GND (pin 39) turns on PushNav's
-debug mode, the same as PUSHNAV_DEBUG=1: the Debug panel, sample-image
+A jumper between GPIO21 (pin 40) and GND (pin 39) turns on Starlock's
+debug mode, the same as STARLOCK_DEBUG=1: the Debug panel, sample-image
 injection and frame capture.
 
-Run by the pushnav-headless service as root, before PushNav starts:
+Run by the starlock-headless service as root, before Starlock starts:
 
     ExecStartPre=+... -m evf.engine.debug_pin
 
 It reads GPIO21 once with the internal pull-up on, and creates
-DEBUG_FLAG when the pin reads low (jumpered to ground). PushNav checks
+DEBUG_FLAG when the pin reads low (jumpered to ground). Starlock checks
 for that file at startup; the unit's RuntimeDirectory= removes it when
 the service stops. The pin is read through the kernel's GPIO character
 device (uAPI v2), so no GPIO library is needed and the sandboxed service
@@ -47,7 +47,7 @@ from pathlib import Path
 logger = logging.getLogger("evf.debug_pin")
 
 DEBUG_GPIO = 21
-DEBUG_FLAG = Path("/run/pushnav-headless/debug")
+DEBUG_FLAG = Path("/run/starlock-headless/debug")
 
 # Labels of the GPIO controller wired to the 40-pin header:
 # Pi 5 (RP1), Pi 4, and Pi 3 / Zero 2 W. Header GPIO n is line n on it.
@@ -85,7 +85,7 @@ def _line_request(line: int) -> bytearray:
     """gpio_v2_line_request for one input line with the pull-up on."""
     req = bytearray(_LINE_REQUEST_SIZE)
     struct.pack_into("I", req, 0, line)
-    struct.pack_into("32s", req, _OFF_CONSUMER, b"pushnav-debug")
+    struct.pack_into("32s", req, _OFF_CONSUMER, b"starlock-debug")
     struct.pack_into("Q", req, _OFF_CONFIG_FLAGS, _FLAG_INPUT | _FLAG_BIAS_PULL_UP)
     struct.pack_into("I", req, _OFF_NUM_LINES, 1)
     return req

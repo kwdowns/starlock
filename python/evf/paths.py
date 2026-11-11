@@ -1,25 +1,25 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Centralized path resolution for dev mode (repo) vs release mode (.app bundle).
 
 Dev mode:   repo root found by walking up from __file__ to pyproject.toml
 Release:    sys.executable sits inside Contents/MacOS/ -> Resources at ../../Resources/
-Headless:   PUSHNAV_ROOT (set by the pushnav-headless launcher) names a
+Headless:   STARLOCK_ROOT (set by the starlock-headless launcher) names a
             directory laid out like the Linux release dir
 """
 
@@ -35,8 +35,8 @@ from pathlib import Path
 _exe = Path(sys.executable).resolve()
 _BUNDLE_MODE = _exe.parent.name == "MacOS" and _exe.parent.parent.name == "Contents"
 # The headless .deb runs a bundled interpreter that doesn't sit next to the
-# app files, so its launcher points PUSHNAV_ROOT at /usr/lib/pushnav-headless.
-_ENV_ROOT = os.environ.get("PUSHNAV_ROOT")
+# app files, so its launcher points STARLOCK_ROOT at /usr/lib/starlock-headless.
+_ENV_ROOT = os.environ.get("STARLOCK_ROOT")
 _LINUX_RELEASE = (
     not _BUNDLE_MODE
     and platform.system() == "Linux"
@@ -180,7 +180,7 @@ def samples_dir() -> Path | None:
     """Path to test sample images.
 
     Shipped in all builds so the DebugPanel sample-injection buttons work
-    when PUSHNAV_DEBUG=1. Returns None only if the directory is missing.
+    when STARLOCK_DEBUG=1. Returns None only if the directory is missing.
     """
     if _BUNDLE_MODE:
         p = _RESOURCES / "samples"

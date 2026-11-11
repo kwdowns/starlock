@@ -2,22 +2,22 @@
 title: Stellarium Setup
 ---
 
-# Connecting Stellarium to PushNav
+# Connecting Stellarium to Starlock
 
-PushNav doesn't have its own sky chart. It uses [Stellarium](https://stellarium.org/) instead. Stellarium is a free, open-source planetarium app with a beautiful sky chart, thousands of deep-sky objects, and it runs on all platforms. PushNav plugs into Stellarium as a virtual telescope, so you get the best of both: Stellarium for finding and picking targets, PushNav for guiding you there.
+Starlock doesn't have its own sky chart. It uses [Stellarium](https://stellarium.org/) instead. Stellarium is a free, open-source planetarium app with a beautiful sky chart, thousands of deep-sky objects, and it runs on all platforms. Starlock plugs into Stellarium as a virtual telescope, so you get the best of both: Stellarium for finding and picking targets, Starlock for guiding you there.
 
-This is a one-time setup. Once it's done, Stellarium and PushNav reconnect automatically every time you start them.
+This is a one-time setup. Once it's done, Stellarium and Starlock reconnect automatically every time you start them.
 
 ## What you'll end up with
 
 - A **live crosshair** on Stellarium's sky chart showing exactly where your telescope is pointing, updating in real time as you push
-- **One-click target selection**: click any object in Stellarium and press a keyboard shortcut to send it to PushNav
-- **Push direction** in PushNav's side panel ("left 2°, down 1°") until the target is centered in your eyepiece
+- **One-click target selection**: click any object in Stellarium and press a keyboard shortcut to send it to Starlock
+- **Push direction** in Starlock's side panel ("left 2°, down 1°") until the target is centered in your eyepiece
 
 ## What you'll need
 
-- [Stellarium](https://stellarium.org/) installed on the same computer as PushNav
-- PushNav installed and running
+- [Stellarium](https://stellarium.org/) installed on the same computer as Starlock
+- Starlock installed and running
 
 ## Step 1: Enable the Telescope Control plugin
 
@@ -37,16 +37,16 @@ You'll see an empty **Telescopes Controlled** list.
 
 Click the **+** button at the bottom to add a new telescope.
 
-## Step 3: Configure it for PushNav
+## Step 3: Configure it for Starlock
 
 Fill in the dialog like this:
 
-![Add New Telescope dialog configured for PushNav](assets/stellarium-telescope-3.jpeg)
+![Add New Telescope dialog configured for Starlock](assets/stellarium-telescope-3.jpeg)
 
 | Setting | What to pick |
 |---|---|
 | Telescope controlled by | **External software or a remote computer** |
-| Name | `PushNav` (or whatever you like) |
+| Name | `Starlock` (or whatever you like) |
 | Coordinate system | **J2000 (default)** (don't change this) |
 | Start/connect at startup | ✓ tick this |
 
@@ -58,31 +58,31 @@ Scroll down and set:
 | TCP Port | `10001` |
 
 !!! warning "Leave the coordinate system on J2000"
-    PushNav only speaks J2000 coordinates. If you switch this to JNow, the crosshair in Stellarium will be slightly off from where your telescope is actually pointing. If things seem "close but not quite right," this is almost always the reason.
+    Starlock only speaks J2000 coordinates. If you switch this to JNow, the crosshair in Stellarium will be slightly off from where your telescope is actually pointing. If things seem "close but not quite right," this is almost always the reason.
 
 Click **OK**.
 
 ## Step 4: Connect
 
-PushNav now appears in the list as **Disconnected**.
+Starlock now appears in the list as **Disconnected**.
 
-![PushNav listed as Disconnected](assets/stellarium-telescope-4.jpeg)
+![Starlock listed as Disconnected](assets/stellarium-telescope-4.jpeg)
 
-Make sure PushNav is **running**, then click **Connect**.
+Make sure Starlock is **running**, then click **Connect**.
 
 ## Step 5: Verify
 
 The status should change to **Connected** within a second.
 
-![PushNav connected](assets/stellarium-telescope-5.jpeg)
+![Starlock connected](assets/stellarium-telescope-5.jpeg)
 
 That's it for setup. Close the dialog. Because you ticked "Start/connect at startup," this will happen automatically from now on. You won't need to open this dialog again.
 
 ## Step 6: See the crosshair
 
-Look at Stellarium's sky chart. You'll see a small crosshair labelled **PushNav**. This is where your telescope is pointed right now, updating live.
+Look at Stellarium's sky chart. You'll see a small crosshair labelled **Starlock**. This is where your telescope is pointed right now, updating live.
 
-![PushNav crosshair in Stellarium's sky chart](assets/stellarium-telescope-6.jpeg)
+![Starlock crosshair in Stellarium's sky chart](assets/stellarium-telescope-6.jpeg)
 
 Push your telescope gently and watch the crosshair move in sync. No encoders, no motors. Just the camera seeing the stars and figuring out where it's looking.
 
@@ -92,31 +92,31 @@ Click any object in Stellarium (a star, a nebula, a galaxy, anything). Stellariu
 
 ![Orion Nebula selected in Stellarium](assets/stellarium-telescope-7.jpeg)
 
-Now press **Cmd+1** (Mac) or **Ctrl+1** (Windows / Linux). This sends the target to PushNav.
+Now press **Cmd+1** (Mac) or **Ctrl+1** (Windows / Linux). This sends the target to Starlock.
 
 ## Step 8: Push to it
 
-Switch to PushNav. The side panel shows the target name and how far you need to push:
+Switch to Starlock. The side panel shows the target name and how far you need to push:
 
-![PushNav tracking the Great Orion Nebula](assets/pushnav.0.2.0-tracking.png)
+![Starlock tracking the Great Orion Nebula](assets/starlock.0.2.0-tracking.png)
 
 In this example, the Great Orion Nebula is **3.9°** away: push the telescope **left by 0.4°** and **down by 3.9°** to reach it. The main view shows arrows pointing in the push direction.
 
 As you push, the numbers shrink in real time. When they get close to zero, the target should be visible in your eyepiece. Center it by eye and enjoy the view.
 
-To pick a different target, just click another object in Stellarium and press **Cmd+1** again. To stop tracking, click **Clear Target** in PushNav.
+To pick a different target, just click another object in Stellarium and press **Cmd+1** again. To stop tracking, click **Clear Target** in Starlock.
 
 ## Troubleshooting
 
 **Can't connect: status stays "Disconnected".**
 
-- Make sure PushNav is running *before* you click Connect in Stellarium. PushNav is the server; Stellarium connects to it.
+- Make sure Starlock is running *before* you click Connect in Stellarium. Starlock is the server; Stellarium connects to it.
 
 **The crosshair is in the wrong part of the sky.**
 
 - Check that the coordinate system in the telescope settings is set to **J2000**, not JNow. This is the most common cause.
 - Make sure Stellarium's location and time are set correctly for where you are.
-- Make sure PushNav has actually solved at least once. If the step indicator in PushNav still says *Sync* rather than *Track*, it doesn't know where it's pointed yet.
+- Make sure Starlock has actually solved at least once. If the step indicator in Starlock still says *Sync* rather than *Track*, it doesn't know where it's pointed yet.
 
 **Cmd+1 / Ctrl+1 doesn't seem to do anything.**
 
@@ -124,10 +124,10 @@ To pick a different target, just click another object in Stellarium and press **
 - Make sure the telescope is connected (check the Telescopes dialog).
 - On Mac, make sure Stellarium's window has focus before pressing the shortcut.
 
-**PushNav shows the target coordinates but not the name.**
+**Starlock shows the target coordinates but not the name.**
 
-- PushNav gets object names from Stellarium's **Remote Control** plugin. If that plugin isn't enabled, coordinates still work but the name will be blank. To fix: go back to **Configuration → Plugins**, find **Remote Control**, tick **Load at startup**, and restart Stellarium.
+- Starlock gets object names from Stellarium's **Remote Control** plugin. If that plugin isn't enabled, coordinates still work but the name will be blank. To fix: go back to **Configuration → Plugins**, find **Remote Control**, tick **Load at startup**, and restart Stellarium.
 
 ## What's next
 
-Now that Stellarium is connected, head to [Using PushNav](using-pushnav.md) to learn how to sync, calibrate, and start pushing to targets.
+Now that Stellarium is connected, head to [Using Starlock](using-starlock.md) to learn how to sync, calibrate, and start pushing to targets.

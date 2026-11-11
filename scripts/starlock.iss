@@ -1,25 +1,25 @@
 ; Copyright (C) 2026 Arun Venkataswamy
 ;
-; This file is part of PushNav.
+; This file is part of Starlock.
 ;
-; PushNav is free software: you can redistribute it and/or modify it
+; Starlock is free software: you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation, either version 3 of the License, or
 ; (at your option) any later version.
 ;
-; PushNav is distributed in the hope that it will be useful, but
+; Starlock is distributed in the hope that it will be useful, but
 ; WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 ; General Public License for more details.
 ;
 ; You should have received a copy of the GNU General Public License
-; along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+; along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-; PushNav Windows Installer — Inno Setup script
-; Compile with: iscc scripts\pushnav.iss
-; Expects the assembled release dir at build\PushNav-windows\
+; Starlock Windows Installer — Inno Setup script
+; Compile with: iscc scripts\starlock.iss
+; Expects the assembled release dir at build\Starlock-windows\
 
-#define MyAppName "PushNav"
+#define MyAppName "Starlock"
 #ifndef APP_VERSION
   #define APP_VERSION GetEnv('APP_VERSION')
   #if APP_VERSION == ""
@@ -27,8 +27,8 @@
   #endif
 #endif
 #define MyAppVersion APP_VERSION
-#define MyAppPublisher "PushNav"
-#define MyAppExeName "PushNav.exe"
+#define MyAppPublisher "Starlock"
+#define MyAppExeName "Starlock.exe"
 
 [Setup]
 AppId={{B8F3A2D1-7E4C-4A9B-8D5F-1C2E3F4A5B6D}
@@ -38,7 +38,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=..\build
-OutputBaseFilename=PushNav-windows-x64-setup
+OutputBaseFilename=Starlock-windows-x64-setup
 SetupIconFile=..\marketing\logo.ico
 UninstallDisplayIcon={app}\marketing\logo.ico
 Compression=lzma2/ultra64
@@ -56,7 +56,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\build\PushNav-windows\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\Starlock-windows\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\marketing\logo.ico"

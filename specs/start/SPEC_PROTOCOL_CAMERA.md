@@ -1,4 +1,4 @@
-# SPEC_PROTOCOL_CAMERA.md — PushNav
+# SPEC_PROTOCOL_CAMERA.md — Starlock
 
 Document version: 2.1
 Protocol version (wire): **1** — must match `data/VERSION.json.protocol_version`

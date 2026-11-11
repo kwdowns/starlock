@@ -21,7 +21,7 @@ interface Props {
  * capped in height (`--frame-max-h`, default 40svh) by narrowing it, so the
  * image always fills it exactly: no letterbox strips.
  */
-const TINT_KEY = "pushnav.frame_tint";
+const TINT_KEY = "starlock.frame_tint";
 
 function loadNatural(): boolean {
   try {
@@ -71,7 +71,7 @@ export function LiveView({ state, showStars, className }: Props) {
         // stretched first: sky level to black, 6x gain, points fattened.
         <div className={cn("absolute inset-0", !natural && "night-frame")}>
           <svg aria-hidden width="0" height="0" className="absolute">
-            <filter id="pushnav-frame-stretch" colorInterpolationFilters="sRGB">
+            <filter id="starlock-frame-stretch" colorInterpolationFilters="sRGB">
               <feComponentTransfer>
                 <feFuncR type="linear" slope={FRAME_GAIN} intercept={-FRAME_GAIN * FRAME_BLACK} />
                 <feFuncG type="linear" slope={FRAME_GAIN} intercept={-FRAME_GAIN * FRAME_BLACK} />
@@ -85,7 +85,7 @@ export function LiveView({ state, showStars, className }: Props) {
             src={frameUrl}
             alt="Live camera frame"
             className="h-full w-full object-cover"
-            style={natural ? undefined : { filter: "url(#pushnav-frame-stretch)" }}
+            style={natural ? undefined : { filter: "url(#starlock-frame-stretch)" }}
           />
         </div>
       ) : (

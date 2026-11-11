@@ -1,0 +1,54 @@
+[Unit]
+Description=Starlock headless plate-solving push-to (web UI on port 8780)
+Documentation=https://kwdowns.github.io/starlock/rpi-headless/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=starlock
+Group=starlock
+SupplementaryGroups=video
+ExecStart=/usr/bin/starlock-headless
+# Status LED: '+' runs just these steps as root, outside the sandbox. 'take'
+# saves the Pi LEDs' state, sets trigger=none and lets group starlock write
+# brightness; 'restore' gives them back. ExecStopPost also runs after a
+# crash, so the LEDs never stay frozen on a Starlock pattern. Both always
+# exit 0, and 'take' honours led.enabled in config.json.
+ExecStartPre=+/usr/lib/starlock-headless/python/bin/python3 -s -m evf.engine.led_helper take --group starlock
+ExecStopPost=+/usr/lib/starlock-headless/python/bin/python3 -s -m evf.engine.led_helper restore
+# Power saving: 'take' saves the CPU's top clock, caps it as config.json
+# says (power.cpu_cap, power.max_freq_mhz) and lets group starlock change
+# the cap, so the Settings panel can switch it while Starlock runs (the
+# governor still idles the CPU at its lowest clock). 'restore' gives the
+# original back, after a crash too. Both always exit 0.
+ExecStartPre=+/usr/lib/starlock-headless/python/bin/python3 -s -m evf.engine.cpufreq_helper take --group starlock
+ExecStopPost=+/usr/lib/starlock-headless/python/bin/python3 -s -m evf.engine.cpufreq_helper restore
+# Debug mode: a jumper from GPIO21 (pin 40) to GND (pin 39). This root step
+# reads the pin and creates /run/starlock-headless/debug if it's jumpered;
+# Starlock turns debug mode on when that file exists. RuntimeDirectory=
+# removes the directory, flag included, whenever the service stops.
+RuntimeDirectory=starlock-headless
+ExecStartPre=+/usr/lib/starlock-headless/python/bin/python3 -s -m evf.engine.debug_pin
+# Config and logs live under /var/lib/starlock-headless (created by systemd,
+# owned by the starlock user, removed on `apt purge`).
+StateDirectory=starlock-headless
+Environment=HOME=/var/lib/starlock-headless
+Environment=XDG_CONFIG_HOME=/var/lib/starlock-headless/config
+Environment=XDG_STATE_HOME=/var/lib/starlock-headless/state
+# SIGTERM only the engine, which stops camera_server itself. The default
+# (control-group) would kill camera_server at the same moment, and the
+# engine would start camera recovery in the middle of shutting down.
+KillMode=mixed
+# shutdown() can wait out a camera retry already in flight (~30 s worst case).
+TimeoutStopSec=45
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

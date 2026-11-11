@@ -1,19 +1,19 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Camera subprocess manager — spawn, monitor, and recover the camera server.
 
@@ -127,7 +127,7 @@ class SubprocessManager:
     def _kill_stale_server(self) -> None:
         """Kill any leftover camera_server process from a previous run.
 
-        If PushNav was force-quit or crashed, the camera server may still
+        If Starlock was force-quit or crashed, the camera server may still
         be alive holding the camera device and TCP port.  This prevents
         the new instance from connecting.
         """
@@ -155,7 +155,7 @@ class SubprocessManager:
     def _build_env(self) -> dict | None:
         """Environment for the camera server.
 
-        Injects PUSHNAV_CAMERA_IDS (the user-configured camera allowlist
+        Injects STARLOCK_CAMERA_IDS (the user-configured camera allowlist
         extras) so the native server recognizes cameras beyond its built-in
         list. Returns None to inherit the parent environment unchanged when
         there is nothing to add.
@@ -165,15 +165,15 @@ class SubprocessManager:
             return None
         env = os.environ.copy()
         parts = []
-        existing = env.get("PUSHNAV_CAMERA_IDS", "").strip()
+        existing = env.get("STARLOCK_CAMERA_IDS", "").strip()
         if existing:
             parts.append(existing)
         parts.extend(s for s in (str(x).strip() for x in extras) if s)
         if parts:
-            env["PUSHNAV_CAMERA_IDS"] = ",".join(parts)
+            env["STARLOCK_CAMERA_IDS"] = ",".join(parts)
             logger.info(
-                "Passing PUSHNAV_CAMERA_IDS=%s to camera server",
-                env["PUSHNAV_CAMERA_IDS"],
+                "Passing STARLOCK_CAMERA_IDS=%s to camera server",
+                env["STARLOCK_CAMERA_IDS"],
             )
         return env
 

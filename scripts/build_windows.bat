@@ -1,22 +1,22 @@
 @echo off
 REM Copyright (C) 2026 Arun Venkataswamy
 REM
-REM This file is part of PushNav.
+REM This file is part of Starlock.
 REM
-REM PushNav is free software: you can redistribute it and/or modify it
+REM Starlock is free software: you can redistribute it and/or modify it
 REM under the terms of the GNU General Public License as published by
 REM the Free Software Foundation, either version 3 of the License, or
 REM (at your option) any later version.
 REM
-REM PushNav is distributed in the hope that it will be useful, but
+REM Starlock is distributed in the hope that it will be useful, but
 REM WITHOUT ANY WARRANTY; without even the implied warranty of
 REM MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 REM General Public License for more details.
 REM
 REM You should have received a copy of the GNU General Public License
-REM along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+REM along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-REM Build PushNav Windows release (zip)
+REM Build Starlock Windows release (zip)
 REM Usage: scripts\build_windows.bat
 REM
 REM Prerequisites:
@@ -30,7 +30,7 @@ setlocal enabledelayedexpansion
 set "SCRIPT_DIR=%~dp0"
 set "REPO_ROOT=%SCRIPT_DIR%.."
 set "BUILD_DIR=%REPO_ROOT%\build"
-set "APP_NAME=PushNav-windows"
+set "APP_NAME=Starlock-windows"
 set "APP_DIR=%BUILD_DIR%\%APP_NAME%"
 
 REM Read version from VERSION.json (single source of truth)
@@ -97,13 +97,13 @@ uv run python -m nuitka ^
     --standalone ^
     --windows-console-mode=disable ^
     --windows-icon-from-ico="%REPO_ROOT%\marketing\logo.ico" ^
-    --windows-product-name=PushNav ^
-    --windows-company-name="Arun Venkataswamy" ^
-    --windows-file-description="PushNav - plate-solving push-to" ^
+    --windows-product-name=Starlock ^
+    --windows-company-name="Kyle Downs" ^
+    --windows-file-description="Starlock - plate-solving push-to" ^
     --windows-product-version=%WIN_VERSION% ^
     --windows-file-version=%WIN_VERSION% ^
     --output-dir="%BUILD_DIR%" ^
-    --output-filename=PushNav.exe ^
+    --output-filename=Starlock.exe ^
     --include-package=numpy ^
     --include-package=PIL ^
     --include-package=playsound3 ^
@@ -153,7 +153,7 @@ echo ==^> Release directory assembled at %APP_DIR%
 REM -------------------------------------------------------------------------
 REM Phase 4: Create zip
 REM -------------------------------------------------------------------------
-set "ZIP_NAME=PushNav-windows-x64.zip"
+set "ZIP_NAME=Starlock-windows-x64.zip"
 set "ZIP_PATH=%BUILD_DIR%\%ZIP_NAME%"
 echo ==^> Creating %ZIP_NAME%
 powershell -NoProfile -Command "Compress-Archive -Path '%APP_DIR%' -DestinationPath '%ZIP_PATH%' -Force"
@@ -172,13 +172,13 @@ if "!ISCC!"=="" (
 )
 
 echo ==^> Creating Windows installer
-"!ISCC!" /DAPP_VERSION="%APP_VERSION%" "%REPO_ROOT%\scripts\pushnav.iss"
+"!ISCC!" /DAPP_VERSION="%APP_VERSION%" "%REPO_ROOT%\scripts\starlock.iss"
 if errorlevel 1 (
     echo ERROR: Installer build failed
     exit /b 1
 )
 
-set "SETUP_PATH=%BUILD_DIR%\PushNav-windows-x64-setup.exe"
+set "SETUP_PATH=%BUILD_DIR%\Starlock-windows-x64-setup.exe"
 
 :done
 echo.

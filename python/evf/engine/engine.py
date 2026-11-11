@@ -1,20 +1,20 @@
 # Copyright (C) 2026 Arun Venkataswamy
 # Copyright (C) 2026 Kyle Downs
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Engine coordinator — wires all components together.
 
@@ -66,7 +66,7 @@ def _read_app_version() -> str:
     """Read app_version string from VERSION.json at engine init.
 
     Falls back to '0.0.0' if the file is missing or malformed so that the
-    LX200 :GVN# reply always returns a well-formed 'PushNav <version>#'.
+    LX200 :GVN# reply always returns a well-formed 'Starlock <version>#'.
     """
     try:
         with open(_VERSION_PATH) as f:
@@ -250,7 +250,7 @@ class Engine:
         """Apply the CPU clock cap from config (headless mode).
 
         Needs cpufreq files this process may write, which only the
-        pushnav-headless service's root helper (evf.engine.cpufreq_helper)
+        starlock-headless service's root helper (evf.engine.cpufreq_helper)
         sets up; anywhere else this logs one line and the Settings switch
         stays hidden.
         """
@@ -667,7 +667,7 @@ class Engine:
         """Show engine status on the Pi's LEDs (headless mode).
 
         Needs LEDs this process may write, which only the
-        pushnav-headless service's root helper (evf.engine.led_helper)
+        starlock-headless service's root helper (evf.engine.led_helper)
         sets up; anywhere else this logs one line and does nothing.
         """
         if not self._config.led_enabled:

@@ -1,20 +1,20 @@
 # Copyright (C) 2026 Arun Venkataswamy
 # Copyright (C) 2026 Kyle Downs
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Mobile web interface — aiohttp HTTP + WebSocket server.
 
@@ -232,7 +232,7 @@ class WebServer:
         """LAN URL of the mobile interface, or None without a LAN address.
 
         Looked up on every call rather than once at start, so it follows the
-        network: a Pi's hotspot or Wi-Fi may come up after PushNav does.
+        network: a Pi's hotspot or Wi-Fi may come up after Starlock does.
         """
         ip = local_ip()
         return f"http://{ip}:{self._config.web_port}" if ip else None
@@ -349,11 +349,11 @@ class WebServer:
         )
 
     async def _handle_version(self, request: web.Request) -> web.Response:
-        """Identify-as-PushNav endpoint.
+        """Identify-as-Starlock endpoint.
 
         Used by the single-instance check in main.py: a second launch
         probes this URL and exits cleanly if the response carries our
-        ``app == "pushnav"`` marker. Independently useful for clients
+        ``app == "starlock"`` marker. Independently useful for clients
         and scripts that want app/protocol version info.
         """
         try:
@@ -362,7 +362,7 @@ class WebServer:
         except (OSError, json.JSONDecodeError):
             data = {}
         return web.json_response({
-            "app": "pushnav",
+            "app": "starlock",
             "version": data.get("app_version"),
             "protocol_version": data.get("protocol_version"),
         })

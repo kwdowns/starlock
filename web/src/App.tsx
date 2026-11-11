@@ -49,7 +49,7 @@ const BELOW_BAR = "var(--app-bar-h) + var(--safe-top)";
 
 export default function App() {
   const state = useEngineState();
-  const [showStars, setShowStars] = useLocalStorageBool("pushnav.show_stars", DEFAULT_SHOW_STARS);
+  const [showStars, setShowStars] = useLocalStorageBool("starlock.show_stars", DEFAULT_SHOW_STARS);
   const leftCol = useHeightVar<HTMLDivElement>(state !== null);
 
   return (

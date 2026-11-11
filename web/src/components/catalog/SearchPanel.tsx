@@ -15,7 +15,7 @@ const starList: StarEntry[] = (starData as Omit<StarEntry, "source">[])
   .map((e) => ({ ...e, source: "star" as const }));
 const allEntries: (NgcEntry | StarEntry)[] = [...ngcList, ...starList];
 
-const QUERY_KEY = "pushnav.catalog.advanced.query";
+const QUERY_KEY = "starlock.catalog.advanced.query";
 const PAGE = 25;
 
 interface Props {

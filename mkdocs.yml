@@ -1,8 +1,8 @@
-site_name: PushNav
+site_name: Starlock
 site_description: Cross-platform plate-solving push-to system for manual telescopes
-site_url: https://meridianfield.github.io/pushnav/
-repo_url: https://github.com/meridianfield/pushnav
-repo_name: meridianfield/pushnav
+site_url: https://kwdowns.github.io/starlock/
+repo_url: https://github.com/kwdowns/starlock
+repo_name: kwdowns/starlock
 edit_uri: edit/main/docs/
 
 docs_dir: docs
@@ -42,13 +42,13 @@ nav:
   - Camera & Lens: hardware.md
   - DIY Notes: diy-notes.md
   - 3D Models: 3d-models.md
-  - Install PushNav: install.md
+  - Install Starlock: install.md
   - Raspberry Pi (headless): rpi-headless.md
   - Stellarium Setup: stellarium-setup.md
   - SkySafari & Other Apps: skysafari-setup.md
-  - Using PushNav: using-pushnav.md
+  - Using Starlock: using-starlock.md
   - License: license.md
-  - Questions & Feedback: https://github.com/meridianfield/pushnav/issues
+  - Questions & Feedback: https://github.com/kwdowns/starlock/issues
 
 markdown_extensions:
   - admonition
@@ -73,11 +73,11 @@ extra_css:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/meridianfield/pushnav
+      link: https://github.com/kwdowns/starlock
     - icon: fontawesome/solid/binoculars
       link: https://stargazingbuddy.com/
       name: Stargazing Buddy
   generator: false
 
 copyright: >
-  <a href="https://github.com/meridianfield/pushnav/issues">Questions & Feedback</a>
+  <a href="https://github.com/kwdowns/starlock/issues">Questions & Feedback</a>

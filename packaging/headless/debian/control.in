@@ -1,14 +1,16 @@
-Package: pushnav-headless
+Package: starlock-headless
 Version: @VERSION@
 Architecture: arm64
-Maintainer: Arun Venkataswamy <5359196+arunvenkataswamy@users.noreply.github.com>
+Maintainer: Kyle Downs <12downsk@gmail.com>
 Installed-Size: @INSTALLED_SIZE@
 Depends: libc6 (>= 2.36), libjpeg62-turbo, adduser
+Conflicts: pushnav-headless
+Replaces: pushnav-headless
 Section: science
 Priority: optional
-Homepage: https://github.com/meridianfield/pushnav
-Description: PushNav plate-solving push-to for Raspberry Pi (headless)
- PushNav plate-solves live frames from a finder camera to show where a
+Homepage: https://github.com/kwdowns/starlock
+Description: Starlock plate-solving push-to for Raspberry Pi (headless)
+ Starlock plate-solves live frames from a finder camera to show where a
  manual telescope is pointing and guide it to a target (push-to).
  .
  This is the headless Raspberry Pi build: it runs as a systemd service
@@ -16,5 +18,6 @@ Description: PushNav plate-solving push-to for Raspberry Pi (headless)
  http://<pi-ip>:8780. SkySafari / Stellarium Mobile connect over LX200
  on port 4030, Stellarium desktop on port 10001.
  .
- It bundles its own Python 3.12 runtime under /usr/lib/pushnav-headless.
- For a PC or laptop, use the regular PushNav desktop release instead.
+ It bundles its own Python 3.12 runtime under /usr/lib/starlock-headless.
+ Starlock is a fork of PushNav and replaces the pushnav-headless package.
+ For a PC or laptop, use the regular Starlock desktop release instead.

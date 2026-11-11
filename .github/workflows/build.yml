@@ -106,13 +106,13 @@ jobs:
         run: bash scripts/build_mac.sh
 
       - name: Rename DMG for artifact upload
-        run: mv build/PushNav.dmg build/PushNav-macOS-arm64.dmg
+        run: mv build/Starlock.dmg build/Starlock-macOS-arm64.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PushNav-macOS-arm64
-          path: build/PushNav-macOS-arm64.dmg
+          name: Starlock-macOS-arm64
+          path: build/Starlock-macOS-arm64.dmg
           retention-days: 90
 
   # ---------------------------------------------------------------------------
@@ -199,28 +199,28 @@ jobs:
         run: bash scripts/build_linux.sh
 
       - name: Rename AppImage for artifact upload
-        # Script outputs PushNav-${ARCH}.AppImage; GHA workflow expects
-        # PushNav-linux-${ARCH}.AppImage.
+        # Script outputs Starlock-${ARCH}.AppImage; GHA workflow expects
+        # Starlock-linux-${ARCH}.AppImage.
         run: |
           ARCH="${{ steps.arch.outputs.arch }}"
-          mv "build/PushNav-${ARCH}.AppImage" "build/PushNav-linux-${ARCH}.AppImage"
+          mv "build/Starlock-${ARCH}.AppImage" "build/Starlock-linux-${ARCH}.AppImage"
 
       - name: Upload tar.gz artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PushNav-linux-tar
-          path: build/PushNav-linux-${{ steps.arch.outputs.arch }}.tar.gz
+          name: Starlock-linux-tar
+          path: build/Starlock-linux-${{ steps.arch.outputs.arch }}.tar.gz
           retention-days: 90
 
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PushNav-linux-AppImage
-          path: build/PushNav-linux-${{ steps.arch.outputs.arch }}.AppImage
+          name: Starlock-linux-AppImage
+          path: build/Starlock-linux-${{ steps.arch.outputs.arch }}.AppImage
           retention-days: 90
 
   # ---------------------------------------------------------------------------
-  # Raspberry Pi — pushnav-headless .deb (arm64, always headless)
+  # Raspberry Pi — starlock-headless .deb (arm64, always headless)
   # Built natively on an ARM runner inside a Debian bookworm container (glibc
   # 2.36) so the one package installs on Pi OS bookworm and trixie.
   # ---------------------------------------------------------------------------
@@ -274,8 +274,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PushNav-headless-deb
-          path: build/pushnav-headless_*_arm64.deb
+          name: Starlock-headless-deb
+          path: build/starlock-headless_*_arm64.deb
           retention-days: 90
 
       # First-boot config for the ready-made SD card (docs/rpi-headless.md),
@@ -283,7 +283,7 @@ jobs:
       - name: Upload user-data
         uses: actions/upload-artifact@v4
         with:
-          name: PushNav-headless-user-data
+          name: Starlock-headless-user-data
           path: packaging/headless/user-data
           retention-days: 90
 
@@ -365,15 +365,15 @@ jobs:
       - name: Upload zip artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PushNav-windows-zip
-          path: build/PushNav-windows-x64.zip
+          name: Starlock-windows-zip
+          path: build/Starlock-windows-x64.zip
           retention-days: 90
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PushNav-windows-setup
-          path: build/PushNav-windows-x64-setup.exe
+          name: Starlock-windows-setup
+          path: build/Starlock-windows-x64-setup.exe
           retention-days: 90
 
   # ---------------------------------------------------------------------------
@@ -395,7 +395,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd artifacts
-          for f in PushNav-headless-deb/*~*.deb; do
+          for f in Starlock-headless-deb/*~*.deb; do
             [ -e "$f" ] && mv "$f" "${f//\~/.}"
           done
           find . -type f \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.exe" -o -name "*.deb" -o -name "user-data" \) \
@@ -409,15 +409,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: PushNav ${{ github.ref_name }}
+          name: Starlock ${{ github.ref_name }}
           draft: true
           generate_release_notes: true
           files: |
-            artifacts/PushNav-macOS-arm64/PushNav-macOS-arm64.dmg
-            artifacts/PushNav-linux-tar/PushNav-linux-*.tar.gz
-            artifacts/PushNav-linux-AppImage/PushNav-linux-*.AppImage
-            artifacts/PushNav-windows-zip/PushNav-windows-x64.zip
-            artifacts/PushNav-windows-setup/PushNav-windows-x64-setup.exe
-            artifacts/PushNav-headless-deb/pushnav-headless_*_arm64.deb
-            artifacts/PushNav-headless-user-data/user-data
+            artifacts/Starlock-macOS-arm64/Starlock-macOS-arm64.dmg
+            artifacts/Starlock-linux-tar/Starlock-linux-*.tar.gz
+            artifacts/Starlock-linux-AppImage/Starlock-linux-*.AppImage
+            artifacts/Starlock-windows-zip/Starlock-windows-x64.zip
+            artifacts/Starlock-windows-setup/Starlock-windows-x64-setup.exe
+            artifacts/Starlock-headless-deb/starlock-headless_*_arm64.deb
+            artifacts/Starlock-headless-user-data/user-data
             checksums-sha256.txt

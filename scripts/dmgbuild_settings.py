@@ -1,26 +1,26 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-"""dmgbuild settings for the PushNav release DMG.
+"""dmgbuild settings for the Starlock release DMG.
 
 Driven by `scripts/build_mac.sh` via two environment variables:
 
-    PUSHNAV_APP_PATH  – absolute path to the built PushNav.app
-    PUSHNAV_BG_PATH   – absolute path to marketing/dmg-background.png
+    STARLOCK_APP_PATH  – absolute path to the built Starlock.app
+    STARLOCK_BG_PATH   – absolute path to marketing/dmg-background.png
                          (the @2x sibling is auto-detected by name)
 
 We avoid create-dmg / appdmg because their AppleScript-driven Finder
@@ -31,8 +31,8 @@ directly via ds-store + mac-alias and produces a stable layout.
 
 import os
 
-app_path = os.environ["PUSHNAV_APP_PATH"]
-bg_path  = os.environ["PUSHNAV_BG_PATH"]
+app_path = os.environ["STARLOCK_APP_PATH"]
+bg_path  = os.environ["STARLOCK_BG_PATH"]
 
 # Files included as-is in the DMG root.
 files = [app_path]

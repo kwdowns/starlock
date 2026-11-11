@@ -29,9 +29,9 @@ export interface CatalogFilterState {
 }
 
 const KEYS = {
-  equipment: "pushnav.catalog.equipment",
-  lp: "pushnav.catalog.lp",
-  reward: "pushnav.catalog.reward",
+  equipment: "starlock.catalog.equipment",
+  lp: "starlock.catalog.lp",
+  reward: "starlock.catalog.reward",
 } as const;
 
 function load<T extends string>(key: string, options: { value: T }[]): Set<T> {

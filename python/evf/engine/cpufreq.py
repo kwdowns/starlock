@@ -1,20 +1,20 @@
 # Copyright (C) 2026 Arun Venkataswamy
 # Copyright (C) 2026 Kyle Downs
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """CPU clock cap (headless Pi power saving), switchable at runtime.
 
@@ -24,8 +24,8 @@ policy's `scaling_max_freq`; the governor is left alone, so the CPU
 still idles at its lowest clock.
 
 Writing `scaling_max_freq` needs root, which the engine doesn't have:
-the pushnav-headless service's root helper (evf.engine.cpufreq_helper)
-saves the original value and lets group pushnav write the file. Without
+the starlock-headless service's root helper (evf.engine.cpufreq_helper)
+saves the original value and lets group starlock write the file. Without
 that (desktop builds, development) no policy is writable and the cap is
 simply unavailable.
 """

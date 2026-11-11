@@ -4,7 +4,7 @@ title: 3D Models
 
 # 3D-Printable Parts
 
-All parts are designed in [OpenSCAD](https://openscad.org/) for FDM printing. Source files are in [`hardware/3d_models/`](https://github.com/meridianfield/pushnav/tree/main/hardware/3d_models), with build instructions in its [README](https://github.com/meridianfield/pushnav/blob/main/hardware/3d_models/README.md).
+All parts are designed in [OpenSCAD](https://openscad.org/) for FDM printing. Source files are in [`hardware/3d_models/`](https://github.com/kwdowns/starlock/tree/main/hardware/3d_models), with build instructions in its [README](https://github.com/kwdowns/starlock/blob/main/hardware/3d_models/README.md).
 
 For a new build, print the **[Camera Housing](#camera-housing-recommended)**. The older v2 and v1 housings are [deprecated](#deprecated-designs) but still available for existing builds.
 
@@ -24,9 +24,9 @@ Everyone prints the [camera housing and hood](#camera-parts-every-setup). Then p
 
     ![The camera on the low mount](assets/3d_model_v3.png)
 
-    The usual setup: the camera's USB cable goes straight to the computer running PushNav. Print the **low mount**.
+    The usual setup: the camera's USB cable goes straight to the computer running Starlock. Print the **low mount**.
 
-    [:material-download: Low mount](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_mount.stl){ .md-button .md-button--primary }
+    [:material-download: Low mount](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_mount.stl){ .md-button .md-button--primary }
 
 -   **Standalone on a Raspberry Pi 3A+** (optional)
 
@@ -34,11 +34,11 @@ Everyone prints the [camera housing and hood](#camera-parts-every-setup). Then p
 
     ![The camera on the Pi mount, above the Raspberry Pi 3A+ box](assets/3d_model_v4.png)
 
-    Only if you run [PushNav headless on a Raspberry Pi](rpi-headless.md). A taller mount lifts the camera over a slim box that holds a Pi 3A+, making a self-contained unit. The box fits the **Pi 3A+ only**. [Details below](#pi-3a-mount-and-box-optional).
+    Only if you run [Starlock headless on a Raspberry Pi](rpi-headless.md). A taller mount lifts the camera over a slim box that holds a Pi 3A+, making a self-contained unit. The box fits the **Pi 3A+ only**. [Details below](#pi-3a-mount-and-box-optional).
 
-    [:material-download: Pi mount](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v4_mount.stl){ .md-button }
-    [:material-download: Box base](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v4_box_base.stl){ .md-button }
-    [:material-download: Box lid](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v4_box_lid.stl){ .md-button }
+    [:material-download: Pi mount](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_mount.stl){ .md-button }
+    [:material-download: Box base](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_base.stl){ .md-button }
+    [:material-download: Box lid](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_lid.stl){ .md-button }
 
 </div>
 
@@ -50,18 +50,18 @@ Everyone prints the [camera housing and hood](#camera-parts-every-setup). Then p
 | **Hood** | Baffled lens shroud; its end takes the cap from the bottom of any 1.25" eyepiece barrel |
 | **Dust cap** (optional) | Printed cap for the hood, if you have no spare eyepiece cap |
 
-[:material-download: Camera housing](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_base.stl){ .md-button .md-button--primary }
-[:material-download: Hood](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_hood.stl){ .md-button .md-button--primary }
-[:material-download: Dust cap](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_cap.stl){ .md-button }
+[:material-download: Camera housing](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_base.stl){ .md-button .md-button--primary }
+[:material-download: Hood](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_hood.stl){ .md-button .md-button--primary }
+[:material-download: Dust cap](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_cap.stl){ .md-button }
 
 **Hardware:** one M4 × 20 star knob (Ø12.5 collar) and one M4 × 6 heat-set insert (5.8 mm knurl). The insert goes in the centre of the camera housing's bottom; the knob comes in from behind the mount and clamps the housing onto the seat. Both mounts use the same knob and insert.
 
 !!! tip "Thread fit on your printer"
-    The hood's thread is toleranced for typical FDM printers. If it binds or feels loose, change `lip_thread_tolerance` at the top of [`housing_v3.scad`](https://github.com/meridianfield/pushnav/blob/main/hardware/3d_models/housing_v3.scad) (0.6 mm by default; raise it for a looser fit) and reprint only the camera housing.
+    The hood's thread is toleranced for typical FDM printers. If it binds or feels loose, change `lip_thread_tolerance` at the top of [`housing_v3.scad`](https://github.com/kwdowns/starlock/blob/main/hardware/3d_models/housing_v3.scad) (0.6 mm by default; raise it for a looser fit) and reprint only the camera housing.
 
 ### Pi 3A+ mount and box (optional)
 
-For running [PushNav headless](rpi-headless.md) on a **Raspberry Pi 3A+**, with the Pi carried on the telescope. With a laptop you don't need any of this — use the low mount above.
+For running [Starlock headless](rpi-headless.md) on a **Raspberry Pi 3A+**, with the Pi carried on the telescope. With a laptop you don't need any of this — use the low mount above.
 
 ![Exploded view: Pi mount, box base and lid, and the camera housing with its hood](assets/3d_model_v4_parts.png)
 
@@ -110,7 +110,7 @@ All hardware goes into brass heat-set inserts:
 
 Print it flat, without supports. Run a 5.4 mm drill through the two clamp bores before fitting their inserts — they print nearly horizontal and sag slightly at the top.
 
-[:material-download: Laser pointer holder](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/laser_pointer_holder.stl){ .md-button .md-button--primary }
+[:material-download: Laser pointer holder](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/laser_pointer_holder.stl){ .md-button .md-button--primary }
 
 ---
 
@@ -120,7 +120,7 @@ Print it flat, without supports. Run a 5.4 mm drill through the two clamp bores 
 
 Replacement for the white plastic base under the camera module's circuit board, in case the original breaks. It keeps the camera at the same height in the housing, touches the board only around its four mounting holes, and is fixed with hot glue instead of tiny screws: glue injected through each board hole sets as a hooked plug in the leg below, and releases with heat or isopropyl alcohol.
 
-[:material-download: Camera base](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/camera_base.stl){ .md-button .md-button--primary }
+[:material-download: Camera base](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/camera_base.stl){ .md-button .md-button--primary }
 
 ---
 
@@ -130,7 +130,7 @@ Replacement for the white plastic base under the camera module's circuit board, 
 
 Lock ring that secures the M12 lens at the correct focus position. Features a tapered centring collar and grip notches for finger tightening.
 
-[:material-download: Lock ring](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/lock_ring.stl){ .md-button .md-button--primary }
+[:material-download: Lock ring](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/lock_ring.stl){ .md-button .md-button--primary }
 
 ---
 
@@ -171,7 +171,7 @@ Lock ring that secures the M12 lens at the correct focus position. Features a ta
 
     Threaded housing with the dovetail built into the base. The hood screws into the base by hand; a friction-fit cap covers the hood.
 
-    :material-download: [base](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v2_base.stl) · [hood](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v2_hood.stl) · [cap](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v2_cap.stl)
+    :material-download: [base](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v2_base.stl) · [hood](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v2_hood.stl) · [cap](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v2_cap.stl)
 
 -   **Camera Housing v1** (bolted)
 
@@ -181,7 +181,7 @@ Lock ring that secures the M12 lens at the correct focus position. Features a ta
 
     The original design: the hood bolts to the base with four M3 screws. The base has 2.7 mm holes for self-tapping screws or 3.5 mm holes for M3 bolts and nuts.
 
-    :material-download: [base, self-tap](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_base_selftap.stl) · [base, bolt-through](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_base_bolt.stl) · [hood](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_hood.stl) · [cap](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_cap.stl)
+    :material-download: [base, self-tap](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_base_selftap.stl) · [base, bolt-through](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_base_bolt.stl) · [hood](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_hood.stl) · [cap](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_cap.stl)
 
 </div>
 
@@ -191,25 +191,25 @@ Lock ring that secures the M12 lens at the correct focus position. Features a ta
 
 | File | Description |
 |------|-------------|
-| [`housing_v3_base.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_base.stl) | Camera housing |
-| [`housing_v3_hood.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_hood.stl) | Hood |
-| [`housing_v3_cap.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_cap.stl) | Dust cap (optional) |
-| [`housing_v3_mount.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v3_mount.stl) | Low mount (with a laptop) |
-| [`housing_v4_mount.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v4_mount.stl) | Pi mount (optional, Pi 3A+) |
-| [`housing_v4_box_base.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v4_box_base.stl) | Pi 3A+ box base (optional) |
-| [`housing_v4_box_lid.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v4_box_lid.stl) | Pi 3A+ box lid (optional) |
-| [`housing_u20cam_base.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_u20cam_base.stl) | Innomaker U20CAM-9281M housing |
-| [`housing_u20cam_hood.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_u20cam_hood.stl) | Innomaker U20CAM-9281M hood |
-| [`housing_u20cam_cap.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_u20cam_cap.stl) | Innomaker U20CAM-9281M cap (optional) |
-| [`tube_shoe.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/tube_shoe.stl) | Stick-on tube shoe (AD8) |
-| [`pi45_tray.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/pi45_tray.stl) | Stick-on Pi 4 / 5 tray (AD8) |
-| [`laser_pointer_holder.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/laser_pointer_holder.stl) | Laser pointer holder |
-| [`camera_base.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/camera_base.stl) | Spare camera base |
-| [`lock_ring.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/lock_ring.stl) | M12 lock ring |
-| [`housing_v2_base.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v2_base.stl) | v2 base (deprecated) |
-| [`housing_v2_hood.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v2_hood.stl) | v2 hood (deprecated) |
-| [`housing_v2_cap.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_v2_cap.stl) | v2 cap (deprecated) |
-| [`housing_base_selftap.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_base_selftap.stl) | v1 base, self-tap holes (deprecated) |
-| [`housing_base_bolt.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_base_bolt.stl) | v1 base, bolt-through holes (deprecated) |
-| [`housing_hood.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_hood.stl) | v1 hood (deprecated) |
-| [`housing_cap.stl`](https://github.com/meridianfield/pushnav/raw/main/hardware/3d_models/stls/housing_cap.stl) | v1 cap (deprecated) |
+| [`housing_v3_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_base.stl) | Camera housing |
+| [`housing_v3_hood.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_hood.stl) | Hood |
+| [`housing_v3_cap.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_cap.stl) | Dust cap (optional) |
+| [`housing_v3_mount.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_mount.stl) | Low mount (with a laptop) |
+| [`housing_v4_mount.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_mount.stl) | Pi mount (optional, Pi 3A+) |
+| [`housing_v4_box_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_base.stl) | Pi 3A+ box base (optional) |
+| [`housing_v4_box_lid.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_lid.stl) | Pi 3A+ box lid (optional) |
+| [`housing_u20cam_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_u20cam_base.stl) | Innomaker U20CAM-9281M housing |
+| [`housing_u20cam_hood.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_u20cam_hood.stl) | Innomaker U20CAM-9281M hood |
+| [`housing_u20cam_cap.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_u20cam_cap.stl) | Innomaker U20CAM-9281M cap (optional) |
+| [`tube_shoe.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/tube_shoe.stl) | Stick-on tube shoe (AD8) |
+| [`pi45_tray.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/pi45_tray.stl) | Stick-on Pi 4 / 5 tray (AD8) |
+| [`laser_pointer_holder.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/laser_pointer_holder.stl) | Laser pointer holder |
+| [`camera_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/camera_base.stl) | Spare camera base |
+| [`lock_ring.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/lock_ring.stl) | M12 lock ring |
+| [`housing_v2_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v2_base.stl) | v2 base (deprecated) |
+| [`housing_v2_hood.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v2_hood.stl) | v2 hood (deprecated) |
+| [`housing_v2_cap.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v2_cap.stl) | v2 cap (deprecated) |
+| [`housing_base_selftap.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_base_selftap.stl) | v1 base, self-tap holes (deprecated) |
+| [`housing_base_bolt.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_base_bolt.stl) | v1 base, bolt-through holes (deprecated) |
+| [`housing_hood.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_hood.stl) | v1 hood (deprecated) |
+| [`housing_cap.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_cap.stl) | v1 cap (deprecated) |

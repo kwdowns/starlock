@@ -1,19 +1,19 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav.
+# This file is part of Starlock.
 #
-# PushNav is free software: you can redistribute it and/or modify it
+# Starlock is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# PushNav is distributed in the hope that it will be useful, but
+# Starlock is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with PushNav. If not, see <https://www.gnu.org/licenses/>.
+# along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
 """Tests for the GPIO21 debug-mode jumper (evf.engine.debug_pin)."""
 
@@ -38,7 +38,7 @@ def test_line_request_layout():
     req = dp._line_request(21)
     assert len(req) == 592
     assert struct.unpack_from("I", req, 0) == (21,)
-    assert req[256:256 + 13] == b"pushnav-debug"
+    assert req[256:256 + 14] == b"starlock-debug"
     flags = struct.unpack_from("Q", req, 288)[0]
     assert flags == (1 << 2) | (1 << 8)  # INPUT | BIAS_PULL_UP
     assert struct.unpack_from("I", req, 296) == (0,)  # num_attrs
@@ -105,8 +105,8 @@ def test_check_prints_the_pin_state(tmp_path, monkeypatch, capsys):
     assert not flag.exists()  # --check never touches the flag
 
 
-def test_service_unit_runs_the_check_before_pushnav():
-    unit = (REPO_ROOT / "packaging/headless/pushnav-headless.service").read_text()
-    assert "RuntimeDirectory=pushnav-headless" in unit
+def test_service_unit_runs_the_check_before_starlock():
+    unit = (REPO_ROOT / "packaging/headless/starlock-headless.service").read_text()
+    assert "RuntimeDirectory=starlock-headless" in unit
     assert "ExecStartPre=+" in unit and "-m evf.engine.debug_pin" in unit
-    assert dp.DEBUG_FLAG == Path("/run/pushnav-headless/debug")
+    assert dp.DEBUG_FLAG == Path("/run/starlock-headless/debug")

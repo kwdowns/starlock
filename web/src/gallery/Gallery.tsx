@@ -511,7 +511,7 @@ function CardSection() {
         </CardHeader>
         <CardContent>
           <p className="text-body">
-            PushNav uses three stars to work out how the camera sits on the tube.
+            Starlock uses three stars to work out how the camera sits on the tube.
           </p>
         </CardContent>
         <CardFooter>
@@ -788,7 +788,7 @@ export default function Gallery() {
     <div className="flex min-h-dvh flex-col">
       <AppBar>
         <TelescopeIcon className="size-6 shrink-0" aria-hidden />
-        <h1 className="flex-1 truncate text-heading">PushNav design system</h1>
+        <h1 className="flex-1 truncate text-heading">Starlock design system</h1>
         <Badge variant="solid">
           <CrosshairIcon /> Lock
         </Badge>

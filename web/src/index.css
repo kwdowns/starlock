@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 /* ==========================================================================
-   PushNav design tokens — "Night Red"
+   Starlock design tokens — "Night Red"
    Human-readable guide: web/DESIGN.md. Live reference: open the app with
    ?gallery appended to the URL.
 
@@ -268,31 +268,31 @@
   }
 }
 
-/* PushNav animations */
-@keyframes pushnav-ants {
+/* Starlock animations */
+@keyframes starlock-ants {
   to { stroke-dashoffset: -14; }
 }
-.pushnav-marching-ants {
-  animation: pushnav-ants 0.6s linear infinite;
+.starlock-marching-ants {
+  animation: starlock-ants 0.6s linear infinite;
 }
 
 /* Thin themed scrollbar for the few regions allowed to scroll on their own
    (sheets, wide tables). */
-.pushnav-scrollbar {
+.starlock-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: var(--red-700) transparent;
 }
-.pushnav-scrollbar::-webkit-scrollbar {
+.starlock-scrollbar::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-.pushnav-scrollbar::-webkit-scrollbar-track {
+.starlock-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
-.pushnav-scrollbar::-webkit-scrollbar-thumb {
+.starlock-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--red-700);
   border-radius: 4px;
 }
-.pushnav-scrollbar::-webkit-scrollbar-thumb:hover {
+.starlock-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: var(--red-600);
 }

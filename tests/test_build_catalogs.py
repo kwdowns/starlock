@@ -1,6 +1,6 @@
 # Copyright (C) 2026 Arun Venkataswamy
 #
-# This file is part of PushNav. See LICENSE in repo root.
+# This file is part of Starlock. See LICENSE in repo root.
 
 """Unit tests for scripts/build_catalogs.py."""
 

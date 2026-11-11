@@ -105,7 +105,7 @@ export function NavOverlay({ state }: Props) {
                  className="stroke-overlay-dim" />
         <line x1={ox} y1={oy} x2={nav.edge_x} y2={nav.edge_y}
               strokeWidth={2} strokeDasharray="8 6"
-              className="stroke-overlay-strong pushnav-marching-ants" />
+              className="stroke-overlay-strong starlock-marching-ants" />
         <CometArrow cx={tipX} cy={tipY} angleDeg={nav.edge_angle_deg} scale={1.6 * k} />
         <Pill x={labelX} y={labelY} text={formatDistance(nav.separation_deg)} fontSize={fs} />
       </g>
@@ -131,7 +131,7 @@ export function NavOverlay({ state }: Props) {
         <circle cx={ox} cy={oy} r={lockR} strokeWidth={1} fill="none"
                 className="stroke-overlay-dim" />
         <line x1={ox} y1={oy} x2={tx} y2={ty} strokeWidth={1} strokeDasharray="8 6"
-              className="stroke-overlay pushnav-marching-ants" />
+              className="stroke-overlay starlock-marching-ants" />
         {/* Target marker: glides between WebSocket updates. */}
         <g style={{ transform: `translate(${tx}px, ${ty}px)`, transition: "transform 100ms linear" }}>
           <circle cx={0} cy={0} r={18} strokeWidth={2} fill="none" className="stroke-overlay-strong" />
