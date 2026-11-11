@@ -1,23 +1,34 @@
-# Contributing to PushNav
+# Contributing to PushNav (kwdowns fork)
 
-Thank you for your interest in PushNav!
-
-## Code contributions
-
-**PushNav is not accepting code contributions at this time.**
-
-The project is in early development and the maintainer is still settling the architecture, scope, and direction. Pull requests will be closed without review for now. This will change once the project stabilizes — watch the repo for an update.
+This is a fork of [meridianfield/pushnav](https://github.com/meridianfield/pushnav)
+by Arun Venkataswamy, maintained by Kyle Downs. The original project is not
+accepting code contributions, so changes are developed here instead.
 
 ## Bug reports and issues
 
-**Bug reports, issues, and feedback are very welcome.** If you've found a bug, hit a crash, run into a setup problem, or have a suggestion, please [open an issue](https://github.com/meridianfield/pushnav/issues).
+Please report problems with this fork at
+[kwdowns/pushnav](https://github.com/kwdowns/pushnav/issues), not upstream.
+This fork has diverged from the original, so a bug you see here may not
+exist there.
 
 When reporting a bug, it helps to include:
 
 - Your operating system and version (e.g. macOS 14.5, Ubuntu 24.04, Windows 11)
-- The PushNav version (or commit hash if running from source)
+- The commit hash you are running
 - Your camera and lens (if relevant)
 - Steps to reproduce the issue
 - What you expected to happen, and what actually happened
 - Any relevant log output or screenshots
 
+## Code contributions
+
+Pull requests are welcome. For anything larger than a small fix, open an
+issue first so we can agree on the approach.
+
+- Run `uv run pytest tests/` and, for UI changes, `npm test` in `web/`.
+- Contributions are licensed under the
+  [GNU General Public License v3.0](LICENSE) or later, like the rest of the
+  project.
+- Keep the existing copyright lines in file headers. If you make a
+  substantial change to a file, add your own line below them:
+  `Copyright (C) <year> <your name>`.

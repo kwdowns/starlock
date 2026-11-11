@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2026 Arun Venkataswamy
+ * Copyright (C) 2026 Kyle Downs
  *
  * This file is part of PushNav.
  *

@@ -1,5 +1,7 @@
 # PushNav
 
+> **This is a fork.** PushNav was created by Arun Venkataswamy at [meridianfield/pushnav](https://github.com/meridianfield/pushnav). This fork has been maintained and modified by Kyle Downs since November 2026. Please report problems with it [here](https://github.com/kwdowns/pushnav/issues), not upstream.
+
 **A cross-platform plate-solving push-to system for manual telescopes.** Add push-to navigation to a manual scope for about **$50** in hardware you can order today.
 
 **Three things, that's all:**
@@ -10,7 +12,7 @@
 
 PushNav uses a live camera feed to continuously plate-solve and determine where your telescope is pointing, reporting coordinates to **Stellarium** on the desktop and to **SkySafari**, **Stellarium Mobile**, **INDI**, or **ASCOM** clients over Wi-Fi in real time. Audio cues for lock, lost, and target alerts let you stay at the eyepiece without watching the screen.
 
-PushNav is built around hardware you already own. The laptop you use every day handles the plate-solving and runs the desktop UI. The only new pieces are a USB camera and lens. That deliberate choice shortens the path to first light. You don't need to source, flash, configure, or troubleshoot a dedicated computer. The full desktop UI sits in one familiar window you can drag around on a table next to your scope. The live frame, Sky View dome, What to See catalog, and the planetarium-app servers are all on the same screen. For observers who want a small dedicated box, PushNav also runs [headless on a Raspberry Pi 3A+, 4 or 5](https://meridianfield.github.io/pushnav/rpi-headless/) (beta), controlled from a phone. Install it with apt on a Pi you already use, or turn a fresh SD card into a dedicated PushNav box with its own Wi-Fi hotspot ([which way?](https://meridianfield.github.io/pushnav/rpi-headless/#which-way-to-install)).
+PushNav is built around hardware you already own. The laptop you use every day handles the plate-solving and runs the desktop UI. The only new pieces are a USB camera and lens. That deliberate choice shortens the path to first light. You don't need to source, flash, configure, or troubleshoot a dedicated computer. The full desktop UI sits in one familiar window you can drag around on a table next to your scope. The live frame, Sky View dome, What to See catalog, and the planetarium-app servers are all on the same screen. For observers who want a small dedicated box, PushNav also runs [headless on a Raspberry Pi 3A+, 4 or 5](docs/rpi-headless.md) (beta), controlled from a phone. Install it with apt on a Pi you already use, or turn a fresh SD card into a dedicated PushNav box with its own Wi-Fi hotspot ([which way?](docs/rpi-headless.md#which-way-to-install)).
 
 PushNav can also run completely standalone, without a separate planetarium app. Pick targets from its built-in What to See catalog. It offers a curated short-list of 161 hand-picked objects, a search across more than 20,000 stars and deep-sky objects, or a manual RA/Dec panel. Follow the push direction and watch your scope's pointing on the on-screen Sky View dome. The curated short-list is sourced from [Stargazing Buddy](https://stargazingbuddy.com/), a companion observing guide by the same author.
 
@@ -28,7 +30,7 @@ It uses **tetra3rs**, a Rust port of the European Space Agency's (ESA) tetra3 fa
 
 Power your non-GOTO manual telescope with PushNav and enjoy seamless push-to navigation, even in light-polluted urban skies. All for under **$50** with an off-the-shelf USB UVC camera and lens. The same technology that powers spacecraft navigation and advanced astrophotography apps is now available for your backyard stargazing sessions.
 
-📖 **Full documentation: [meridianfield.github.io/pushnav](https://meridianfield.github.io/pushnav)**
+📖 **Full documentation: [docs/](docs/index.md)**
 
 ## Push-to ops
 
@@ -78,7 +80,7 @@ Supports **Windows**, **macOS**, and **Linux**, plus a headless package for the 
 - Live activity indicators in the app showing when Stellarium or LX200 clients are talking
 - IAU 2006 J2000 ↔ JNow precession via `pyerfa` at the LX200 boundary (SkySafari expects JNow, PushNav stores J2000)
 - Audio feedback for lock/lost/GOTO events
-- **Raspberry Pi (headless):** the `pushnav-headless` package runs PushNav as a background service on a Pi 3A+, 4 or 5, controlled from your phone. With no screen attached, the Pi's own LEDs show the status: red when it needs attention (no camera, error), green when it's working (needs sync, tracking, lost the stars). See the [Pi guide](https://meridianfield.github.io/pushnav/rpi-headless/#status-light). Two ways to set it up:
+- **Raspberry Pi (headless):** the `pushnav-headless` package runs PushNav as a background service on a Pi 3A+, 4 or 5, controlled from your phone. With no screen attached, the Pi's own LEDs show the status: red when it needs attention (no camera, error), green when it's working (needs sync, tracking, lost the stars). See the [Pi guide](docs/rpi-headless.md#status-light). Two ways to set it up:
   - **Install with apt** on a Pi you set up yourself, on your own Wi-Fi.
   - **Ready-made PushNav SD card:** flash Raspberry Pi OS Lite, copy the release's `.deb` and `user-data` onto the card, and boot. The Pi becomes a dedicated box with its own hotspot, `PushNav-XXXX`, at `http://192.168.77.1:8780`.
 - Always-visible **Sky View** — an interactive 3D hemispheric dome rendered alongside the wizard, showing where the scope is pointing (yellow marker + semi-transparent red telescope cylinder) and where the target sits (cream marker with name label), with solid/dashed lines from the dome centre. Useful as a spatial check during sync, roll calibration, and tracking alike.
@@ -126,7 +128,7 @@ session.
 ## Setup
 
 ```bash
-git clone https://github.com/meridianfield/pushnav.git
+git clone https://github.com/kwdowns/pushnav.git
 cd pushnav
 uv sync
 (cd web && npm install)
@@ -353,11 +355,13 @@ The [`hardware/3d_models/`](hardware/3d_models/) directory contains OpenSCAD sou
 | **M12 Lock Ring** | Secures the lens at the correct focus position (`lock_ring.stl`). |
 | **Camera Housings v2, v1** (deprecated) | Kept for existing builds: the v2 threaded housing (`housing_v2_*.stl`) and the v1 bolted housing (`housing_base_*.stl`, `housing_hood.stl`, `housing_cap.stl`). |
 
-Pre-built STLs are in [`hardware/3d_models/stls/`](hardware/3d_models/stls/). See the [3D models README](hardware/3d_models/README.md) for hardware, print settings and build instructions, or the [3D Models](https://meridianfield.github.io/pushnav/3d-models/) page on the website.
+Pre-built STLs are in [`hardware/3d_models/stls/`](hardware/3d_models/stls/). See the [3D models README](hardware/3d_models/README.md) for hardware, print settings and build instructions, or the [3D Models](docs/3d-models.md) page in the docs.
 
 ## License
 
-Copyright © 2026 Arun Venkataswamy
+Copyright © 2026 Arun Venkataswamy  
+Modifications in this fork copyright © 2026 Kyle Downs
+
 This project is licensed under the [GNU General Public License v3.0](LICENSE) or later.
 
 ## Third-party data
