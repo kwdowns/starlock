@@ -11,6 +11,7 @@
 
 - **[Camera Housing](#camera-housing--recommended)** (recommended): the camera on a rotation mount, on the low mount for use with a laptop or — optionally — over a box for a Raspberry Pi 3A+
 - **[Laser Pointer Holder](#laser-pointer-holder-laser_pointer_holderscad)**: puts a 23 mm laser pointer on a finder shoe
+- **[Star Knob](#camera-parts-and-low-mount-housing_v3scad)**: printed knob for a plain M4 × 20 pan-head screw, in place of the bought star knob
 - **[Camera Base](#camera-base-camera_basescad--spare-part)**: spare for the camera module's white base
 - **[M12 Lock Ring](#m12-lock-ring-lock_ringstl)**: holds the lens at focus
 - **[Deprecated housings](#deprecated-designs)**: v2 and v1, kept for existing builds
@@ -38,6 +39,8 @@ The dust cap is optional in both.
 | Low mount | `housing_v3_mount.stl` | `RENDER_MOUNT` | Finder-shoe dovetail, a low bridge rib, and the flat Ø30 seat the camera turns on |
 
 **Hardware:** one M4 × 20 star knob (Ø12.5 collar) from behind the mount into one M4 × 6 heat-set insert (5.9 mm knurl) in the centre of the housing's bottom. Tightening it clamps the housing onto the seat. The insert pocket has a 45° lead-in and a narrower relief that catches displaced plastic and stops the insert flush. The Pi mount uses the same knob and insert.
+
+**No star knob?** Print `star_knob.stl` (`star_knob.scad`) and glue a plain M4 × 20 Phillips pan-head screw into it. The head sits in a pocket open at the bottom and stands 0.3 mm proud, so it still bears on the mount and the full 20 mm of thread reaches the insert; a cross key in the pocket drops into the Phillips recess and turns the screw. Measure the head first (`head_dia`, `head_height`), then glue it in with gel super glue, key in the recess, and let it set for an hour. Print top face down, no supports.
 
 **Thread fit:** the housing's female thread uses `lip_thread_tolerance = 0.6` mm and the hood's male thread `hood_thread_tolerance = 0.4` mm. If the hood binds, raise `lip_thread_tolerance` to 0.7; if it's sloppy, drop it to 0.5 — only the housing needs reprinting.
 
@@ -76,12 +79,15 @@ For the [Innomaker U20CAM-9281M](https://www.inno-maker.com/product/u20cam-9281m
 | Part | STL | Flag |
 |------|-----|------|
 | Camera housing | `housing_u20cam_base.stl` | `U20_RENDER_BASE` |
+| Camera housing, glued board (no screws) | `housing_u20cam_base_pins.stl` | `U20_RENDER_BASE` + `U20_PCB_PINS` |
 | Hood | `housing_u20cam_hood.stl` | `U20_RENDER_HOOD` |
 | Dust cap (optional) | `housing_u20cam_cap.stl` | `U20_RENDER_CAP` |
 
 **Before printing**, measure the tallest part on the back of the board with the lead plugged in, and set `pcb_standoff_height` to a little more than that if it is over 5.5 mm.
 
 **Hardware:** 4 × M2 × 6 screws (self-tapping, or machine screws that cut their own thread in the 1.7 mm pilots), plus v3's M4 × 20 star knob and M4 × 6 insert.
+
+**No M2 screws?** Print `housing_u20cam_base_pins.stl` instead (`U20_PCB_PINS = true`). Each standoff ends in a Ø1.9 mm pin that goes up through the board's hole and stands 1 mm proud of it. Drop the board onto the pins, then put a drop of thin super glue (CA) on each pin: it wicks into the hole and sets as a collar round the pin. The pins assume 2.2 mm board holes — measure yours and set `pcb_hole_dia` if they differ. The glue makes the board hard to remove; a gel CA dabbed only on the protruding pins comes off more easily if you may want the board back.
 
 **Assembly:** unplug the lead from the board, push the plug through the slot from outside, plug it back in, and screw the board down. Any of the four board orientations works, because the housing turns on its seat.
 
@@ -95,13 +101,23 @@ A second finder shoe, for scopes whose only shoe is taken by the finder. It is a
 
 **Printing:** stands on its stop end, so every face is vertical and it needs no supports. It is tall for its footprint (49 mm on 52 × 15 mm), so add a 5 mm brim. PETG is preferred.
 
-### Pi 4 / Pi 5 Tube Tray (`pi45_tray.scad`)
+### Pi 4 / Pi 5 Tube Tray and Cover (`pi45_tray.scad`)
 
-An open tray that carries a Raspberry Pi 4 or 5 on the tube for [Starlock headless](../../docs/rpi-headless.md), with the same curved VHB base as the tube shoe and slots for an optional 25 mm Velcro strap round the tube. The open sides keep every port reachable. On a Pi 5, fit the Active Cooler.
+An open tray that carries a Raspberry Pi 4 or 5 on the tube for [Starlock headless](../../docs/rpi-headless.md), with the same curved VHB base as the tube shoe and slots for an optional 25 mm Velcro strap round the tube. On a Pi 5, fit the Active Cooler.
 
-**Hardware:** 4 × M2.5 × 6 screws (self-tapping into 2.2 mm pilots), VHB tape about 90 × 50 mm, and optionally a 25 mm Velcro strap.
+| Part | STL | Flags |
+|------|-----|-------|
+| Tray, screwed board | `pi45_tray.stl` | `RENDER_TRAY` |
+| Tray, glued board (no screws) | `pi45_tray_pins.stl` | `RENDER_TRAY` + `PI_PINS` |
+| Cover (optional) | `pi45_cover.stl` | `RENDER_COVER` |
 
-**Printing:** base down, with tree supports set to "on build plate only"; they are needed only under the shallow curved underside. PETG is preferred.
+**Board mounting:** either 4 × M2.5 × 6 screws (self-tapping into 2.2 mm pilots), or — on the pinned tray — no screws: each standoff ends in a Ø2.4 mm pin that goes up through the Pi's 2.7 mm mounting hole and stands 1 mm proud. Set the board on the pins and put a drop of thin super glue on each one.
+
+**Cover:** a roof that snaps over the Pi and keeps dew and dust off it. Two beads inside each skirt click into pockets in the tray's long sides, which also stop it sliding along the tube. It leaves the USB / Ethernet end fully open for the camera lead, has windows at port height for the USB-C power and micro-HDMI plugs, a slot in the other end for the microSD card, and vents over the SoC / Active Cooler fan. The roof is 18 mm over the board, enough for the Ethernet jack and the cooler with air above its fan. To take it off, spread the skirts at the middle of each side. Both trays have the snap pockets.
+
+**Hardware:** VHB tape about 90 × 50 mm, optionally a 25 mm Velcro strap, and the screws if you print the screwed tray.
+
+**Printing:** tray base down, with tree supports set to "on build plate only"; they are needed only under the shallow curved underside. Cover roof down, no supports. PETG is preferred for both.
 
 ### Laser Pointer Holder (`laser_pointer_holder.scad`)
 
@@ -164,11 +180,15 @@ All in [`stls/`](stls/).
 | `housing_v4_box_lid.stl`  | Pi 3A+ box lid (optional) |
 | **Innomaker U20CAM-9281M** | |
 | `housing_u20cam_base.stl` | Camera housing for the 32 mm board (fits the v3 low mount) |
+| `housing_u20cam_base_pins.stl` | The same, with glue-on pins instead of M2 screw holes |
 | `housing_u20cam_hood.stl` | Hood with 52 mm thread and 1.25" cap band |
 | `housing_u20cam_cap.stl`  | Fallback slip-on cap (optional) |
 | **Accessories** | |
+| `star_knob.stl`            | Printed star knob for an M4 × 20 pan-head screw |
 | `tube_shoe.stl`            | Stick-on finder shoe for the tube (AD8 curvature) |
 | `pi45_tray.stl`            | Stick-on tray for a Pi 4 / Pi 5 (AD8 curvature) |
+| `pi45_tray_pins.stl`       | The same, with glue-on pins instead of M2.5 screw holes |
+| `pi45_cover.stl`           | Snap-on cover for the Pi 4 / 5 tray |
 | `laser_pointer_holder.stl` | Laser Pointer Holder |
 | `camera_base.stl`          | Spare camera base (replaces the module's white base) |
 | `lock_ring.stl`            | M12 Lock Ring |
@@ -233,12 +253,16 @@ for part in BASE HOOD CAP; do
   done
   openscad -o "stls/housing_u20cam_$(echo $part | tr A-Z a-z).stl" $args housing_u20cam.scad
 done
+openscad -o stls/housing_u20cam_base_pins.stl -D U20_RENDER_BASE=true -D U20_RENDER_HOOD=false   -D U20_RENDER_CAP=false -D U20_PCB_PINS=true housing_u20cam.scad
 
 # Tube shoe and Pi 4/5 tray — set your tube with -D tube_od=<mm>
 openscad -o stls/tube_shoe.stl tube_shoe.scad
 openscad -o stls/pi45_tray.stl pi45_tray.scad
+openscad -o stls/pi45_tray_pins.stl -D PI_PINS=true pi45_tray.scad
+openscad -o stls/pi45_cover.stl -D RENDER_TRAY=false -D RENDER_COVER=true pi45_tray.scad
 
 # Accessories
+openscad -o stls/star_knob.stl star_knob.scad
 openscad -o stls/laser_pointer_holder.stl laser_pointer_holder.scad
 openscad -o stls/camera_base.stl camera_base.scad
 ```

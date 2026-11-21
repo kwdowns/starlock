@@ -177,7 +177,7 @@ hardware/                       # 3D-printable mechanical designs (OpenSCAD)
     housing_v2.scad, housing.scad  # deprecated v2 (threaded) and v1 (bolted) housings
     housing_u20cam.scad         # v3 housing resized for the 32 mm Innomaker U20CAM-9281M board
     tube_shoe.scad              # stick-on (VHB) finder shoe curved to the tube, takes the mounts' rail
-    pi45_tray.scad              # stick-on tray for a Pi 4 / Pi 5 on the tube
+    pi45_tray.scad              # stick-on tray for a Pi 4 / Pi 5 on the tube, and its snap-on cover
     laser_pointer_holder.scad   # 23 mm laser pointer cradle on a finder-shoe saddle
     camera_base.scad            # spare for the camera module's white base
     vendor/                     # threads.scad (CC0), YAPP_Box (MIT)

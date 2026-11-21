@@ -28,7 +28,9 @@
 //   - the shell grows from 50 to 58 mm and the thread from 44 to 52 mm,
 //     so the bigger pocket still fits inside the thread's root
 //   - the board stands on four standoffs on its 28 mm hole square
-//     (M2 screws), high enough to clear the connector underneath
+//     (M2 screws), high enough to clear the connector underneath;
+//     with U20_PCB_PINS each standoff instead ends in a pin that pokes
+//     up through the board's hole, and the board is glued on
 //   - the lead leaves through a slot in the back wall at standoff
 //     height; unplug it from the board, thread it through the slot,
 //     then plug it back in
@@ -43,17 +45,22 @@
 //   4 × M2 × 6 screws (self-tapping, or machine screws that cut their
 //   own thread in the 1.7 mm holes), plus v3's M4 × 20 star knob and
 //   M4 × 6 heat-set insert (5.9 mm knurl).
+//   With U20_PCB_PINS: no M2 screws, just a drop of thin cyanoacrylate
+//   (super glue) at each pin.
 //
 // MEASURE BEFORE PRINTING — vendor drawing gives the board outline and
 // holes only. Check with calipers and adjust if needed:
 //   pcb_standoff_height — must exceed the tallest part on the board's
 //                         back, normally the plugged-in USB connector
 //   pcb_thickness       — usually 1.6
+//   pcb_hole_dia        — U20_PCB_PINS only; the pins are 0.3 mm
+//                         narrower than the hole
 //
 // PRINTING:
 //   Set one U20_RENDER_* flag true (others false), Render (F6), export.
 //     - Base: bottom face on the bed, no supports (the cable slot roof
-//       is a 12 mm bridge; the back flat ends in a 45° chamfer).
+//       is a 12 mm bridge; the back flat ends in a 45° chamfer). The
+//       pinned base prints the same way, with the pins upright.
 //     - Hood: lip-thread end on the bed, no supports.
 //     - Cap:  closed top on the bed, no supports.
 
@@ -66,6 +73,11 @@ include <housing_v3.scad>
 U20_RENDER_BASE = true;
 U20_RENDER_HOOD = true;
 U20_RENDER_CAP  = true;
+
+// Board mounting: false = M2 screws into pilot holes; true = a pin on
+// each standoff goes up through the board's hole and the board is
+// super-glued on (no screws).
+U20_PCB_PINS    = false;
 
 // ============================================================
 // OVERRIDES of housing_v3.scad values (OpenSCAD: last assignment wins)
@@ -98,6 +110,14 @@ m2_pilot_depth      = 7;
 m2_funnel_dia       = 3.2;   // 45° lead-in at the pilot's top: guides the
                              // screw tip in and starts it straight
 
+// Pins (U20_PCB_PINS) — locate the board and give the glue a grip
+pcb_hole_dia        = 2.2;   // MEASURE — the board's M2 clearance holes
+pin_clearance       = 0.15;  // per side: slips in, and thin CA wicks into the gap
+pin_dia             = pcb_hole_dia - 2 * pin_clearance;   // 1.9
+pin_protrusion      = 1.0;   // above the board's top face; the glue forms
+                             // a collar round it there
+pin_chamfer         = 0.4;   // 45° tip chamfer, guides the pin into the hole
+
 u20_pocket_width    = 38;    // 32 board + 3 mm each side for the lead
 u20_pocket_radius   = 9;     // corner fillet — keeps the pocket inside the
                              // thread root (√2 × (19 − 9) + 9 = 23.1 < 23.4)
@@ -124,6 +144,9 @@ assert(hood_flange_dia <= thread_root_dia, "hood flange would overhang the threa
 assert(pcb_top_z < base_height, "board would stand above the housing top");
 assert(cable_slot_top > pcb_bottom_z, "cable slot must reach the board's underside");
 assert(u20_pocket_width / 2 + 3 <= back_flat_y, "back wall under 3 mm");
+assert(!U20_PCB_PINS || pcb_top_z + pin_protrusion < base_height,
+       "pins would stand above the housing top, into the hood");
+assert(pin_dia >= 1.6, "pins too thin to print and survive handling");
 
 // ============================================================
 // MODULES
@@ -151,22 +174,31 @@ module u20_base() {
                            u20_floor_z - 0.01])
                     cylinder(d = standoff_dia, h = pcb_standoff_height + 0.01);
 
+            // Locating pins through the board's holes
+            if (U20_PCB_PINS)
+                for (x = [-1, 1], y = [-1, 1])
+                    translate([x * pcb_hole_spacing / 2, y * pcb_hole_spacing / 2,
+                               pcb_bottom_z - 0.01])
+                        _u20_pin();
+
             translate([0, 0, base_height])
                 _threaded_lip();
         }
 
-        // M2 pilots
-        for (x = [-1, 1], y = [-1, 1])
-            translate([x * pcb_hole_spacing / 2, y * pcb_hole_spacing / 2,
-                       pcb_bottom_z - m2_pilot_depth])
-                cylinder(d = m2_pilot_dia, h = m2_pilot_depth + 1, $fn = 24);
+        if (!U20_PCB_PINS) {
+            // M2 pilots
+            for (x = [-1, 1], y = [-1, 1])
+                translate([x * pcb_hole_spacing / 2, y * pcb_hole_spacing / 2,
+                           pcb_bottom_z - m2_pilot_depth])
+                    cylinder(d = m2_pilot_dia, h = m2_pilot_depth + 1, $fn = 24);
 
-        // Lead-in funnels at the top of each pilot
-        for (x = [-1, 1], y = [-1, 1])
-            translate([x * pcb_hole_spacing / 2, y * pcb_hole_spacing / 2,
-                       pcb_bottom_z - (m2_funnel_dia - m2_pilot_dia) / 2])
-                cylinder(d1 = m2_pilot_dia, d2 = m2_funnel_dia,
-                         h = (m2_funnel_dia - m2_pilot_dia) / 2 + 0.01, $fn = 24);
+            // Lead-in funnels at the top of each pilot
+            for (x = [-1, 1], y = [-1, 1])
+                translate([x * pcb_hole_spacing / 2, y * pcb_hole_spacing / 2,
+                           pcb_bottom_z - (m2_funnel_dia - m2_pilot_dia) / 2])
+                    cylinder(d1 = m2_pilot_dia, d2 = m2_funnel_dia,
+                             h = (m2_funnel_dia - m2_pilot_dia) / 2 + 0.01, $fn = 24);
+        }
 
         // Cable slot through the back wall (+Y)
         translate([-cable_slot_width / 2, 0, u20_floor_z])
@@ -187,6 +219,15 @@ module u20_base() {
         translate([0, 0, -base_extension])
             _insert_pocket();
     }
+}
+
+// Pin standing on a standoff: through the board, chamfered at the tip
+module _u20_pin() {
+    pin_h = pcb_thickness + pin_protrusion;
+    cylinder(d = pin_dia, h = pin_h - pin_chamfer + 0.01, $fn = 24);
+    translate([0, 0, pin_h - pin_chamfer])
+        cylinder(d1 = pin_dia, d2 = pin_dia - 2 * pin_chamfer,
+                 h = pin_chamfer, $fn = 24);
 }
 
 // ============================================================

@@ -56,6 +56,8 @@ Everyone prints the [camera housing and hood](#camera-parts-every-setup). Then p
 
 **Hardware:** one M4 × 20 star knob (Ø12.5 collar) and one M4 × 6 heat-set insert (5.8 mm knurl). The insert goes in the centre of the camera housing's bottom; the knob comes in from behind the mount and clamps the housing onto the seat. Both mounts use the same knob and insert.
 
+No star knob? Print [`star_knob.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/star_knob.stl) and super-glue a plain M4 × 20 Phillips pan-head screw into it. The screw head still presses on the mount and keeps its full 20 mm of thread, and a cross key in the knob fits the Phillips slot to turn it. Print it top face down, without supports.
+
 !!! tip "Thread fit on your printer"
     The hood's thread is toleranced for typical FDM printers. If it binds or feels loose, change `lip_thread_tolerance` at the top of [`housing_v3.scad`](https://github.com/kwdowns/starlock/blob/main/hardware/3d_models/housing_v3.scad) (0.6 mm by default; raise it for a looser fit) and reprint only the camera housing.
 
@@ -87,13 +89,13 @@ For running [Starlock headless](rpi-headless.md) on a **Raspberry Pi 3A+**, with
 
 ## Innomaker U20CAM-9281M Housing
 
-For the [Innomaker U20CAM-9281M](https://www.inno-maker.com/product/u20cam-9281m/), whose board is 32 × 32 mm instead of 25 mm. It is the v3 housing with a 58 mm shell and a 52 mm thread. The board stands on four 6 mm standoffs (4 × M2 × 6 screws, with a lead-in funnel at each hole), and the USB lead leaves through a slot in the back wall. It turns on the **v3 low mount** with the same M4 knob and insert. Print `housing_u20cam_base.stl`, `housing_u20cam_hood.stl` and, optionally, `housing_u20cam_cap.stl`, all without supports.
+For the [Innomaker U20CAM-9281M](https://www.inno-maker.com/product/u20cam-9281m/), whose board is 32 × 32 mm instead of 25 mm. It is the v3 housing with a 58 mm shell and a 52 mm thread. The board stands on four 6 mm standoffs (4 × M2 × 6 screws, with a lead-in funnel at each hole; or print `housing_u20cam_base_pins.stl`, whose standoffs end in pins that go through the board's holes, and super-glue the board on), and the USB lead leaves through a slot in the back wall. It turns on the **v3 low mount** with the same M4 knob and insert. Print `housing_u20cam_base.stl`, `housing_u20cam_hood.stl` and, optionally, `housing_u20cam_cap.stl`, all without supports.
 
 Before printing, measure the tallest part on the back of the board with the lead plugged in. If it is over 5.5 mm, raise `pcb_standoff_height` in `housing_u20cam.scad`.
 
 ## Tube Shoe and Pi 4 / 5 Tray
 
-For a scope whose only finder shoe is taken by its finder: `tube_shoe.stl` is a stick-on shoe curved to the tube that takes the camera mount's rail. It holds with 3M VHB tape (no drilling), a stop at one end, and two M4 × 16 thumbscrews in M4 × 6 inserts. `pi45_tray.stl` carries a Raspberry Pi 4 or 5 on the tube the same way, with 4 × M2.5 × 6 screws and slots for an optional 25 mm Velcro strap. Both default to an Apertura AD8 tube (`tube_od = 237`, measured 744 mm round); for another scope, set `tube_od` = circumference ÷ π. Print the shoe standing on its stop end with a brim, and no supports. Print the tray base down, with tree supports only under its curved underside.
+For a scope whose only finder shoe is taken by its finder: `tube_shoe.stl` is a stick-on shoe curved to the tube that takes the camera mount's rail. It holds with 3M VHB tape (no drilling), a stop at one end, and two M4 × 16 thumbscrews in M4 × 6 inserts. `pi45_tray.stl` carries a Raspberry Pi 4 or 5 on the tube the same way, with 4 × M2.5 × 6 screws and slots for an optional 25 mm Velcro strap. `pi45_tray_pins.stl` takes no screws: pins on its standoffs go through the Pi's mounting holes and the board is super-glued on. `pi45_cover.stl` is an optional cover that snaps onto either tray and keeps dew off the Pi, with the ports and microSD card left reachable. Both default to an Apertura AD8 tube (`tube_od = 237`, measured 744 mm round); for another scope, set `tube_od` = circumference ÷ π. Print the shoe standing on its stop end with a brim, and no supports. Print the tray base down, with tree supports only under its curved underside.
 
 ---
 
@@ -199,10 +201,14 @@ Lock ring that secures the M12 lens at the correct focus position. Features a ta
 | [`housing_v4_box_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_base.stl) | Pi 3A+ box base (optional) |
 | [`housing_v4_box_lid.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_lid.stl) | Pi 3A+ box lid (optional) |
 | [`housing_u20cam_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_u20cam_base.stl) | Innomaker U20CAM-9281M housing |
+| [`housing_u20cam_base_pins.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_u20cam_base_pins.stl) | Innomaker U20CAM-9281M housing, glued board (no M2 screws) |
 | [`housing_u20cam_hood.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_u20cam_hood.stl) | Innomaker U20CAM-9281M hood |
 | [`housing_u20cam_cap.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_u20cam_cap.stl) | Innomaker U20CAM-9281M cap (optional) |
 | [`tube_shoe.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/tube_shoe.stl) | Stick-on tube shoe (AD8) |
 | [`pi45_tray.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/pi45_tray.stl) | Stick-on Pi 4 / 5 tray (AD8) |
+| [`pi45_tray_pins.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/pi45_tray_pins.stl) | Stick-on Pi 4 / 5 tray, glued board (no screws) |
+| [`pi45_cover.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/pi45_cover.stl) | Snap-on cover for the Pi 4 / 5 tray |
+| [`star_knob.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/star_knob.stl) | Printed star knob for an M4 × 20 pan-head screw |
 | [`laser_pointer_holder.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/laser_pointer_holder.stl) | Laser pointer holder |
 | [`camera_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/camera_base.stl) | Spare camera base |
 | [`lock_ring.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/lock_ring.stl) | M12 lock ring |
