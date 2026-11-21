@@ -21,9 +21,6 @@ site/
 # Nuitka crash report (only emitted on Nuitka build failure)
 nuitka-crash-report.xml
 
-# Claude Code
-.claude/
-
 # React front-end
 node_modules/
 web/dist/
