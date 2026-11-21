@@ -100,3 +100,48 @@ def test_payload_image_size_follows_frames(tmp_path, monkeypatch):
     fb.set(b"not a jpeg", 0.2, 3)
     payload = ws._build_payload()
     assert (payload["image_w"], payload["image_h"]) == (1280, 800)
+
+
+def _tracking_server(tmp_path, location, mode):
+    cfg = ConfigManager(config_dir=tmp_path / "evf-config")
+    cfg.mount_mode = mode
+    pointing = PointingState()
+    pointing.update(80.0, 40.0, 30.0, 20, 0.001)
+    goto = GotoTarget()
+    goto.set(85.0, 42.0)
+    return WebServer(
+        pointing, StateMachine(), goto, cfg, frame_buffer=LatestFrame(),
+        location=lambda: {
+            "latitude": location[0] if location else None,
+            "longitude": location[1] if location else None,
+            "source": "manual" if location else None,
+        },
+    )
+
+
+def test_payload_mount_guidance_altaz(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    payload = _tracking_server(tmp_path, (40.0, -105.0), "altaz")._build_payload()
+    assert payload["mount"]["mode"] == "altaz"
+    assert payload["mount"]["needs_location"] is False
+    assert payload["mount"]["axes"] is not None
+    m = payload["nav"]["mount"]
+    assert m is not None and m["pointing_alt_deg"] is not None
+    assert json.dumps(payload)
+
+
+def test_payload_altaz_without_location_falls_back(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    payload = _tracking_server(tmp_path, None, "altaz")._build_payload()
+    assert payload["mount"]["needs_location"] is True
+    assert payload["mount"]["axes"] is None
+    assert payload["nav"]["mount"] is None
+    assert payload["nav"]["separation_deg"] > 0  # sky-direction guidance still there
+
+
+def test_payload_mount_guidance_eq_needs_no_location(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    payload = _tracking_server(tmp_path, None, "eq")._build_payload()
+    assert payload["mount"]["needs_location"] is False
+    m = payload["nav"]["mount"]
+    assert m["axis1_deg"] > 0 and m["axis2_deg"] > 0  # east and north

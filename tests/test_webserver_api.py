@@ -230,6 +230,18 @@ async def test_settings_cpu_cap(server_and_actions):
 
 
 @pytest.mark.asyncio
+async def test_settings_mount_mode(server_and_actions):
+    ws, actions = server_and_actions
+    async with ClientSession() as s:
+        url = f"http://127.0.0.1:{ws._port}/api/settings"
+        async with s.post(url, json={"mount_mode": "eq"}) as resp:
+            assert resp.status == 204
+        async with s.post(url, json={"mount_mode": "fork"}) as resp:
+            assert resp.status == 400
+    actions.set_mount_mode.assert_called_once_with("eq")
+
+
+@pytest.mark.asyncio
 async def test_pwa_manifest_and_icons_served(server_and_actions, tmp_path, monkeypatch):
     """The manifest is served as application/manifest+json and the page + icons resolve."""
     ws, _ = server_and_actions

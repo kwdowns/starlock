@@ -1,5 +1,5 @@
-import type { EnginePayload, NavData } from "@/lib/types";
-import { formatDistance } from "@/lib/screen";
+import type { EnginePayload, MountMode, MountNav, NavData } from "@/lib/types";
+import { formatDegrees, formatDistance } from "@/lib/screen";
 
 interface Props {
   state: EnginePayload;
@@ -73,6 +73,81 @@ function CometArrow({ cx, cy, angleDeg, scale }: { cx: number; cy: number; angle
   );
 }
 
+/** Distance from (ox, oy) along unit (ux, uy) to the frame edge inset by margin. */
+function rayToEdge(
+  ox: number, oy: number, ux: number, uy: number, w: number, h: number, margin: number,
+): number {
+  let t = Infinity;
+  if (ux > 1e-9) t = Math.min(t, (w - margin - ox) / ux);
+  if (ux < -1e-9) t = Math.min(t, (margin - ox) / ux);
+  if (uy > 1e-9) t = Math.min(t, (h - margin - oy) / uy);
+  if (uy < -1e-9) t = Math.min(t, (margin - oy) / uy);
+  return Math.max(0, t);
+}
+
+/** Below this a mount axis needs no move. */
+const AXIS_DONE_DEG = 0.05;
+
+function axisLabels(mode: MountMode, m: MountNav): [string, string] {
+  if (mode === "eq") {
+    return [
+      `RA ${m.axis1_deg >= 0 ? "E" : "W"} ${formatDegrees(m.axis1_deg)}`,
+      `Dec ${m.axis2_deg >= 0 ? "N" : "S"} ${formatDegrees(m.axis2_deg)}`,
+    ];
+  }
+  return [
+    `Turn ${m.axis1_deg >= 0 ? "right" : "left"} ${formatDegrees(m.axis1_deg)}`,
+    `${m.axis2_deg >= 0 ? "Raise" : "Lower"} ${formatDegrees(m.axis2_deg)}`,
+  ];
+}
+
+/**
+ * Target off-frame, mount axes known: one arrow per mount axis, pointing the
+ * way the view moves for that push. The bigger move is drawn bold.
+ */
+function MountArrows({ state, m }: { state: EnginePayload; m: MountNav }) {
+  const ox = state.origin_x;
+  const oy = state.origin_y;
+  const k = state.image_w / 1280;
+  const fs = 48 * k;
+  const labels = axisLabels(state.mount.mode, m);
+  const moves = [
+    { id: "axis1", deg: m.axis1_deg, angle: m.axis1_angle_deg, label: labels[0] },
+    { id: "axis2", deg: m.axis2_deg, angle: m.axis2_angle_deg, label: labels[1] },
+  ].filter((a) => Math.abs(a.deg) >= AXIS_DONE_DEG);
+  const biggest = Math.max(...moves.map((a) => Math.abs(a.deg)));
+
+  return (
+    <g>
+      <Reticle cx={ox} cy={oy} ringR={12} armInner={4} armOuter={20} strokeW={1}
+               className="stroke-overlay-dim" />
+      {moves.map((a) => {
+        const primary = Math.abs(a.deg) === biggest;
+        const angle = a.deg >= 0 ? a.angle : a.angle + 180;
+        const r = (angle * Math.PI) / 180;
+        const ux = Math.sin(r);
+        const uy = -Math.cos(r);
+        const reach = rayToEdge(ox, oy, ux, uy, state.image_w, state.image_h, 110 * k);
+        const len = Math.min(reach, 0.42 * Math.min(state.image_w, state.image_h));
+        const tipX = ox + ux * len;
+        const tipY = oy + uy * len;
+        // Label beside the arrow, off to the side of the push line.
+        const lx = ox + ux * len * 0.55 - uy * 60 * k;
+        const ly = oy + uy * len * 0.55 + ux * 60 * k;
+        return (
+          <g key={a.id} opacity={primary ? 1 : 0.65}>
+            <line x1={ox} y1={oy} x2={tipX} y2={tipY}
+                  strokeWidth={primary ? 3 : 2} strokeDasharray="8 6"
+                  className="stroke-overlay-strong starlock-marching-ants" />
+            <CometArrow cx={tipX} cy={tipY} angleDeg={angle} scale={(primary ? 1.6 : 1.1) * k} />
+            <Pill x={lx} y={ly} text={a.label} fontSize={fs} />
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 export function NavOverlay({ state }: Props) {
   const nav = state.nav;
   if (!nav || !nav.active) return null;
@@ -84,6 +159,10 @@ export function NavOverlay({ state }: Props) {
   // phone); scales with the frame's resolution.
   const k = state.image_w / 1280;
   const fs = 48 * k;
+
+  if (zone === "PUSH" && nav.mount) {
+    return <MountArrows state={state} m={nav.mount} />;
+  }
 
   if (zone === "PUSH") {
     if (nav.edge_x === null || nav.edge_y === null || nav.edge_angle_deg === null) {

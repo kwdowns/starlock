@@ -1,4 +1,5 @@
 # Copyright (C) 2026 Arun Venkataswamy
+# Copyright (C) 2026 Kyle Downs
 #
 # This file is part of Starlock.
 #
@@ -139,6 +140,16 @@ def gnomonic_project(
     return (pixel_x, pixel_y)
 
 
+def sky_pa_to_camera_angle(sky_pa: float, roll: float) -> float:
+    """Image direction (clockwise from image-up) of a sky position angle.
+
+    Matches gnomonic_project: a target at position angle p lands at
+    clockwise image angle roll - p (the image shows the sky as seen, so
+    east is counter-clockwise from north).
+    """
+    return (roll - sky_pa) % 360.0
+
+
 def compute_navigation(
     ra: float,
     dec: float,
@@ -152,7 +163,7 @@ def compute_navigation(
     """Compute full navigation result from current pointing to target."""
     sep = angular_separation(ra, dec, target_ra, target_dec)
     sky_pa = sky_position_angle(ra, dec, target_ra, target_dec)
-    camera_angle = (sky_pa - roll) % 360.0
+    camera_angle = sky_pa_to_camera_angle(sky_pa, roll)
 
     cam_r = math.radians(camera_angle)
     delta_right = sep * math.sin(cam_r)

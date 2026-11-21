@@ -18,7 +18,7 @@ import {
 import { useNearestObject } from "@/hooks/useNearestObject";
 import { api } from "@/lib/api";
 import { CENTERED_DEG } from "@/lib/nearest";
-import { formatDec, formatDistance, formatRa, mountDeltas } from "@/lib/screen";
+import { formatDec, formatDistance, formatMountMove, formatRa, mountDeltas } from "@/lib/screen";
 import type { EnginePayload } from "@/lib/types";
 
 type Props = { state: EnginePayload };
@@ -52,6 +52,8 @@ function TargetReadout({ state }: Props) {
         </span>
         {!p.valid ? (
           <span className="text-body text-muted-foreground">Waiting for a solve…</span>
+        ) : nav.mount ? (
+          <span className="readout text-body">{formatMountMove(state.mount.mode, nav.mount)}</span>
         ) : deltas ? (
           <span className="readout text-body">
             {deltas.right >= 0 ? "Right" : "Left"} {Math.abs(deltas.right).toFixed(2)}° ·{" "}
@@ -61,6 +63,18 @@ function TargetReadout({ state }: Props) {
           nav.direction_text && <span className="text-body">{nav.direction_text}</span>
         )}
       </div>
+      {p.valid && nav.mount?.near_pole && (
+        <p className="text-label">
+          {state.mount.mode === "eq"
+            ? "Near the pole a small move can need a big turn in RA. Set RA first, then Dec."
+            : "Near the zenith a small move can need a big turn of the base. Lower the tube, turn the base, then raise it."}
+        </p>
+      )}
+      {state.mount.needs_location && (
+        <p className="text-label text-muted-foreground">
+          Set your location in Settings to get turn and raise directions.
+        </p>
+      )}
       <p className="text-label text-muted-foreground">1° is about two full moons wide.</p>
     </div>
   );

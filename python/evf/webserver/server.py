@@ -39,6 +39,7 @@ from PIL import Image
 from evf.config.manager import ConfigManager
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
+from evf.engine.mount import MOUNT_MODES, compute_mount_guidance, mount_axes
 from evf.engine.navigation import compute_navigation, edge_arrow_position
 from evf.engine.pointing import PointingState
 from evf.engine.state import StateMachine
@@ -76,6 +77,7 @@ class EngineActions(Protocol):
     def set_goto_target(self, ra_deg: float, dec_deg: float) -> None: ...
     def set_audio_enabled(self, enabled: bool) -> None: ...
     def set_cpu_cap(self, enabled: bool) -> None: ...
+    def set_mount_mode(self, mode: str) -> None: ...
     def inject_sample(self, name: str | None) -> None: ...
     def inject_target(self, ra_deg: float, dec_deg: float) -> None: ...
     def capture_frame(self): ...  # returns Path | None
@@ -552,6 +554,15 @@ class WebServer:
             )
             if resp.status >= 400:
                 return resp
+        if "mount_mode" in body:
+            mode = body["mount_mode"]
+            if mode not in MOUNT_MODES:
+                return web.Response(status=400, text=f"mount_mode must be one of {MOUNT_MODES}")
+            resp = await self._handle_api(
+                request, lambda: self._actions.set_mount_mode(mode),
+            )
+            if resp.status >= 400:
+                return resp
         if "cpu_cap" in body:
             resp = await self._handle_api(
                 request,
@@ -665,8 +676,37 @@ class WebServer:
             ),
         }
 
+        location_blk = self._location_fn() if self._location_fn else {
+            "latitude": None, "longitude": None, "source": None,
+        }
+        location = (
+            (location_blk["latitude"], location_blk["longitude"])
+            if location_blk.get("latitude") is not None
+            and location_blk.get("longitude") is not None
+            else None
+        )
+        mount_mode = self._config.mount_mode
+        now = time.time()
+
+        axes = None
+        if snap.valid:
+            axes = mount_axes(
+                mount_mode, snap.ra_j2000, snap.dec_j2000, snap.roll, location, now,
+            )
+        mount_blk = {
+            "mode": mount_mode,
+            # Alt-az guidance needs the observer's location for the zenith.
+            "needs_location": mount_mode == "altaz" and location is None,
+            "axes": (
+                {"axis1_angle_deg": axes.axis1_angle_deg,
+                 "axis2_angle_deg": axes.axis2_angle_deg}
+                if axes is not None else None
+            ),
+        }
+
         nav_data = self._build_nav(
             snap, target, origin_x, origin_y, dx_off, dy_off, img_w, img_h,
+            mount_mode, location, now,
         )
 
         controls = self._camera_controls() if self._camera_controls else []
@@ -696,10 +736,6 @@ class WebServer:
         else:
             stellarium_blk.setdefault("location", None)
 
-        location_blk = self._location_fn() if self._location_fn else {
-            "latitude": None, "longitude": None, "source": None,
-        }
-
         return {
             "state": state.value,
             "failures": failures,
@@ -712,6 +748,7 @@ class WebServer:
             "finder_rotation": self._config.finder_rotation,
             "fov_h_deg": _FOV_H,
             "has_calibration": self._config.has_calibration,
+            "mount": mount_blk,
             "image_size": list(snap.image_size) if snap.valid and snap.image_size else None,
             "controls": controls or [],
             "sync": sync_blk,
@@ -734,6 +771,7 @@ class WebServer:
 
     def _build_nav(
         self, snap, target, origin_x, origin_y, dx_off, dy_off, img_w, img_h,
+        mount_mode="altaz", location=None, now=None,
     ) -> dict | None:
         if not target.active:
             return None
@@ -755,7 +793,7 @@ class WebServer:
             return {**base, "separation_deg": None, "direction_text": "--",
                     "in_fov": False, "pixel_x": None, "pixel_y": None,
                     "camera_angle_deg": None, "edge_x": None, "edge_y": None,
-                    "edge_angle_deg": None}
+                    "edge_angle_deg": None, "mount": None}
 
         nav = compute_navigation(
             snap.ra_j2000, snap.dec_j2000, snap.roll,
@@ -801,8 +839,25 @@ class WebServer:
                     origin_x=origin_x, origin_y=origin_y,
                 )
 
+        guidance = compute_mount_guidance(
+            mount_mode, snap.ra_j2000, snap.dec_j2000, snap.roll,
+            target.ra_j2000, target.dec_j2000, location, now,
+        )
+        mount_nav = None
+        if guidance is not None:
+            mount_nav = {
+                "axis1_deg": guidance.axis1_deg,
+                "axis2_deg": guidance.axis2_deg,
+                "axis1_angle_deg": guidance.axes.axis1_angle_deg,
+                "axis2_angle_deg": guidance.axes.axis2_angle_deg,
+                "near_pole": guidance.near_pole,
+                "pointing_alt_deg": guidance.pointing_alt_deg,
+                "target_alt_deg": guidance.target_alt_deg,
+            }
+
         return {
             **base,
+            "mount": mount_nav,
             "separation_deg": nav.separation_deg,
             "direction_text": nav.direction_text,
             "in_fov": in_fov,

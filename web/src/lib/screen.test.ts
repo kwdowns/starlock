@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatDec,
   formatDistance,
+  formatMountMove,
   formatRa,
   hasNoStars,
   isSetupPhase,
@@ -76,10 +77,23 @@ describe("formatting", () => {
     expect(formatRa(359.99999)).toBe("0h 00m 00.0s");
     expect(formatDec(9.99999)).toBe("+10° 00′ 00″");
   });
-  it("formats distance in degrees or arcminutes", () => {
+  it("formats distance in degrees all the way down", () => {
     expect(formatDistance(null)).toBe("—");
     expect(formatDistance(12.34)).toBe("12.3°");
-    expect(formatDistance(0.5)).toBe("30.0′");
+    expect(formatDistance(1.04)).toBe("1.0°");
+    expect(formatDistance(0.99)).toBe("0.99°");
+    expect(formatDistance(0.5)).toBe("0.50°");
+    expect(formatDistance(0.123)).toBe("0.12°");
+  });
+  it("formats mount moves per mode", () => {
+    const m = {
+      axis1_deg: -12.04, axis2_deg: 0.5, axis1_angle_deg: 0, axis2_angle_deg: 0,
+      near_pole: false, pointing_alt_deg: 40, target_alt_deg: 40.5,
+    };
+    expect(formatMountMove("altaz", m)).toBe("Turn left 12.0° · Raise 0.50°");
+    expect(formatMountMove("eq", { ...m, axis1_deg: 3, axis2_deg: -2 })).toBe(
+      "RA east 3.0° · Dec south 2.0°",
+    );
   });
 });
 
@@ -90,9 +104,13 @@ describe("mountDeltas", () => {
     expect(d.right).toBeGreaterThan(0);
     expect(d.up).toBeCloseTo(0);
   });
-  it("undoes a 90° finder rotation", () => {
+  it("undoes a 90° finder rotation (mount-up is image-right)", () => {
     const d = mountDeltas({ ...geom, finder_rotation: 90 }, 740, 360);
     expect(d.right).toBeCloseTo(0);
-    expect(Math.abs(d.up)).toBeGreaterThan(0);
+    expect(d.up).toBeGreaterThan(0);
+    // Image-down is then mount-right.
+    const below = mountDeltas({ ...geom, finder_rotation: 90 }, 640, 460);
+    expect(below.right).toBeGreaterThan(0);
+    expect(below.up).toBeCloseTo(0);
   });
 });

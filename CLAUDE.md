@@ -109,6 +109,7 @@ python/evf/                     # main Python package
     frame_buffer.py             # latest-frame buffer (no queues)
     pointing.py                 # telescope pointing state
     navigation.py               # goto-target navigation logic
+    mount.py                    # push-to guidance along alt-az / equatorial mount axes (Settings → Mount)
     goto_target.py              # thread-safe goto target container
     sample_injector.py          # dev-mode sample-image injector
     audio.py                    # audio feedback (lock/lost sounds)

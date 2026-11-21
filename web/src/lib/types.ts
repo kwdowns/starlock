@@ -20,8 +20,29 @@ export interface PointingData {
   solve_age_s: number | null;
 }
 
+export type MountMode = "altaz" | "eq";
+
+/**
+ * Moves along the mount's own axes. axis1: alt-az base turn (+ = right /
+ * clockwise from above) or equatorial RA (+ = east). axis2: alt-az tube
+ * (+ = raise) or Dec (+ = north). Angles are image directions, clockwise
+ * from up, that the view moves for a + move.
+ */
+export interface MountNav {
+  axis1_deg: number;
+  axis2_deg: number;
+  axis1_angle_deg: number;
+  axis2_angle_deg: number;
+  /** Alt-az: near the zenith. Equatorial: near the celestial pole. */
+  near_pole: boolean;
+  pointing_alt_deg: number | null;
+  target_alt_deg: number | null;
+}
+
 export interface NavData {
   active: boolean;
+  /** Null without a solve, or in alt-az mode without a location. */
+  mount: MountNav | null;
   target_name: string | null;
   target_ra_deg: number;
   target_dec_deg: number;
@@ -106,6 +127,12 @@ export interface EnginePayload {
   finder_rotation: number;
   fov_h_deg: number;
   has_calibration: boolean;
+  mount: {
+    mode: MountMode;
+    /** Alt-az mode with no observer location: falls back to the calibrated arrow. */
+    needs_location: boolean;
+    axes: { axis1_angle_deg: number; axis2_angle_deg: number } | null;
+  };
   image_size: [number, number] | null;
   controls: ControlDescriptor[];
   sync: SyncBlock;

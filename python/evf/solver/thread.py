@@ -29,7 +29,11 @@ from evf.engine.audio import AudioAlert
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.pointing import PointingState
 from evf.engine.state import EngineState, InvalidTransitionError, StateMachine
-from evf.engine.navigation import angular_separation, sky_position_angle
+from evf.engine.navigation import (
+    angular_separation,
+    sky_pa_to_camera_angle,
+    sky_position_angle,
+)
 from evf.solver.solver import PlateSolver
 from evf.solver.sync import apply_body_frame_sync
 
@@ -144,7 +148,7 @@ class SolverThread:
         transition to WARMING_UP.
         """
         if self._cal_skip.is_set():
-            logger.info("Calibration skipped — using saved finder_rotation=%.1f",
+            logger.info("Calibration skipped — finder_rotation stays %.1f",
                         self._config.finder_rotation)
             self._state_machine.transition(EngineState.WARMING_UP)
             return True
@@ -181,7 +185,7 @@ class SolverThread:
 
         # Scope has been stable long enough — compute finder rotation
         sky_pa = sky_position_angle(ra, dec, self._cal_ref_ra, self._cal_ref_dec)
-        camera_angle = (sky_pa - roll) % 360.0
+        camera_angle = sky_pa_to_camera_angle(sky_pa, roll)
         # The old center is "behind" us (opposite to push direction)
         finder_rotation = (camera_angle - 180.0) % 360.0
 

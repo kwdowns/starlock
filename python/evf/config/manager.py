@@ -36,7 +36,11 @@ DEFAULT_CONFIG = {
     "version": CONFIG_VERSION,
     "solver": {"min_matches": 8, "max_prob": 0.2},
     "camera": {"exposure": None, "gain": None, "extra_camera_ids": []},
-    "calibration": {"finder_rotation": 0.0, "sync_d_body": None},
+    # finder_rotation_v2: finder_rotation uses the corrected (unmirrored)
+    # image-angle convention; older configs are converted once on load.
+    "calibration": {"finder_rotation": 0.0, "sync_d_body": None, "finder_rotation_v2": True},
+    # "altaz" or "eq" — which axes the push-to guidance is given in.
+    "mount": {"mode": "altaz"},
     "logging": {"verbose": False},
     "audio": {"enabled": True},
     # Headless Pi status LED (see evf/engine/status_led.py).
@@ -86,6 +90,24 @@ class ConfigManager:
             logger.info("Web server port moved from the old default %d to %d",
                         _OLD_DEFAULT_WEB_PORT, web["port"])
 
+    def _migrate_finder_rotation(self) -> None:
+        """Convert a finder_rotation saved before the mirror fix.
+
+        The old calibration measured image angles counter-clockwise, so the
+        saved value is the negative of the real one. Must run before
+        defaults are merged in, which would add the v2 marker.
+        """
+        cal = self._data.get("calibration")
+        if not isinstance(cal, dict) or cal.get("finder_rotation_v2"):
+            return
+        old = cal.get("finder_rotation")
+        if isinstance(old, (int, float)):
+            cal["finder_rotation"] = (-float(old)) % 360.0
+            logger.info("finder_rotation converted from %.1f to %.1f (mirror fix)",
+                        old, cal["finder_rotation"])
+        cal["finder_rotation_v2"] = True
+        self._dirty = True
+
     def _load(self) -> None:
         if self._path.exists():
             try:
@@ -100,6 +122,7 @@ class ConfigManager:
                     self._data = _deep_copy(DEFAULT_CONFIG)
                     self._dirty = True
                 else:
+                    self._migrate_finder_rotation()
                     # Merge in any missing keys from defaults
                     self._data = _merge_defaults(DEFAULT_CONFIG, self._data)
                     self._migrate_old_default_port()
@@ -191,6 +214,18 @@ class ConfigManager:
     @finder_rotation.setter
     def finder_rotation(self, value: float) -> None:
         self.set("calibration", "finder_rotation", value)
+
+    @property
+    def mount_mode(self) -> str:
+        """"altaz" or "eq"; anything else reads as the alt-az default."""
+        mode = self.get("mount", "mode")
+        return mode if mode in ("altaz", "eq") else "altaz"
+
+    @mount_mode.setter
+    def mount_mode(self, value: str) -> None:
+        if value not in ("altaz", "eq"):
+            raise ValueError(f"mount mode must be 'altaz' or 'eq', got {value!r}")
+        self.set("mount", "mode", value)
 
     @property
     def sync_d_body(self) -> list[float] | None:

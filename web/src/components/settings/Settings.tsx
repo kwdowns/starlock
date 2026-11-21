@@ -1,12 +1,17 @@
 import { RotateCcw } from "lucide-react";
-import { Button, Field, Input, Separator, SettingRow, Switch } from "@/components/ui";
+import { Button, Field, Input, SegmentedControl, Separator, SettingRow, Switch } from "@/components/ui";
 import { api } from "@/lib/api";
-import type { EnginePayload } from "@/lib/types";
+import type { EnginePayload, MountMode } from "@/lib/types";
 
 export const DEFAULT_SHOW_STARS = false;
 const DEFAULT_AUDIO_ENABLED = true;
 const DEFAULT_MIN_MATCHES = 8;
 const DEFAULT_MAX_PROB = 0.2;
+
+const MOUNT_MODES = [
+  { value: "altaz", label: "Alt-az" },
+  { value: "eq", label: "Equatorial" },
+] as const satisfies readonly { value: MountMode; label: string }[];
 
 interface Props {
   state: EnginePayload;
@@ -29,6 +34,23 @@ export function Settings({ state, showStars, setShowStars }: Props) {
 
   return (
     <section className="flex flex-col" aria-label="Settings">
+      <SectionTitle>Mount</SectionTitle>
+      <div className="mt-3 flex flex-col gap-2">
+        <SegmentedControl
+          aria-label="Mount type"
+          value={state.mount.mode}
+          options={MOUNT_MODES}
+          fullWidth
+          onValueChange={(m) => api.setSettings({ mount_mode: m }).catch(console.error)}
+        />
+        <p className="text-label text-muted-foreground">
+          {state.mount.mode === "eq"
+            ? "Directions are given as RA east/west and Dec north/south."
+            : "Directions are given as turning the base and raising or lowering the tube. Needs your location (below)."}
+        </p>
+      </div>
+
+      <Separator className="my-4" />
       <SectionTitle>Display and sound</SectionTitle>
       <SettingRow label="Show detected stars" description="Circle every star the solver found.">
         <Switch checked={showStars} onCheckedChange={setShowStars} />

@@ -231,6 +231,18 @@ class Engine:
     def set_audio_enabled(self, enabled: bool) -> None:
         self.audio_enabled = enabled
 
+    def set_mount_mode(self, mode: str) -> None:
+        """Switch push-to guidance between "altaz" and "eq" axes."""
+        self._config.mount_mode = mode
+
+    def _mount_axes_known(self) -> bool:
+        """True when the mount axes come from each solve, so the push-up
+        rotation calibration is not needed (equatorial, or alt-az with a
+        known location)."""
+        if self._config.mount_mode == "eq":
+            return True
+        return self.location.get("latitude") is not None
+
     @property
     def power(self) -> dict:
         """CPU clock cap state for the Settings panel."""
@@ -887,6 +899,9 @@ class Engine:
             self._sync_camera_dec,
             self._sync_camera_roll,
         )  # SYNC_CONFIRM → CALIBRATE
+        if self._mount_axes_known():
+            logger.info("Mount axes known from location/mode — skipping rotation calibration")
+            self._solver_thread.skip_calibrate()  # CALIBRATE → WARMING_UP on the first solve
 
     def sync_retry(self) -> None:
         """Go back to SYNC to redo the current solve (preserves earlier pairs)."""

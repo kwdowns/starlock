@@ -1,7 +1,7 @@
 // Pure helpers for the main screen: which step the engine is on, what the
 // status badge says, and number formatting for the readouts.
 import type { BadgeVariant } from "@/components/ui/badge";
-import type { EnginePayload, EngineState } from "@/lib/types";
+import type { EnginePayload, EngineState, MountMode, MountNav } from "@/lib/types";
 
 /** The four wizard steps shown by <Steps>. */
 export const SETUP_STEPS = [
@@ -105,11 +105,30 @@ export function formatDec(deg: number): string {
   return `${sign}${d}° ${String(m).padStart(2, "0")}′ ${String(s).padStart(2, "0")}″`;
 }
 
-/** Angular distance: degrees from 1° up, arcminutes below. */
+/**
+ * Angular distance, always in degrees so it never jumps in size: one
+ * decimal from 1° up, two below (the lock zone is 0.15°).
+ */
 export function formatDistance(sep: number | null): string {
   if (sep === null) return "—";
-  if (sep >= 1) return `${sep.toFixed(1)}°`;
-  return `${(sep * 60).toFixed(1)}′`;
+  return formatDegrees(sep);
+}
+
+/** Unsigned degrees: one decimal from 1° up, two below. */
+export function formatDegrees(deg: number): string {
+  const abs = Math.abs(deg);
+  return `${abs >= 1 ? abs.toFixed(1) : abs.toFixed(2)}°`;
+}
+
+/** Readout for a move along the mount's axes, e.g. "Turn right 12.0° · Raise 4.1°". */
+export function formatMountMove(mode: MountMode, m: MountNav): string {
+  const a1 = mode === "eq"
+    ? `RA ${m.axis1_deg >= 0 ? "east" : "west"} ${formatDegrees(m.axis1_deg)}`
+    : `Turn ${m.axis1_deg >= 0 ? "right" : "left"} ${formatDegrees(m.axis1_deg)}`;
+  const a2 = mode === "eq"
+    ? `Dec ${m.axis2_deg >= 0 ? "north" : "south"} ${formatDegrees(m.axis2_deg)}`
+    : `${m.axis2_deg >= 0 ? "Raise" : "Lower"} ${formatDegrees(m.axis2_deg)}`;
+  return `${a1} · ${a2}`;
 }
 
 /**
@@ -124,7 +143,8 @@ export function mountDeltas(
   const scale = s.image_w / (2 * Math.tan(((s.fov_h_deg / 2) * Math.PI) / 180));
   const dx = (pixelX - s.origin_x) / scale;
   const dy = (s.origin_y - pixelY) / scale;
-  const phi = (-s.finder_rotation * Math.PI) / 180;
+  // finder_rotation: image direction of mount-up, clockwise from image-up.
+  const phi = (s.finder_rotation * Math.PI) / 180;
   return {
     right: dx * Math.cos(phi) - dy * Math.sin(phi),
     up: dx * Math.sin(phi) + dy * Math.cos(phi),

@@ -59,7 +59,7 @@ describe("StepArea", () => {
       active: true, target_name: "M 31", target_ra_deg: 10.68, target_dec_deg: 41.27,
       separation_deg: 3.21, direction_text: "Push up and left", in_fov: false,
       pixel_x: null, pixel_y: null, camera_angle_deg: null,
-      edge_x: null, edge_y: null, edge_angle_deg: null,
+      edge_x: null, edge_y: null, edge_angle_deg: null, mount: null,
     };
     const { container } = render(
       <StepArea
