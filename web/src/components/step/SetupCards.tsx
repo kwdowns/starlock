@@ -14,6 +14,7 @@ import {
   Spinner,
 } from "@/components/ui";
 import { RetryCameraButton } from "@/components/RetryCameraButton";
+import { useStarNames } from "@/hooks/useStarNames";
 import { api } from "@/lib/api";
 import type { EnginePayload } from "@/lib/types";
 
@@ -94,6 +95,7 @@ export function SyncCard({ state }: Props) {
 
 export function SyncConfirmCard({ state }: Props) {
   const candidates = state.sync.candidates.slice(0, 7);
+  const names = useStarNames(candidates);
   const selected = state.sync.selected_idx;
   return (
     <Card>
@@ -101,8 +103,8 @@ export function SyncConfirmCard({ state }: Props) {
         <CardTitle>Which star did you center?</CardTitle>
         <CardDescription>
           The brightest star is picked for you. If you centered a different
-          one, tap it below (numbers match the rings on the frame), then
-          confirm.
+          one, tap it below (numbers match the rings on the frame; named
+          stars show their name), then confirm.
         </CardDescription>
       </CardHeader>
       <CardFooter>
@@ -128,7 +130,8 @@ export function SyncConfirmCard({ state }: Props) {
                   {i + 1}
                 </span>
               }
-              title={c.name}
+              title={names[i]?.name ?? c.name}
+              subtitle={names[i]?.designation ?? undefined}
               meta={`mag ${(Math.round(c.magnitude * 10) / 10 || 0).toFixed(1)}`}
               selected={c.idx === selected}
               onPress={() => api.syncSelect(c.idx)}

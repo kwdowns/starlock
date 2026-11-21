@@ -54,6 +54,22 @@ describe("StepArea", () => {
     expect(screen.getByRole("button", { name: /re-solve/i })).toBeInTheDocument();
   });
 
+  it("SYNC_CONFIRM: names catalogue stars, keeps numbers for unnamed ones", async () => {
+    const sync = {
+      in_progress: false,
+      selected_idx: 0,
+      error: null,
+      candidates: [
+        { idx: 0, name: "Star #1", ra_deg: 279.2346, dec_deg: 38.7837, magnitude: 0, pixel_x: 1, pixel_y: 1 },
+        { idx: 1, name: "Star #2", ra_deg: 10.0, dec_deg: -89.5, magnitude: 6, pixel_x: 2, pixel_y: 2 },
+      ],
+    };
+    render(<StepArea state={payload({ state: "SYNC_CONFIRM", sync })} />);
+    expect(await screen.findByText("Vega")).toBeInTheDocument();
+    expect(screen.getByText("α Lyr")).toBeInTheDocument();
+    expect(screen.getByText("Star #2")).toBeInTheDocument();
+  });
+
   it("TRACKING: target readout, camera and sky view folded away", () => {
     const nav = {
       active: true, target_name: "M 31", target_ra_deg: 10.68, target_dec_deg: 41.27,
