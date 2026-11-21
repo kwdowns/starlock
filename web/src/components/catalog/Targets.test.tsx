@@ -16,9 +16,14 @@ const setGoto = vi.mocked(api.setGoto);
 const CHENNAI = { latitude: 13.0878, longitude: 80.2785 };
 const NIGHT = new Date("2026-10-10T16:00:00Z");
 
-function payload(over: { nav?: NavData | null; location?: boolean } = {}): EnginePayload {
+function payload(
+  over: { nav?: NavData | null; location?: boolean; pointing?: { ra_deg: number; dec_deg: number } } = {},
+): EnginePayload {
   return {
     nav: over.nav ?? null,
+    pointing: over.pointing
+      ? { valid: true, ...over.pointing }
+      : { valid: false, ra_deg: 0, dec_deg: 0 },
     location:
       over.location === false
         ? { latitude: null, longitude: null, source: null }
@@ -174,5 +179,38 @@ describe("Targets / Search and Manual", () => {
     const [ra, dec] = setGoto.mock.calls[0];
     expect(ra).toBeCloseTo((5 + 35 / 60 + 17 / 3600) * 15, 5);
     expect(dec).toBeCloseTo(-(5 + 23 / 60 + 28 / 3600), 5);
+  });
+});
+
+describe("Targets / Tonight nearest sort", () => {
+  function sortBy(label: string) {
+    if (!screen.queryByRole("radio", { name: label })) {
+      fireEvent.click(screen.getByRole("button", { name: /Filter and sort/ }));
+    }
+    fireEvent.click(screen.getByRole("radio", { name: label }));
+  }
+
+  it("puts the object the scope is on first, with its distance", () => {
+    // Aim at whatever the default list shows first.
+    const { unmount } = render(<Targets state={payload()} />);
+    const aimed = buddyItem(objectFor(firstGoButton()))!;
+    unmount();
+
+    render(<Targets state={payload({ pointing: { ra_deg: aimed.ra_deg, dec_deg: aimed.dec_deg } })} />);
+    sortBy("Nearest");
+    sortBy("Altitude"); // make sure switching back and forth works
+    sortBy("Nearest");
+
+    expect(firstGoButton()).toHaveAccessibleName(`Go to ${aimed.title}`);
+    const away = screen.getAllByText(/° away$/).map((el) => parseFloat(el.textContent!));
+    expect(away[0]).toBeLessThan(0.25);
+    expect([...away].sort((a, b) => a - b)).toEqual(away);
+  });
+
+  it("falls back to highest first without a solve, and says so", () => {
+    render(<Targets state={payload()} />);
+    sortBy("Nearest");
+    expect(screen.getByText(/highest first until the scope has a solve/)).toBeInTheDocument();
+    expect(screen.queryByText(/° away$/)).not.toBeInTheDocument();
   });
 });

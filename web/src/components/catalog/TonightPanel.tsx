@@ -9,23 +9,23 @@ import type { Location, TargetItem } from "./items";
 import { readStored, writeStored } from "./storage";
 import { TargetList, type TargetActions } from "./TargetList";
 import { TimeControl } from "./TimeControl";
-import { ALT_THRESHOLD_DEG, tonightRows, type SortKey } from "./tonight";
+import { ALT_THRESHOLD_DEG, tonightRows, type SkyPoint, type SortKey } from "./tonight";
 
 const objects = objectsData as CatalogObject[];
 const SORT_KEY = "starlock.catalog.sort";
 
 const SORT_OPTIONS = [
   { value: "type", label: "Type" },
-  { value: "name", label: "Name" },
   { value: "mag", label: "Bright" },
   { value: "alt", label: "Altitude" },
+  { value: "near", label: "Nearest" },
 ] as const;
 
 const SORT_LABELS: Record<SortKey, string> = {
   type: "by type",
-  name: "by name",
   mag: "brightest first",
   alt: "highest first",
+  near: "nearest to the scope",
 };
 
 function loadSort(): SortKey {
@@ -37,12 +37,14 @@ interface Props {
   location: Location | null;
   /** Wall-clock now in ms (ticks once a minute). */
   now: number;
+  /** Where the scope points, or null without a solve. */
+  scope: SkyPoint | null;
   actions: TargetActions;
   onOpen: (item: TargetItem, evalAt: Date) => void;
 }
 
 /** Curated list of what is above the horizon, with filters and an observation time. */
-export function TonightPanel({ location, now, actions, onOpen }: Props) {
+export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
   const [filters, setFilters] = useCatalogFilters();
   const [sort, setSortRaw] = useState<SortKey>(loadSort);
   const [offsetMin, setOffsetMin] = useState(0);
@@ -50,8 +52,8 @@ export function TonightPanel({ location, now, actions, onOpen }: Props) {
   const evalAt = useMemo(() => new Date(now + offsetMin * 60_000), [now, offsetMin]);
 
   const rows = useMemo(
-    () => (location ? tonightRows(objects, filters, location, evalAt, sort) : []),
-    [location, filters, evalAt, sort],
+    () => (location ? tonightRows(objects, filters, location, evalAt, sort, scope) : []),
+    [location, filters, evalAt, sort, scope],
   );
 
   if (!location) {
@@ -107,6 +109,7 @@ export function TonightPanel({ location, now, actions, onOpen }: Props) {
         <>
           <p className="text-label text-muted-foreground">
             {rows.length} {rows.length === 1 ? "object" : "objects"} above {ALT_THRESHOLD_DEG}°
+            {sort === "near" && !scope && " · highest first until the scope has a solve"}
           </p>
           <TargetList
             rows={rows}

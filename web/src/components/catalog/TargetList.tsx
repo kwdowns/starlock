@@ -1,12 +1,15 @@
 import { CheckIcon } from "lucide-react";
 import { Button, List, ListRow } from "@/components/ui";
 import { azimuthCompass } from "@/lib/catalogTypes";
+import { formatDistance } from "@/lib/screen";
 import type { TargetItem } from "./items";
 
 export interface TargetRowData {
   item: TargetItem;
   altDeg: number | null;
   azDeg: number | null;
+  /** Distance from the scope; shown instead of alt/az when set. */
+  sepDeg?: number | null;
 }
 
 export interface TargetActions {
@@ -29,7 +32,7 @@ export function TargetList({
 }) {
   return (
     <List>
-      {rows.map(({ item, altDeg, azDeg }) => {
+      {rows.map(({ item, altDeg, azDeg, sepDeg }) => {
         const active = actions.isActive(item);
         const below = altDeg !== null && altDeg < 0;
         return (
@@ -38,9 +41,11 @@ export function TargetList({
             title={item.title}
             subtitle={item.subtitle}
             meta={
-              altDeg !== null && azDeg !== null
-                ? `${Math.round(altDeg)}° ${azimuthCompass(azDeg)}`
-                : undefined
+              sepDeg != null
+                ? `${formatDistance(sepDeg)} away`
+                : altDeg !== null && azDeg !== null
+                  ? `${Math.round(altDeg)}° ${azimuthCompass(azDeg)}`
+                  : undefined
             }
             selected={active}
             onPress={() => actions.onOpen(item)}

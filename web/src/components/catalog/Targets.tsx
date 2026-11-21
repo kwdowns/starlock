@@ -52,6 +52,16 @@ export function Targets({ state, onTargetSet }: TargetsProps) {
     [lat, lon],
   );
 
+  // Rounded so the list only re-sorts when the scope has really moved,
+  // not on every solve's jitter.
+  const p = state.pointing;
+  const scopeRa = p.valid ? Math.round(p.ra_deg * 4) / 4 : null;
+  const scopeDec = p.valid ? Math.round(p.dec_deg * 4) / 4 : null;
+  const scope = useMemo(
+    () => (scopeRa === null || scopeDec === null ? null : { ra_deg: scopeRa, dec_deg: scopeDec }),
+    [scopeRa, scopeDec],
+  );
+
   const { go, pendingKey, error, clearError } = useGoto(onTargetSet);
   const nav = state.nav;
 
@@ -106,7 +116,13 @@ export function Targets({ state, onTargetSet }: TargetsProps) {
       )}
 
       {tab === "tonight" && (
-        <TonightPanel location={location} now={now} actions={actions} onOpen={openDetail} />
+        <TonightPanel
+          location={location}
+          now={now}
+          scope={scope}
+          actions={actions}
+          onOpen={openDetail}
+        />
       )}
       {tab === "search" && (
         <Suspense
