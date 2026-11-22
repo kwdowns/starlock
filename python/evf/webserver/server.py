@@ -140,6 +140,83 @@ async def _security_headers_middleware(request: web.Request, handler) -> web.Str
     return response
 
 
+# Content types a browser may send cross-site without a CORS preflight.
+_SIMPLE_CONTENT_TYPES = frozenset({
+    "application/x-www-form-urlencoded",
+    "multipart/form-data",
+    "text/plain",
+})
+_LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal", ".localdomain")
+
+
+def _host_is_local(host: str) -> bool:
+    """Whether a Host header value names this unit on the LAN.
+
+    Accepts IP literals, ``localhost``, single-label names and the usual
+    LAN suffixes (``starlock-3f2a.local``). Anything else is a public DNS
+    name, which is how a DNS-rebinding page would reach the unit.
+    """
+    import ipaddress
+    host = host.strip().lower()
+    if host.startswith("["):  # [v6]:port
+        host = host[1:host.find("]")] if "]" in host else host[1:]
+    elif host.count(":") == 1:
+        host = host.split(":", 1)[0]
+    host = host.rstrip(".")
+    if not host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        pass
+    return host == "localhost" or "." not in host or host.endswith(_LOCAL_SUFFIXES)
+
+
+def _origin_matches_host(origin: str, host: str) -> bool:
+    import urllib.parse
+    try:
+        netloc = urllib.parse.urlsplit(origin).netloc.lower()
+    except ValueError:
+        return False
+    return bool(netloc) and netloc == host.strip().lower()
+
+
+def request_guard_problem(method: str, host: str, origin: str | None,
+                          content_type: str) -> str | None:
+    """Why a request must be refused, or None.
+
+    Stops other web pages from driving the unit through the owner's
+    browser: DNS rebinding (Host check), cross-site writes and WebSocket
+    reads (Origin check; native apps and tools send no Origin), and
+    form/text posts that skip the CORS preflight. See
+    specs/start/SPEC_FIRST_RUN.md §7.2.
+    """
+    if not _host_is_local(host):
+        return "unknown host"
+    if origin is not None and not _origin_matches_host(origin, host):
+        if method not in ("GET", "HEAD", "OPTIONS"):
+            return "cross-site request"
+    if method in ("POST", "PUT", "PATCH") and content_type in _SIMPLE_CONTENT_TYPES:
+        return "use Content-Type: application/json"
+    return None
+
+
+@web.middleware
+async def _request_guard_middleware(request: web.Request, handler) -> web.StreamResponse:
+    origin = request.headers.get("Origin")
+    problem = request_guard_problem(request.method, request.host or "", origin,
+                                    request.content_type if request.body_exists else "")
+    if problem is None and request.path == "/ws" and origin is not None \
+            and not _origin_matches_host(origin, request.host or ""):
+        problem = "cross-site WebSocket"
+    if problem is not None:
+        logger.warning("Refused %s %s (Host %r, Origin %r): %s",
+                       request.method, request.path, request.host, origin, problem)
+        return web.Response(status=403, text=problem)
+    return await handler(request)
+
+
 def _is_local_origin(origin: str) -> bool:
     """Return True if the WebSocket Origin header looks like a local address."""
     import urllib.parse
@@ -292,7 +369,8 @@ class WebServer:
             logger.info("Mobile web interface at %s", url)
 
         self._have_clients = asyncio.Event()
-        app = web.Application(middlewares=[_security_headers_middleware])
+        app = web.Application(middlewares=[_security_headers_middleware,
+                                           _request_guard_middleware])
         app.router.add_get("/", self._handle_index)
         app.router.add_get("/api/version", self._handle_version)
         app.router.add_get("/ws", self._handle_ws)
@@ -815,6 +893,8 @@ class WebServer:
 
     async def _api_dev_capture_frame(self, request):
         """Save the latest frame to ~/Downloads. Returns 200 + JSON {path}."""
+        if not self._dev_mode:
+            return web.Response(status=404, text="Debug mode only")
         if self._actions is None:
             return web.Response(status=503, text="No actions wired")
         try:
