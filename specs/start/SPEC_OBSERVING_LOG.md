@@ -1,10 +1,20 @@
 # Observing log (sessions, sightings, observations)
 
-Status: **design proposal**, written 2026-11-22. Replaces the "dwell log +
+Status: **design proposal**, written 2026-11-22 (decisions below). Replaces the "dwell log +
 CSV" model of `evf/engine/observation_log.py` with a logbook good enough
 for observing-program certification. Spans the Pi (this repo), the iOS app,
 Starlock Cloud and a new web app. The private repos implement from this
 document; they don't copy code from here.
+
+## Decisions (2026-11-22)
+
+| Topic | Decision |
+|---|---|
+| Sign-in | **Microsoft Entra External ID** (§6). Prod data is only test data, so it's a clean switch. |
+| Frames on the Pi | **Every sighting keeps its camera frame** (built: `observation_log.frames`, downscaled to 1024 px, about 60–100 kB). Frames are trimmed **oldest first** past a local quota (`frame_quota_mb`, default 2 GB on the Pi 4) or when free disk falls under `min_free_mb` (default 1 GB); the entries themselves stay. So a note added later can still pick up a picture. |
+| Frames in the cloud | Only frames **attached** to an observation or note upload. The log sheet has an **"Upload finder capture with log"** box, ticked by default; untick to keep the frame local only. |
+| Observing programs | Not now. |
+| Images | Only Starlock camera frames. No sketching, user photos or scans for now. |
 
 ## 1. Goals
 
@@ -52,7 +62,7 @@ milliseconds.
 | **Observation** | id, session, object (§2.1), start, end (optional), seen (`yes`, `no`, `uncertain`), description, rating (optional), program tags, equipment and conditions (resolved from the setup and conditions in force at `start`, overridable per observation), sightings linked, frames | Deliberate: **Log** while on target, promote a sighting, or add by hand (naked eye, binoculars, or when the Pi wasn't used) |
 | **Note** | id, session, observation (optional), at, text, frame (optional) | The Note button, dictation, the Watch. Attaches to the **open** observation if there is one |
 | **Measurement** | id, observation, kind `variable-star` (star, estimated magnitude, comparison stars, chart id, flags, AAVSO fields) | A kind of observation detail; more kinds later (double-star separation, meteor counts) |
-| **Frame** | id, at, JPEG (max 1024 px long side, about 60–100 kB), plate-solve centre and field | Offered when logging an observation or adding a note while observing (one tap, off by default per user setting) |
+| **Frame** | id, at, JPEG (max 1024 px long side, about 60–100 kB), plate-solve centre and field | Kept by the Pi with every sighting (rolling local quota); attached to an observation or note with the "Upload finder capture with log" box (ticked by default) |
 
 ### 2.1 Object identity
 
@@ -142,12 +152,12 @@ frames on devices.
 Exports are made on the device (Pi, app or web app) from the logbook; the
 cloud never needs to render PDFs.
 
-## 6. Sign-in (pending owner decision)
+## 6. Sign-in (decided: Entra External ID)
 
 Needs: Pi web page (plain HTTP on a LAN address), the iOS app, Android
 later, and the web app.
 
-**Proposed:** keep Starlock Cloud's own token service (already built:
+**Considered first, not chosen:** keep Starlock Cloud's own token service (already built:
 access + rotating refresh tokens) and add providers to it:
 
 - **Apple** (native on iOS, Sign in with Apple JS on the web, which needs an
@@ -164,10 +174,11 @@ access + rotating refresh tokens) and add providers to it:
 - On the web app, the session is an httpOnly cookie held by the cloud (no
   tokens in browser storage).
 
-**Alternative:** Microsoft Entra External ID (Azure AD B2C's successor;
+**Chosen:** Microsoft Entra External ID (Azure AD B2C's successor;
 first 50,000 monthly active users free; Google, Facebook, Apple, email and
-password, MFA, hosted sign-in pages). Worth it if passwords, MFA, or club
-and organisation accounts become needs. Costs: browser-sheet sign-in in
+password, MFA, hosted sign-in pages). Picked because those needs will come and it's
+cheapest to start on it. The Pi's web page still links with the Pi-initiated
+code flow above, which is the cloud's own and independent of the provider. Costs: browser-sheet sign-in in
 the apps instead of the native Apple button, hosted pages to brand, and a
 migration of today's Apple users. Duende IdentityServer is not recommended
 (licence for a commercial product, and we'd run it ourselves).
@@ -197,9 +208,7 @@ migration of today's Apple users. Duende IdentityServer is not recommended
 
 ## 9. Open questions
 
-1. Sign-in: own token service plus providers (proposed) or Entra External ID (§6).
+1. How much of the logbook the apps rebuild vs. hand to the web app (an
+   "Open my logbook" button to `my.starlock.app`, or to the Pi's own page
+   for users without an account).
 2. Web app name: `my.starlock.app`, `app.starlock.app` or `log.starlock.app`.
-3. Which observing programs to ship lists for first (Messier, Caldwell,
-   Herschel 400, RASC Finest NGC…)? Check each program's licence for its
-   object lists.
-4. Should frames sync to the cloud by default, or only ones you keep?

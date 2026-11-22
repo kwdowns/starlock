@@ -356,6 +356,22 @@ class ConfigManager:
         return self._positive("observation_log", "radius_deg")
 
     @property
+    def observation_frame_limits(self) -> tuple[int, int] | None:
+        """(quota, minimum free disk) in bytes for the frame kept with each
+        log entry, or None when frames are off. ``observation_log.frames``,
+        ``frame_quota_mb`` (default 2048) and ``min_free_mb`` (default 1024)."""
+        if self.get("observation_log", "frames") is False:
+            return None
+
+        def mb(key: str, default: int) -> int:
+            value = self.get("observation_log", key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+                value = default
+            return int(value * 1024 * 1024)
+
+        return mb("frame_quota_mb", 2048), mb("min_free_mb", 1024)
+
+    @property
     def cloud_base_url(self) -> str | None:
         value = self.get("cloud", "base_url")
         return value if isinstance(value, str) and value.strip() else None

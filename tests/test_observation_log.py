@@ -404,3 +404,86 @@ def test_config_defaults(tmp_path):
     assert cfg.observation_dwell_s == 30.0 and cfg.observation_radius_deg == 1.0
     cfg.observation_log_enabled = False
     assert ConfigManager(config_dir=tmp_path).observation_log_enabled is False
+
+
+# -- frames -----------------------------------------------------------------------
+
+def _jpeg(w=1280, h=800, shade=40):
+    from PIL import Image
+    out = io.BytesIO()
+    Image.new("L", (w, h), shade).save(out, "JPEG")
+    return out.getvalue()
+
+
+def test_logger_keeps_a_downscaled_frame_per_entry(store):
+    from PIL import Image
+    p = FakePointing()
+    lg = make_logger(store, p, frame=lambda: _jpeg(), frame_limits=lambda: (10 << 20, 0))
+    run(lg, p, 45, 0)
+    e = store.list(T0 - 10, T0 + 1000)[0]
+    assert e["has_frame"] is True
+    with Image.open(io.BytesIO(store.frame(e["id"]))) as img:
+        assert max(img.size) == 1024
+    assert store.frames_bytes() > 0
+
+
+def test_no_frame_when_off_or_camera_has_none(store):
+    p = FakePointing()
+    lg = make_logger(store, p, frame=lambda: _jpeg(), frame_limits=lambda: None)
+    run(lg, p, 45, 0)
+    lg2 = make_logger(store, p, frame=lambda: None, frame_limits=lambda: (10 << 20, 0))
+    p.ra = 200.0
+    run(lg2, p, 45, 100)
+    assert [e["has_frame"] for e in store.list(T0 - 10, T0 + 1000)] == [False, False]
+
+
+def test_trim_drops_oldest_frames_but_keeps_entries(store):
+    ids = []
+    for i in range(5):
+        eid = store.open_entry(T0 + i * 100, 10.0 + i, 20.0)
+        store.close_entry(eid, T0 + i * 100 + 50)
+        store.save_frame(eid, b"x" * 1000)
+        ids.append(eid)
+    # quota fits 2 frames
+    assert store.trim_frames(2500, 0, free_bytes=lambda: 1 << 40) == 3
+    kept = {e["id"] for e in store.list(T0 - 1, T0 + 1000) if e["has_frame"]}
+    assert kept == {ids[3], ids[4]}
+    assert len(store.list(T0 - 1, T0 + 1000)) == 5
+    assert not (store.frames_dir / f"{ids[0]}.jpg").exists()
+    # low disk: drop more even under quota, but never the one being kept
+    assert store.trim_frames(10_000, 5000, keep=ids[4], free_bytes=lambda: 0) == 1
+    assert store.frame(ids[4]) is not None and store.frame(ids[3]) is None
+
+
+def test_delete_removes_frame_files(store):
+    eid = store.open_entry(T0, 10.0, 20.0)
+    store.close_entry(eid, T0 + 60)
+    store.save_frame(eid, b"jpeg")
+    assert store.delete(T0 - 1, T0 + 100) == 1
+    assert not (store.frames_dir / f"{eid}.jpg").exists()
+
+
+def test_frame_limits_config(tmp_path):
+    cfg = ConfigManager(config_dir=tmp_path / "c")
+    assert cfg.observation_frame_limits == (2048 << 20, 1024 << 20)
+    cfg._data["observation_log"].update({"frame_quota_mb": 100, "min_free_mb": "x"})
+    assert cfg.observation_frame_limits == (100 << 20, 1024 << 20)
+    cfg._data["observation_log"]["frames"] = False
+    assert cfg.observation_frame_limits is None
+
+
+@pytest.mark.asyncio
+async def test_api_frame(api):
+    ws, store, _, _ = api
+    eid = store.open_entry(1_700_000_000, 10.0, 20.0)
+    store.close_entry(eid, 1_700_000_100)
+    store.save_frame(eid, _jpeg(64, 40))
+    base = f"http://127.0.0.1:{ws._port}/api/observations"
+    async with ClientSession() as s:
+        async with s.get(f"{base}/{eid}/frame.jpg") as r:
+            assert r.status == 200 and r.content_type == "image/jpeg"
+            assert (await r.read())[:2] == b"\xff\xd8"
+        async with s.get(f"{base}/{eid + 1}/frame.jpg") as r:
+            assert r.status == 404
+        async with s.get(f"{base}/abc/frame.jpg") as r:
+            assert r.status == 400

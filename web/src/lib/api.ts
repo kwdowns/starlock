@@ -24,6 +24,8 @@ export interface ObservationEntry {
   az_deg: number | null;
   target_name: string | null;
   clock: "system" | "client";
+  /** A downscaled camera frame was kept with the entry (may be trimmed later). */
+  has_frame?: boolean;
 }
 
 export interface ObservationList {

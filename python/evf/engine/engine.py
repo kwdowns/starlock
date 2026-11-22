@@ -557,6 +557,8 @@ class Engine:
                     radius_deg=self._config.observation_radius_deg,
                 ),
                 enabled=lambda: self._config.observation_log_enabled,
+                frame=lambda: self._frame_buffer.get()[0],
+                frame_limits=lambda: self._config.observation_frame_limits,
             )
             self._observations.start()
         except Exception as exc:

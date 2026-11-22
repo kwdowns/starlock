@@ -117,7 +117,7 @@ python/evf/                     # main Python package
     sample_injector.py          # dev-mode sample-image injector
     audio.py                    # audio feedback (lock/lost sounds)
     epoch.py                    # J2000 <-> JNow precession (pyerfa)
-    observation_log.py          # observation log: dwell tracker, SQLite store (observations.sqlite3 next to config.json), CSV, client-corrected clock
+    observation_log.py          # observation log: dwell tracker, SQLite store (observations.sqlite3 next to config.json) + one frame per entry (observation_frames/, oldest trimmed past a quota), CSV, client-corrected clock
   camera/                       # TCP camera client
     client.py                   # camera TCP client
     protocol.py                 # camera protocol (de)serialization
@@ -302,6 +302,8 @@ Detailed design docs live in `specs/start/`:
 - `SPEC_PROTOCOL_CAMERA.md` — camera TCP protocol
 - `SPEC_PROTOCOL_STELLARIUM.md` — Stellarium telescope binary protocol (J2000, port 10001)
 - `SPEC_DISCOVERY.md` — Bonjour / mDNS service type and TXT record the native apps rely on
+- `SPEC_FIRST_RUN.md` — out-of-box setup: Pi image, hotspot/QR provisioning, owner tokens, factory reset, cloud ownership (design)
+- `SPEC_OBSERVING_LOG.md` — certifiable logbook: sessions, sightings, observations, equipment, sync, exports (design)
 - `SPEC_PROTOCOL_LX200.md` — LX200 Classic ASCII protocol for SkySafari / Stellarium Mobile / INDI / ASCOM (JNow, port 4030)
 - `SPEC_BUILD_RELEASE.md` — build and release process
 - `ACCEPTANCE_TESTS.md` — acceptance criteria

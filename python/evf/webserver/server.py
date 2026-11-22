@@ -417,6 +417,7 @@ class WebServer:
         app.router.add_get("/api/observations", self._api_observations)
         app.router.add_get("/api/observations.csv", self._api_observations_csv)
         app.router.add_delete("/api/observations", self._api_observations_delete)
+        app.router.add_get("/api/observations/{id}/frame.jpg", self._api_observation_frame)
         app.router.add_get("/api/catalog/{name}", self._api_catalog)
         app.router.add_get("/api/cloud", self._api_cloud_status)
         app.router.add_post("/api/cloud/pair", self._api_cloud_pair)
@@ -763,6 +764,20 @@ class WebServer:
         start, end = self._obs_range(request)
         n = await asyncio.to_thread(self._observations.store.delete, start, end)
         return web.json_response({"deleted": n})
+
+    async def _api_observation_frame(self, request: web.Request) -> web.Response:
+        """The camera frame kept with a log entry (404 if none or trimmed)."""
+        if (resp := self._obs_unavailable()) is not None:
+            return resp
+        try:
+            entry_id = int(request.match_info["id"])
+        except ValueError:
+            return web.Response(status=400, text="id must be an integer")
+        jpeg = await asyncio.to_thread(self._observations.store.frame, entry_id)
+        if jpeg is None:
+            return web.Response(status=404, text="No frame for this entry")
+        return web.Response(body=jpeg, content_type="image/jpeg",
+                            headers={"Cache-Control": "private, max-age=86400"})
 
     # -- Catalog data ------------------------------------------------------------
 

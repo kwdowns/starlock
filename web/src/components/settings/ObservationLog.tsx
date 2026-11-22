@@ -61,14 +61,43 @@ function whenLabel(e: ObservationEntry): string {
   return `${day}, ${time}${e.open ? " (now)" : ""}`;
 }
 
+function frameUrl(e: ObservationEntry): string {
+  return `/api/observations/${e.id}/frame.jpg`;
+}
+
 function Entry({ e }: { e: ObservationEntry }) {
+  const [expanded, setExpanded] = useState(false);
   const where = `${formatRa(e.ra_j2000_deg)} ${formatDec(e.dec_j2000_deg)}`;
+  const label = e.target_name ?? where;
   return (
-    <ListRow
-      title={e.target_name ?? where}
-      subtitle={e.target_name ? `${whenLabel(e)} · ${where}` : whenLabel(e)}
-      meta={formatDuration(e.duration_s)}
-    />
+    <>
+      <ListRow
+        title={label}
+        subtitle={e.target_name ? `${whenLabel(e)} · ${where}` : whenLabel(e)}
+        meta={formatDuration(e.duration_s)}
+        leading={
+          e.has_frame ? (
+            <img
+              src={frameUrl(e)}
+              alt=""
+              loading="lazy"
+              className="night-frame h-10 w-16 rounded-sm object-cover"
+            />
+          ) : undefined
+        }
+        onPress={e.has_frame ? () => setExpanded((x) => !x) : undefined}
+        aria-expanded={e.has_frame ? expanded : undefined}
+      />
+      {expanded && e.has_frame && (
+        <li className="list-none px-3 pb-3">
+          <img
+            src={frameUrl(e)}
+            alt={`Camera frame: ${label}`}
+            className="night-frame w-full rounded-sm"
+          />
+        </li>
+      )}
+    </>
   );
 }
 
