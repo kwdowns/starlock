@@ -22,7 +22,7 @@ in config.json.
 |--------------|----------------|---------|
 | `api`        | `1`            | Version of this discovery + HTTP API contract. Bumped only on breaking changes; clients should refuse a higher major they don't know. |
 | `id`         | `3f2a…` (32 hex) | Stable per-install id (`device.id` in config.json, generated on first start). Use it to recognise a Starlock across IP changes and to pair with the cloud service. Also returned by `GET /api/version` as `device_id`. |
-| `version`    | `0.3.0-beta`   | App version (`data/VERSION.json`). |
+| `version`    | `0.4.0`        | App version (`data/VERSION.json`). |
 | `protocol`   | `1`            | `protocol_version` from `data/VERSION.json`. |
 | `path`       | `/`            | Web UI path on the advertised port. |
 | `ws`         | `/ws`          | State WebSocket path. |

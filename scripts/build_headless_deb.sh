@@ -176,7 +176,7 @@ License: GPL-3+
 EOF
 
 RAW_VERSION="$("$PY" -c "import json; print(json.load(open('data/VERSION.json'))['app_version'])")"
-# 0.3.0-beta -> 0.3.0~beta-1 ('~' sorts before the final 0.3.0)
+# 0.4.0 -> 0.4.0-1. An old-style 0.3.0-beta -> 0.3.0~beta-1 ('~' sorts before 0.3.0)
 DEB_VERSION="${RAW_VERSION/-/\~}-${STARLOCK_DEB_REVISION:-1}"
 
 chmod -R u+rwX,go+rX,go-w "$STAGE"

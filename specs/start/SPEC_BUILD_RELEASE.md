@@ -277,7 +277,42 @@ Launch with `--dev` flag for debug features.
 
 ## 11. Versioning
 
-`data/VERSION.json`:
+### Product versions (all components)
+
+Starlock ships as several components in separate repos: this engine (the
+`starlock-headless` Pi package), Starlock Cloud, and the iOS app (Android
+later). They share one version scheme:
+
+- **SemVer `MAJOR.MINOR.PATCH`, numbers only.** No `-beta` / `-rc`
+  suffixes: iOS's `CFBundleShortVersionString` only takes digits and dots,
+  and the Pi and app should show exactly the same string. Staying below
+  1.0 says "not finished"; TestFlight is the iOS beta channel. 1.0.0 is the
+  first release you sell.
+- **`MAJOR.MINOR` is the product release, shared by every component.**
+  "Starlock 0.4" means engine 0.4.x, cloud 0.4.x and app 0.4.x. Starting a
+  new minor (a feature release) bumps every component to `X.Y.0`, even one
+  that didn't change, so users can match them at a glance.
+- **`PATCH` is per component.** A cloud hotfix is cloud 0.4.3 while the
+  app stays 0.4.1; no empty App Store releases.
+- **Compatibility is decided by the API versions, not by matching
+  numbers:** the Bonjour TXT `api` and `/api/version` here, the cloud's
+  `/v1` path, `protocol_version` for the camera protocol. A breaking API
+  change bumps those (and, before 1.0, the minor).
+- **Releases are git tags `vX.Y.Z`** in each repo, on the commit whose
+  version file says `X.Y.Z`.
+- **Build numbers** (iOS `CFBundleVersion`) are a separate, ever-increasing
+  counter (the CI run number). TestFlight shows them as "0.4.0 (37)"; the
+  App Store shows only "0.4.0".
+
+Where each component keeps its version (the one place to edit):
+
+| Component | File | Shown as |
+|---|---|---|
+| Engine / Pi package | `data/VERSION.json` `app_version` (and `pyproject.toml`, kept equal by a test) | `/api/version`, Bonjour TXT `version`, `.deb` `X.Y.Z-1` |
+| Starlock Cloud | `Directory.Build.props` `<Version>` | `/healthz`, image tag |
+| iOS app | `project.yml` `MARKETING_VERSION` | App Store / TestFlight version |
+
+### `data/VERSION.json`
 
 ```json
 {
@@ -287,6 +322,7 @@ Launch with `--dev` flag for debug features.
 }
 ```
 
-Concrete values drift per release; `protocol_version` and `hip_db_version` are
-stable across minor releases while `app_version` tracks `pyproject.toml`.
+`protocol_version` and `solver_db_version` are stable across minor releases;
+`app_version` follows the product scheme above and must equal
+`pyproject.toml`'s `version` (checked by `tests/test_version.py`).
 Logged at startup (INFO).

@@ -5,7 +5,7 @@ TXT record that tells a client what it found before it connects::
 
     api=1                 # discovery/API contract version (bump on breaking change)
     id=<hex>              # stable per-install id (config.json "device.id")
-    version=0.3.0-beta    # app version from data/VERSION.json
+    version=0.4.0         # app version from data/VERSION.json
     protocol=<n>          # camera/app protocol version from VERSION.json
     path=/                # web UI path on the advertised port
     ws=/ws                # state WebSocket path
