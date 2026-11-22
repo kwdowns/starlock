@@ -675,6 +675,25 @@ Must not log per-frame failures at INFO level.
 
 ---
 
+# 14b. Observation Log (`engine/observation_log.py`)
+
+A daemon thread samples `PointingState` once a second (never on the solver
+thread). An entry opens once pointing stays within `observation_log.radius_deg`
+(1 deg) for `dwell_s` (30 s) and closes when the scope moves away, solving is
+lost for 15 s, or the engine stops. Entries hold start/end UTC, J2000 RA/Dec,
+alt/az (when a location is known) and the GOTO target name if the pointing is
+within the radius of it. They live in SQLite (`observations.sqlite3`, in the
+config directory, `synchronous=FULL`), committed on open, every 30 s and on
+close; entries left open by a power cut are closed at startup.
+
+If a web client's clock differs from the host's by more than 60 s (Pi without
+RTC or network), `POST /api/clock` makes log timestamps use the client time.
+API: `GET /api/observations`, `GET /api/observations.csv`,
+`DELETE /api/observations` (all with `start`/`end` ISO-8601). Config:
+`observation_log.{enabled,dwell_s,radius_deg}`.
+
+---
+
 # 15. Future-Proofing
 
 Architecture must allow:

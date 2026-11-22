@@ -114,6 +114,7 @@ python/evf/                     # main Python package
     sample_injector.py          # dev-mode sample-image injector
     audio.py                    # audio feedback (lock/lost sounds)
     epoch.py                    # J2000 <-> JNow precession (pyerfa)
+    observation_log.py          # observation log: dwell tracker, SQLite store (observations.sqlite3 next to config.json), CSV, client-corrected clock
   camera/                       # TCP camera client
     client.py                   # camera TCP client
     protocol.py                 # camera protocol (de)serialization
@@ -144,6 +145,7 @@ web/                            # React + Vite + TS + Tailwind + shadcn/ui front
       step/                     # StepArea (wizard cards, TrackingPanel)
       catalog/                  # Targets section — Tonight/Search/Manual panels, TargetList, TargetDetail sheet, filters, time, LocationPanel
       ui/                       # component library (see web/DESIGN.md)
+      settings/                 # Settings, Connectivity, ObservationLog (range picker + CSV download)
       live-view/                # LiveView, NavOverlay, AxesOverlay, StarOverlay, ...
         SkyDome/                # always-visible 3D dome (R3F) — pointing/target markers, telescope cylinder
     hooks/                      # useEngineState (WebSocket subscription), useFullscreen (Fullscreen API)

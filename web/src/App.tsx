@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
 import { useEngineState } from "@/hooks/useEngineState";
 import { LiveView } from "@/components/live-view/LiveView";
 import { Splash } from "@/components/splash/Splash";
@@ -51,6 +52,13 @@ export default function App() {
   const state = useEngineState();
   const [showStars, setShowStars] = useLocalStorageBool("starlock.show_stars", DEFAULT_SHOW_STARS);
   const leftCol = useHeightVar<HTMLDivElement>(state !== null);
+
+  // A Pi in hotspot mode may have a wrong clock; tell it ours once we're connected
+  // so observation-log times are right. Best effort.
+  const connected = state !== null;
+  useEffect(() => {
+    if (connected) api.reportClock().catch(() => {});
+  }, [connected]);
 
   return (
     <>

@@ -36,6 +36,13 @@ from evf.config.manager import ConfigManager
 from evf.engine.audio import AudioAlert
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
+from evf.engine.observation_log import (
+    DB_NAME as _OBSERVATION_DB,
+    Clock,
+    DwellTracker,
+    ObservationLogger,
+    ObservationStore,
+)
 from evf.engine.pointing import PointingState
 from evf.engine.sample_injector import SampleInjector
 from evf.engine.state import EngineState, StateMachine
@@ -145,6 +152,7 @@ class Engine:
         self._stellarium: StellariumServer | None = None
         self._lx200: Lx200Server | None = None
         self._webserver: WebServer | None = None
+        self._observations: ObservationLogger | None = None
 
         # Held while a wizard step runs. Web requests each run on their own
         # thread, so a double tap would otherwise run the same step twice.
@@ -224,12 +232,17 @@ class Engine:
     def clear_goto_target(self) -> None:
         self._goto_target.clear()
 
-    def set_goto_target(self, ra_deg: float, dec_deg: float) -> None:
+    def set_goto_target(
+        self, ra_deg: float, dec_deg: float, name: str | None = None,
+    ) -> None:
         """Set the GOTO target. Used by the catalog 'Set as target' flow."""
-        self._goto_target.set(float(ra_deg), float(dec_deg))
+        self._goto_target.set(float(ra_deg), float(dec_deg), name)
 
     def set_audio_enabled(self, enabled: bool) -> None:
         self.audio_enabled = enabled
+
+    def set_observation_log_enabled(self, enabled: bool) -> None:
+        self._config.observation_log_enabled = enabled
 
     def set_mount_mode(self, mode: str) -> None:
         """Switch push-to guidance between "altaz" and "eq" axes."""
@@ -509,6 +522,43 @@ class Engine:
             logger.error("Failed to start LX200 server: %s", exc)
             self._lx200 = None
 
+    def _observation_target(self) -> tuple[float, float, str | None] | None:
+        """Active GOTO target as (ra, dec, name) for the observation log.
+
+        The name comes from the client that set it (web UI), else from the
+        object Stellarium reported for its GOTO.
+        """
+        t = self._goto_target.read()
+        if not t.active:
+            return None
+        name = t.name
+        if not name:
+            obj = self.stellarium_object
+            if obj:
+                name = obj.get("localized-name") or obj.get("name")
+        return (t.ra_j2000, t.dec_j2000, name)
+
+    def startup_observation_log(self) -> None:
+        """Open the observation log database and start the dwell logger."""
+        try:
+            store = ObservationStore(self._config.dir / _OBSERVATION_DB)
+            self._observations = ObservationLogger(
+                store,
+                self._pointing_state,
+                Clock(),
+                location=lambda: self.location,
+                target=self._observation_target,
+                tracker=DwellTracker(
+                    dwell_s=self._config.observation_dwell_s,
+                    radius_deg=self._config.observation_radius_deg,
+                ),
+                enabled=lambda: self._config.observation_log_enabled,
+            )
+            self._observations.start()
+        except Exception as exc:
+            logger.error("Failed to start observation log: %s", exc)
+            self._observations = None
+
     def startup_webserver(self) -> None:
         """Start mobile web interface server."""
         try:
@@ -556,6 +606,7 @@ class Engine:
                 dev_mode=self._dev_mode,
                 sample_active=lambda: self._sample_injector.active_name,
                 actions=self,
+                observations=self._observations,
             )
             self._webserver.start()
         except Exception as exc:
@@ -978,6 +1029,13 @@ class Engine:
             except Exception as exc:
                 logger.error("Error stopping solver: %s", exc)
 
+        # 1b. Close the open observation entry (before the pointing source goes away)
+        if self._observations:
+            try:
+                self._observations.stop(timeout=2)
+            except Exception as exc:
+                logger.error("Error stopping observation log: %s", exc)
+
         # 2. Stop Stellarium server
         if self._stellarium:
             try:
@@ -998,6 +1056,12 @@ class Engine:
                 self._webserver.stop(timeout=2)
             except Exception as exc:
                 logger.error("Error stopping web server: %s", exc)
+
+        if self._observations:
+            try:
+                self._observations.store.close()
+            except Exception as exc:
+                logger.error("Error closing observation log: %s", exc)
 
         # 3. Terminate camera subprocess. Taking _camera_lock waits out any
         # retry already in flight (_shutting_down refuses new ones), so no

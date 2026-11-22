@@ -155,6 +155,7 @@ def main() -> None:
     engine.startup_solver()
     engine.startup_stellarium()
     engine.startup_lx200()
+    engine.startup_observation_log()
     engine.startup_webserver()
 
     def _start_camera() -> None:

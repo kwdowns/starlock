@@ -9,6 +9,7 @@ import {
 } from "@/components/ui";
 import { LocationPanel } from "@/components/catalog/LocationPanel";
 import { DebugPanel } from "@/components/debug/DebugPanel";
+import { ObservationLog } from "@/components/settings/ObservationLog";
 import { Connectivity } from "@/components/settings/Connectivity";
 import { Settings } from "@/components/settings/Settings";
 import type { EnginePayload } from "@/lib/types";
@@ -48,6 +49,8 @@ export function SettingsSheet({ open, onOpenChange, state, showStars, setShowSta
           <Separator />
           {/* LocationPanel brings its own "Location" heading. */}
           <LocationPanel state={state} />
+          <Separator />
+          <ObservationLog />
           {state.dev_mode && (
             <>
               <Separator />

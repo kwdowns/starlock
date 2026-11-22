@@ -43,6 +43,7 @@ class GotoTargetSnapshot:
     ra_j2000: float  # degrees
     dec_j2000: float  # degrees
     active: bool
+    name: str | None = None  # label from the client that set it, if any
 
 
 class GotoTarget:
@@ -53,6 +54,7 @@ class GotoTarget:
         self._ra_j2000: float = 0.0
         self._dec_j2000: float = 0.0
         self._active: bool = False
+        self._name: str | None = None
         self._on_change: list[Callable[[], None]] = []
 
     def add_on_change(self, callback: Callable[[], None]) -> None:
@@ -60,12 +62,15 @@ class GotoTarget:
         invalidate cached object metadata that's tied to the previous target."""
         self._on_change.append(callback)
 
-    def set(self, ra_j2000_deg: float, dec_j2000_deg: float) -> None:
+    def set(
+        self, ra_j2000_deg: float, dec_j2000_deg: float, name: str | None = None,
+    ) -> None:
         """Set a new GOTO target. Called by Stellarium server thread."""
         with self._lock:
             self._ra_j2000 = ra_j2000_deg
             self._dec_j2000 = dec_j2000_deg
             self._active = True
+            self._name = name or None
         for cb in self._on_change:
             try:
                 cb()
@@ -100,4 +105,5 @@ class GotoTarget:
                 ra_j2000=self._ra_j2000,
                 dec_j2000=self._dec_j2000,
                 active=self._active,
+                name=self._name,
             )

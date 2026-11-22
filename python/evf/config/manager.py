@@ -48,6 +48,8 @@ DEFAULT_CONFIG = {
     # Headless Pi CPU clock cap (see evf/engine/cpufreq.py). Solves take
     # tens of ms per exposure, so the CPU can run slower.
     "power": {"cpu_cap": True, "max_freq_mhz": 1200},
+    # Dwell log of what the scope pointed at (see evf/engine/observation_log.py).
+    "observation_log": {"enabled": True, "dwell_s": 30, "radius_deg": 1.0},
     "lx200": {"epoch": "jnow"},
     "webserver": {"port": 8780},
     "location": {"latitude": None, "longitude": None},
@@ -316,6 +318,33 @@ class ConfigManager:
             raise ValueError(f"longitude must be in [-180, 180], got {lon}")
         self.set("location", "latitude", float(lat))
         self.set("location", "longitude", float(lon))
+
+    @property
+    def observation_log_enabled(self) -> bool:
+        return self.get("observation_log", "enabled") is not False
+
+    @observation_log_enabled.setter
+    def observation_log_enabled(self, value: bool) -> None:
+        self.set("observation_log", "enabled", bool(value))
+
+    @property
+    def observation_dwell_s(self) -> float:
+        return self._positive("observation_log", "dwell_s")
+
+    @property
+    def observation_radius_deg(self) -> float:
+        return self._positive("observation_log", "radius_deg")
+
+    def _positive(self, section: str, key: str) -> float:
+        value = self.get(section, key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            return float(DEFAULT_CONFIG[section][key])
+        return float(value)
+
+    @property
+    def dir(self) -> Path:
+        """Directory holding config.json (and the observation log database)."""
+        return self._dir
 
     @property
     def path(self) -> Path:

@@ -74,7 +74,7 @@ describe("Targets / Tonight", () => {
 
     await waitFor(() => expect(onTargetSet).toHaveBeenCalledTimes(1));
     expect(setGoto).toHaveBeenCalledTimes(1);
-    expect(setGoto).toHaveBeenCalledWith(item.ra_deg, item.dec_deg);
+    expect(setGoto).toHaveBeenCalledWith(item.ra_deg, item.dec_deg, item.title);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe("Targets / Tonight", () => {
     expect(setGoto).not.toHaveBeenCalled();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Go to" }));
-    await waitFor(() => expect(setGoto).toHaveBeenCalledWith(item.ra_deg, item.dec_deg));
+    await waitFor(() => expect(setGoto).toHaveBeenCalledWith(item.ra_deg, item.dec_deg, item.title));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 

@@ -31,6 +31,7 @@ import math
 import mimetypes
 import threading
 import time
+from datetime import datetime, timezone
 from typing import Callable, Protocol
 
 from aiohttp import WSCloseCode, web
@@ -41,6 +42,7 @@ from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
 from evf.engine.mount import MOUNT_MODES, compute_mount_guidance, mount_axes
 from evf.engine.navigation import compute_navigation, edge_arrow_position
+from evf.engine.observation_log import ObservationLogger, entries_to_csv
 from evf.engine.pointing import PointingState
 from evf.engine.state import StateMachine
 from evf.network import local_ip
@@ -74,7 +76,10 @@ class EngineActions(Protocol):
     def retry_camera(self) -> bool: ...
     def set_control(self, name: str, value: int) -> None: ...
     def clear_goto_target(self) -> None: ...
-    def set_goto_target(self, ra_deg: float, dec_deg: float) -> None: ...
+    def set_goto_target(
+        self, ra_deg: float, dec_deg: float, name: str | None = None,
+    ) -> None: ...
+    def set_observation_log_enabled(self, enabled: bool) -> None: ...
     def set_audio_enabled(self, enabled: bool) -> None: ...
     def set_cpu_cap(self, enabled: bool) -> None: ...
     def set_mount_mode(self, mode: str) -> None: ...
@@ -178,7 +183,9 @@ class WebServer:
         sample_active: Callable[[], str | None] | None = None,
         actions: "EngineActions | None" = None,
         on_client_connected: Callable[[], None] | None = None,
+        observations: ObservationLogger | None = None,
     ) -> None:
+        self._observations = observations
         self._pointing = pointing
         self._state_machine = state_machine
         self._goto_target = goto_target
@@ -291,6 +298,10 @@ class WebServer:
         app.router.add_post("/api/control", self._api_set_control)
         app.router.add_post("/api/goto/clear", self._api_goto_clear)
         app.router.add_post("/api/goto/set", self._api_goto_set)
+        app.router.add_post("/api/clock", self._api_clock)
+        app.router.add_get("/api/observations", self._api_observations)
+        app.router.add_get("/api/observations.csv", self._api_observations_csv)
+        app.router.add_delete("/api/observations", self._api_observations_delete)
         app.router.add_post("/api/settings", self._api_settings)
         app.router.add_post("/api/dev/inject-sample", self._api_dev_inject_sample)
         app.router.add_post("/api/dev/inject-target", self._api_dev_inject_target)
@@ -541,9 +552,95 @@ class WebServer:
         body = await request.json()
         ra = float(body["ra_deg"])
         dec = float(body["dec_deg"])
+        name = body.get("name")
+        if isinstance(name, str) and name.strip():
+            name = name.strip()[:120]
+            return await self._handle_api(
+                request, lambda: self._actions.set_goto_target(ra, dec, name)
+            )
         return await self._handle_api(
             request, lambda: self._actions.set_goto_target(ra, dec)
         )
+
+    # -- observation log ------------------------------------------------------
+
+    def _obs_unavailable(self) -> web.Response | None:
+        if self._observations is None:
+            return web.Response(status=503, text="Observation log unavailable")
+        return None
+
+    def _obs_range(self, request: web.Request) -> tuple[float, float]:
+        """(start, end) unix seconds from ?start=&end= ISO-8601; default last 24 h."""
+        def parse(text: str) -> float:
+            dt = datetime.fromisoformat(text.strip().replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.timestamp()
+        try:
+            q = request.query
+            end = parse(q["end"]) if q.get("end") else self._observations.clock.now()
+            start = parse(q["start"]) if q.get("start") else end - 86400.0
+        except ValueError as exc:
+            raise web.HTTPBadRequest(text=f"start/end must be ISO-8601: {exc}")
+        if start > end:
+            raise web.HTTPBadRequest(text="start must not be after end")
+        return start, end
+
+    async def _api_clock(self, request: web.Request) -> web.Response:
+        """A web client reports its clock; used when the host clock is wrong."""
+        if (resp := self._obs_unavailable()) is not None:
+            return resp
+        try:
+            body = await request.json()
+            client_s = float(body["unix_ms"]) / 1000.0
+        except (ValueError, KeyError, TypeError):
+            return web.Response(status=400, text="unix_ms required")
+        used = self._observations.clock.report_client_time(client_s)
+        return web.json_response({"client_clock_used": used})
+
+    async def _api_observations(self, request: web.Request) -> web.Response:
+        if (resp := self._obs_unavailable()) is not None:
+            return resp
+        start, end = self._obs_range(request)
+        try:
+            limit = int(request.query["limit"]) if "limit" in request.query else 500
+        except ValueError:
+            return web.Response(status=400, text="limit must be an integer")
+        store = self._observations.store
+        entries = await asyncio.to_thread(store.list, start, end, max(1, limit))
+        return web.json_response({
+            "enabled": self._config.observation_log_enabled,
+            "clock": self._observations.clock.source,
+            "now_utc": datetime.fromtimestamp(
+                self._observations.clock.now(), timezone.utc
+            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "entries": entries,
+        })
+
+    async def _api_observations_csv(self, request: web.Request) -> web.Response:
+        if (resp := self._obs_unavailable()) is not None:
+            return resp
+        start, end = self._obs_range(request)
+        entries = await asyncio.to_thread(self._observations.store.list, start, end)
+        def stamp(t: float) -> str:
+            return datetime.fromtimestamp(t, timezone.utc).strftime("%Y%m%d-%H%M")
+        return web.Response(
+            body=entries_to_csv(entries).encode("utf-8"),
+            content_type="text/csv",
+            charset="utf-8",
+            headers={"Content-Disposition":
+                     f'attachment; filename="starlock-observations-{stamp(start)}-{stamp(end)}.csv"'},
+        )
+
+    async def _api_observations_delete(self, request: web.Request) -> web.Response:
+        """Delete closed entries in a range. start and end are both required."""
+        if (resp := self._obs_unavailable()) is not None:
+            return resp
+        if "start" not in request.query or "end" not in request.query:
+            return web.Response(status=400, text="start and end are required")
+        start, end = self._obs_range(request)
+        n = await asyncio.to_thread(self._observations.store.delete, start, end)
+        return web.json_response({"deleted": n})
 
     async def _api_settings(self, request):
         body = await request.json()
@@ -596,6 +693,14 @@ class WebServer:
                 resp = await self._handle_api(
                     request, lambda: self._actions.set_location(lat, lon),
                 )
+            if resp.status >= 400:
+                return resp
+        if "observation_log_enabled" in body:
+            resp = await self._handle_api(
+                request,
+                lambda: self._actions.set_observation_log_enabled(
+                    bool(body["observation_log_enabled"])),
+            )
             if resp.status >= 400:
                 return resp
         if "lx200_epoch" in body:
