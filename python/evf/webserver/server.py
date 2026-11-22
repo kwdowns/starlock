@@ -33,7 +33,7 @@ import mimetypes
 import threading
 import time
 from datetime import datetime, timezone
-from typing import Callable, Protocol
+from typing import Callable, Iterable, Protocol
 
 from aiohttp import WSCloseCode, web
 from PIL import Image
@@ -149,41 +149,64 @@ _SIMPLE_CONTENT_TYPES = frozenset({
 _LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal", ".localdomain")
 
 
-def _host_is_local(host: str) -> bool:
-    """Whether a Host header value names this unit on the LAN.
-
-    Accepts IP literals, ``localhost``, single-label names and the usual
-    LAN suffixes (``starlock-3f2a.local``). Anything else is a public DNS
-    name, which is how a DNS-rebinding page would reach the unit.
-    """
-    import ipaddress
+def _host_name(host: str) -> str:
+    """Host header value without port, lower case, no trailing dot."""
     host = host.strip().lower()
     if host.startswith("["):  # [v6]:port
         host = host[1:host.find("]")] if "]" in host else host[1:]
     elif host.count(":") == 1:
         host = host.split(":", 1)[0]
-    host = host.rstrip(".")
-    if not host:
+    return host.rstrip(".")
+
+
+def _in_allowed(name: str, allowed: Iterable[str]) -> bool:
+    for pattern in allowed:
+        if pattern.startswith("*."):
+            if name.endswith(pattern[1:]):
+                return True
+        elif name == pattern:
+            return True
+    return False
+
+
+def _host_is_local(host: str, allowed: Iterable[str] = ()) -> bool:
+    """Whether a Host header value names this unit.
+
+    Accepts IP literals, ``localhost``, single-label names, the usual LAN
+    suffixes (``starlock-3f2a.local``) and the owner's own names from
+    ``webserver.allowed_hosts``. Anything else is a public DNS name, which
+    is how a DNS-rebinding page would reach the unit.
+    """
+    import ipaddress
+    name = _host_name(host)
+    if not name:
         return False
     try:
-        ipaddress.ip_address(host)
+        ipaddress.ip_address(name)
         return True
     except ValueError:
         pass
-    return host == "localhost" or "." not in host or host.endswith(_LOCAL_SUFFIXES)
+    return (name == "localhost" or "." not in name or name.endswith(_LOCAL_SUFFIXES)
+            or _in_allowed(name, allowed))
 
 
-def _origin_matches_host(origin: str, host: str) -> bool:
+def _origin_ok(origin: str, host: str, allowed: Iterable[str] = ()) -> bool:
+    """Same origin as the request, or one of the owner's allowed names
+    (a reverse proxy may rewrite Host to the Pi's IP)."""
     import urllib.parse
     try:
-        netloc = urllib.parse.urlsplit(origin).netloc.lower()
+        parts = urllib.parse.urlsplit(origin)
     except ValueError:
         return False
-    return bool(netloc) and netloc == host.strip().lower()
+    netloc = parts.netloc.lower()
+    if not netloc:
+        return False
+    return netloc == host.strip().lower() or _in_allowed(_host_name(netloc), allowed)
 
 
 def request_guard_problem(method: str, host: str, origin: str | None,
-                          content_type: str) -> str | None:
+                          content_type: str, allowed: Iterable[str] = (),
+                          path: str = "") -> str | None:
     """Why a request must be refused, or None.
 
     Stops other web pages from driving the unit through the owner's
@@ -192,29 +215,33 @@ def request_guard_problem(method: str, host: str, origin: str | None,
     form/text posts that skip the CORS preflight. See
     specs/start/SPEC_FIRST_RUN.md §7.2.
     """
-    if not _host_is_local(host):
+    if not _host_is_local(host, allowed):
         return "unknown host"
-    if origin is not None and not _origin_matches_host(origin, host):
+    if origin is not None and not _origin_ok(origin, host, allowed):
         if method not in ("GET", "HEAD", "OPTIONS"):
             return "cross-site request"
+        if path == "/ws":
+            return "cross-site WebSocket"
     if method in ("POST", "PUT", "PATCH") and content_type in _SIMPLE_CONTENT_TYPES:
         return "use Content-Type: application/json"
     return None
 
 
-@web.middleware
-async def _request_guard_middleware(request: web.Request, handler) -> web.StreamResponse:
-    origin = request.headers.get("Origin")
-    problem = request_guard_problem(request.method, request.host or "", origin,
-                                    request.content_type if request.body_exists else "")
-    if problem is None and request.path == "/ws" and origin is not None \
-            and not _origin_matches_host(origin, request.host or ""):
-        problem = "cross-site WebSocket"
-    if problem is not None:
-        logger.warning("Refused %s %s (Host %r, Origin %r): %s",
-                       request.method, request.path, request.host, origin, problem)
-        return web.Response(status=403, text=problem)
-    return await handler(request)
+def _request_guard_middleware(allowed_hosts: Callable[[], list[str]]):
+    @web.middleware
+    async def guard(request: web.Request, handler) -> web.StreamResponse:
+        origin = request.headers.get("Origin")
+        problem = request_guard_problem(
+            request.method, request.host or "", origin,
+            request.content_type if request.body_exists else "",
+            allowed_hosts(), request.path,
+        )
+        if problem is not None:
+            logger.warning("Refused %s %s (Host %r, Origin %r): %s",
+                           request.method, request.path, request.host, origin, problem)
+            return web.Response(status=403, text=problem)
+        return await handler(request)
+    return guard
 
 
 def _is_local_origin(origin: str) -> bool:
@@ -369,8 +396,10 @@ class WebServer:
             logger.info("Mobile web interface at %s", url)
 
         self._have_clients = asyncio.Event()
-        app = web.Application(middlewares=[_security_headers_middleware,
-                                           _request_guard_middleware])
+        app = web.Application(middlewares=[
+            _security_headers_middleware,
+            _request_guard_middleware(lambda: self._config.web_allowed_hosts),
+        ])
         app.router.add_get("/", self._handle_index)
         app.router.add_get("/api/version", self._handle_version)
         app.router.add_get("/ws", self._handle_ws)

@@ -485,6 +485,9 @@ Cheap fixes that ship with this (and are worth doing even before tokens):
   or the unit's hostname (stops DNS rebinding).
 - Reject a present `Origin` that doesn't match `Host`.
 - `/api/dev/*` only in debug mode.
+- Built 2026-11-22 (`_request_guard_middleware` in the web server). Owners
+  who reach the unit through their own DNS name or reverse proxy list it in
+  `webserver.allowed_hosts` in config.json (`*.example.com` allowed).
 
 ### 7.3 Cloud ownership: device identity and the hardware key
 

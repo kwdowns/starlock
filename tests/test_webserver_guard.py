@@ -113,3 +113,26 @@ async def test_capture_frame_needs_debug_mode(server):
         async with s.post(f"http://127.0.0.1:{ws._port}/api/dev/capture-frame") as resp:
             assert resp.status == 404
     actions.capture_frame.assert_not_called()
+
+
+def test_owner_allowed_hosts_behind_a_reverse_proxy():
+    allowed = ["*.home.example.net", "scope.example.org"]
+    # Browser -> proxy keeps Host
+    assert request_guard_problem("POST", "starlock.home.example.net", "https://starlock.home.example.net",
+                                 "application/json", allowed) is None
+    # Proxy rewrote Host to the Pi's IP; Origin is the owner's name
+    assert request_guard_problem("POST", "192.168.1.52", "https://scope.example.org",
+                                 "application/json", allowed) is None
+    assert request_guard_problem("GET", "192.168.1.52", "https://scope.example.org", "",
+                                 allowed, "/ws") is None
+    # Not on the list
+    assert request_guard_problem("GET", "home.example.net.evil.com", None, "", allowed) == "unknown host"
+    assert request_guard_problem("GET", "192.168.1.52", "https://evil.example.com", "",
+                                 allowed, "/ws") == "cross-site WebSocket"
+
+
+def test_allowed_hosts_config(tmp_path):
+    cfg = ConfigManager(config_dir=tmp_path / "c")
+    assert cfg.web_allowed_hosts == []
+    cfg._data["webserver"]["allowed_hosts"] = ["Starlock.Home.Example.NET.", " ", 5]
+    assert cfg.web_allowed_hosts == ["starlock.home.example.net", "5"]

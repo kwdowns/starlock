@@ -306,6 +306,17 @@ class ConfigManager:
         self.set("webserver", "port", value)
 
     @property
+    def web_allowed_hosts(self) -> list[str]:
+        """Extra host names the web server answers to, besides IPs and LAN
+        names: e.g. a home DNS name behind a reverse proxy. Hand-edited in
+        config.json (``webserver.allowed_hosts``); ``*.example.com`` matches
+        any subdomain."""
+        value = self.get("webserver", "allowed_hosts")
+        if not isinstance(value, list):
+            return []
+        return [str(h).strip().lower().rstrip(".") for h in value if str(h).strip()]
+
+    @property
     def location(self) -> tuple[float, float] | None:
         """Return (latitude_deg, longitude_deg) or None if unset."""
         lat = self.get("location", "latitude")
