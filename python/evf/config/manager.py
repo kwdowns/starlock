@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import platform
+import uuid
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,11 @@ DEFAULT_CONFIG = {
     "observation_log": {"enabled": True, "dwell_s": 30, "radius_deg": 1.0},
     "lx200": {"epoch": "jnow"},
     "webserver": {"port": 8780},
+    # Bonjour / mDNS advertising of the web server (see evf/discovery.py).
+    "discovery": {"enabled": True},
+    # Stable random id for this install, generated on first use. Lets apps
+    # tell two Starlocks apart and recognise one that changed IP.
+    "device": {"id": None},
     "location": {"latitude": None, "longitude": None},
 }
 
@@ -334,6 +340,20 @@ class ConfigManager:
     @property
     def observation_radius_deg(self) -> float:
         return self._positive("observation_log", "radius_deg")
+
+    @property
+    def discovery_enabled(self) -> bool:
+        return self.get("discovery", "enabled") is not False
+
+    @property
+    def device_id(self) -> str:
+        """This install's id, created and saved the first time it's read."""
+        value = self.get("device", "id")
+        if isinstance(value, str) and value:
+            return value
+        value = uuid.uuid4().hex
+        self.set("device", "id", value)
+        return value
 
     def _positive(self, section: str, key: str) -> float:
         value = self.get(section, key)

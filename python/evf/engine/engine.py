@@ -33,6 +33,7 @@ from pathlib import Path
 from evf.camera.subprocess_mgr import SubprocessManager
 from evf.config.logging_setup import setup_logging
 from evf.config.manager import ConfigManager
+from evf.discovery import DiscoveryAdvertiser, txt_properties
 from evf.engine.audio import AudioAlert
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
@@ -152,6 +153,7 @@ class Engine:
         self._stellarium: StellariumServer | None = None
         self._lx200: Lx200Server | None = None
         self._webserver: WebServer | None = None
+        self._discovery: DiscoveryAdvertiser | None = None
         self._observations: ObservationLogger | None = None
 
         # Held while a wizard step runs. Web requests each run on their own
@@ -613,6 +615,35 @@ class Engine:
             logger.error("Failed to start web server: %s", exc)
             self._webserver = None
 
+    def startup_discovery(self) -> None:
+        """Advertise the web server over Bonjour / mDNS (``_starlock._tcp``).
+
+        Phone apps find Starlock this way without the user typing an IP.
+        Needs the web server to be up; off when ``discovery.enabled`` is false.
+        """
+        if self._webserver is None or not self._config.discovery_enabled:
+            return
+        try:
+            try:
+                with open(version_json()) as f:
+                    meta = json.load(f)
+            except (OSError, json.JSONDecodeError):
+                meta = {}
+            device_id = self._config.device_id
+            self._discovery = DiscoveryAdvertiser(
+                self._config.web_port,
+                txt_properties(
+                    device_id,
+                    meta.get("app_version"),
+                    meta.get("protocol_version"),
+                ),
+                device_id,
+            )
+            self._discovery.start()
+        except Exception as exc:
+            logger.error("Failed to start mDNS advertising: %s", exc)
+            self._discovery = None
+
     @property
     def web_url(self) -> str | None:
         """LAN URL for the mobile web interface, or None if not running."""
@@ -1050,7 +1081,13 @@ class Engine:
             except Exception as exc:
                 logger.error("Error stopping LX200 server: %s", exc)
 
-        # 3a. Stop web server
+        # 3a. Withdraw the mDNS advert, then stop the web server
+        if self._discovery:
+            try:
+                self._discovery.stop(timeout=2)
+            except Exception as exc:
+                logger.error("Error stopping mDNS advertising: %s", exc)
+
         if self._webserver:
             try:
                 self._webserver.stop(timeout=2)

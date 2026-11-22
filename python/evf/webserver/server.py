@@ -378,6 +378,9 @@ class WebServer:
             "app": "starlock",
             "version": data.get("app_version"),
             "protocol_version": data.get("protocol_version"),
+            # Same id as the mDNS TXT record, so an app can match an
+            # address it was given to a Starlock it discovered before.
+            "device_id": self._config.device_id,
         })
 
     # -- Camera frames ------------------------------------------------------

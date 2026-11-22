@@ -11,7 +11,9 @@ Camera servers are platform-specific: Swift (macOS), C/V4L2 (Linux), C/DirectSho
 External integrations run in-process on three TCP servers: a **Stellarium** binary-protocol
 server on `localhost:10001`, an **LX200 Classic** ASCII server on `0.0.0.0:4030` for
 SkySafari / Stellarium Mobile / INDI / ASCOM clients, and an **aiohttp HTTP + WebSocket**
-server on `0.0.0.0:8780` for the phone-scannable mobile web interface.
+server on `0.0.0.0:8780` for the phone-scannable mobile web interface. The web
+server is advertised over Bonjour / mDNS as `_starlock._tcp` (`evf/discovery.py`,
+TXT record in `specs/start/SPEC_DISCOVERY.md`) so phone apps find it without an IP.
 
 The UI is a single screen with no tabs (design rules in `web/DESIGN.md`, red
 channel only for night vision; live component reference at `?gallery`):
@@ -103,6 +105,7 @@ python/evf/                     # main Python package
   main.py                       # entry point — engine + pywebview
   paths.py                      # centralized path resolution (dev vs release bundles)
   network.py                    # shared LAN-IP probe used by webserver + engine
+  discovery.py                  # Bonjour / mDNS advert of the web server (_starlock._tcp, zeroconf)
   engine/                       # core engine, state machine, threading
     engine.py                   # main engine (owns all subsystems)
     state.py                    # state machine
@@ -220,6 +223,7 @@ specs/start/                    # design specifications
 - **three** + **@react-three/fiber** + **@react-three/drei** — WebGL rendering for the always-visible Sky View 3D dome (`web/src/components/live-view/SkyDome/`). Labels use drei `<Html>` to stay offline; `<Text>` is intentionally avoided so troika-three-text's CDN font-resolver is never loaded
 - **numpy**, **Pillow** — image/array handling (solver wrapper) and the sync rotation maths
 - **playsound3** — audio feedback for solve lock/lost events
+- **zeroconf** (+ ifaddr) — pure-Python mDNS responder for the `_starlock._tcp` advert; runs alongside avahi-daemon on the Pi
 - **aiohttp** — HTTP + WebSocket server (serves the React build, /ws state, /frame.jpg + /frame.mjpg, /api/*)
 - **qrcode.react** (npm) — QR-code rendering for the LAN URL in the Settings panel
 - **pyerfa** — IAU 2006 precession (J2000 ↔ JNow) for the LX200 protocol server
@@ -291,6 +295,7 @@ Detailed design docs live in `specs/start/`:
 - `SPEC_PRODUCT.md` — product requirements
 - `SPEC_PROTOCOL_CAMERA.md` — camera TCP protocol
 - `SPEC_PROTOCOL_STELLARIUM.md` — Stellarium telescope binary protocol (J2000, port 10001)
+- `SPEC_DISCOVERY.md` — Bonjour / mDNS service type and TXT record the native apps rely on
 - `SPEC_PROTOCOL_LX200.md` — LX200 Classic ASCII protocol for SkySafari / Stellarium Mobile / INDI / ASCOM (JNow, port 4030)
 - `SPEC_BUILD_RELEASE.md` — build and release process
 - `ACCEPTANCE_TESTS.md` — acceptance criteria
