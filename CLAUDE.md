@@ -132,6 +132,12 @@ python/evf/                     # main Python package
   lx200/                        # LX200 Classic TCP protocol server
     server.py                   # TCP server (select-based, multi-client)
     protocol.py                 # LX200 ASCII parsing + dispatch
+  cloud/                        # optional Starlock Cloud link (opt-in; idle until paired)
+    link.py                     # cloud.json (base URL, device id, credential; 0600, never sent to clients)
+    client.py                   # stdlib HTTP client for the device API (Authorization: Device …)
+    pointing.py                 # Live Activity pointing updates from the /ws payload (2 s / 30 s heartbeat / backoff)
+    uploader.py                 # observation-log backup, batches of 100, idempotent entry ids
+    service.py                  # owns link + workers; pairing (/api/cloud/pair) and unlinking
   webserver/                    # aiohttp HTTP + WebSocket server
     server.py                   # serves React build, MJPEG, /ws, /api/*
   config/                       # configuration
@@ -148,7 +154,7 @@ web/                            # React + Vite + TS + Tailwind + shadcn/ui front
       step/                     # StepArea (wizard cards, TrackingPanel)
       catalog/                  # Targets section — Tonight/Search/Manual panels, TargetList, TargetDetail sheet, filters, time, LocationPanel
       ui/                       # component library (see web/DESIGN.md)
-      settings/                 # Settings, Connectivity, ObservationLog (range picker + CSV download)
+      settings/                 # Settings, Connectivity, ObservationLog (range picker + CSV download), CloudLink
       live-view/                # LiveView, NavOverlay, AxesOverlay, StarOverlay, ...
         SkyDome/                # always-visible 3D dome (R3F) — pointing/target markers, telescope cylinder
     hooks/                      # useEngineState (WebSocket subscription), useFullscreen (Fullscreen API)

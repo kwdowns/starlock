@@ -37,6 +37,7 @@ from typing import Callable, Protocol
 from aiohttp import WSCloseCode, web
 from PIL import Image
 
+from evf.cloud.service import CloudService, PairingError
 from evf.config.manager import ConfigManager
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
@@ -184,8 +185,10 @@ class WebServer:
         actions: "EngineActions | None" = None,
         on_client_connected: Callable[[], None] | None = None,
         observations: ObservationLogger | None = None,
+        cloud: Callable[[], "CloudService | None"] | None = None,
     ) -> None:
         self._observations = observations
+        self._cloud_fn = cloud
         self._pointing = pointing
         self._state_machine = state_machine
         self._goto_target = goto_target
@@ -302,6 +305,9 @@ class WebServer:
         app.router.add_get("/api/observations", self._api_observations)
         app.router.add_get("/api/observations.csv", self._api_observations_csv)
         app.router.add_delete("/api/observations", self._api_observations_delete)
+        app.router.add_get("/api/cloud", self._api_cloud_status)
+        app.router.add_post("/api/cloud/pair", self._api_cloud_pair)
+        app.router.add_delete("/api/cloud", self._api_cloud_unlink)
         app.router.add_post("/api/settings", self._api_settings)
         app.router.add_post("/api/dev/inject-sample", self._api_dev_inject_sample)
         app.router.add_post("/api/dev/inject-target", self._api_dev_inject_target)
@@ -645,6 +651,48 @@ class WebServer:
         n = await asyncio.to_thread(self._observations.store.delete, start, end)
         return web.json_response({"deleted": n})
 
+    # -- Starlock Cloud link ---------------------------------------------------
+
+    def _cloud(self) -> "CloudService | None":
+        return self._cloud_fn() if self._cloud_fn else None
+
+    async def _api_cloud_status(self, request: web.Request) -> web.Response:
+        """Link status for the Settings sheet. Never includes the credential."""
+        cloud = self._cloud()
+        if cloud is None:
+            return web.json_response({"available": False, "linked": False})
+        return web.json_response({"available": True, **cloud.status()})
+
+    async def _api_cloud_pair(self, request: web.Request) -> web.Response:
+        """Link to Starlock Cloud with a pairing code from the phone app.
+
+        Body: {"code": "K7P4-QX9M", "base_url"?: "https://…", "name"?: "Backyard Pi"}.
+        Sent by the Settings sheet or by the phone app over the LAN.
+        """
+        cloud = self._cloud()
+        if cloud is None:
+            return web.Response(status=503, text="Starlock Cloud unavailable")
+        try:
+            body = await request.json()
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return web.Response(status=400, text="JSON body required")
+        if not isinstance(body, dict) or not isinstance(body.get("code"), str):
+            return web.Response(status=400, text="code required")
+        base_url = body.get("base_url") if isinstance(body.get("base_url"), str) else None
+        name = body.get("name") if isinstance(body.get("name"), str) else None
+        try:
+            status = await asyncio.to_thread(cloud.pair, body["code"], base_url, name)
+        except PairingError as exc:
+            return web.Response(status=exc.status, text=str(exc))
+        return web.json_response({"available": True, **status})
+
+    async def _api_cloud_unlink(self, request: web.Request) -> web.Response:
+        cloud = self._cloud()
+        if cloud is None:
+            return web.Response(status=503, text="Starlock Cloud unavailable")
+        await asyncio.to_thread(cloud.unlink)
+        return web.Response(status=204)
+
     async def _api_settings(self, request):
         body = await request.json()
         if "audio_enabled" in body:
@@ -760,6 +808,14 @@ class WebServer:
                 except Exception as exc:  # noqa: BLE001 — keep the last good size
                     logger.debug("Could not read frame size: %s", exc)
         return self._img_dims
+
+    def build_payload(self) -> dict | None:
+        """The /ws state dict, for other subsystems (Starlock Cloud). None on error."""
+        try:
+            return self._build_payload()
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Payload build error: %s", exc)
+            return None
 
     def _build_payload(self) -> dict:
         state = self._state_machine.state

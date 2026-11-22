@@ -58,6 +58,9 @@ DEFAULT_CONFIG = {
     # Stable random id for this install, generated on first use. Lets apps
     # tell two Starlocks apart and recognise one that changed IP.
     "device": {"id": None},
+    # Optional Starlock Cloud (see evf/cloud/). Null until a production address
+    # exists; the phone app can pass the address along with a pairing code.
+    "cloud": {"base_url": None},
     "location": {"latitude": None, "longitude": None},
 }
 
@@ -340,6 +343,11 @@ class ConfigManager:
     @property
     def observation_radius_deg(self) -> float:
         return self._positive("observation_log", "radius_deg")
+
+    @property
+    def cloud_base_url(self) -> str | None:
+        value = self.get("cloud", "base_url")
+        return value if isinstance(value, str) and value.strip() else None
 
     @property
     def discovery_enabled(self) -> bool:

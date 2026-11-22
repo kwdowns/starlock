@@ -9,6 +9,7 @@ import {
 } from "@/components/ui";
 import { LocationPanel } from "@/components/catalog/LocationPanel";
 import { DebugPanel } from "@/components/debug/DebugPanel";
+import { CloudLink } from "@/components/settings/CloudLink";
 import { ObservationLog } from "@/components/settings/ObservationLog";
 import { Connectivity } from "@/components/settings/Connectivity";
 import { Settings } from "@/components/settings/Settings";
@@ -51,6 +52,8 @@ export function SettingsSheet({ open, onOpenChange, state, showStars, setShowSta
           <LocationPanel state={state} />
           <Separator />
           <ObservationLog />
+          <Separator />
+          <CloudLink open={open} />
           {state.dev_mode && (
             <>
               <Separator />

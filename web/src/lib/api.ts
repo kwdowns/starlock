@@ -32,6 +32,28 @@ export interface ObservationList {
   entries: ObservationEntry[];
 }
 
+export interface CloudStatus {
+  /** False when the engine has no cloud link support running. */
+  available: boolean;
+  linked: boolean;
+  device_id?: string;
+  name?: string | null;
+  base_url?: string;
+  paired_at?: number;
+  error?: string | null;
+  default_base_url?: string | null;
+  last_pointing_at?: number | null;
+  pointing_error?: string | null;
+  last_upload_at?: number | null;
+  upload_error?: string | null;
+}
+
+async function cloudCall(path: string, init?: RequestInit): Promise<CloudStatus> {
+  const resp = await fetch(path, init);
+  if (resp.status >= 400) throw new Error((await resp.text()) || `HTTP ${resp.status}`);
+  return await resp.json();
+}
+
 function rangeQuery(startIso: string, endIso: string): string {
   return new URLSearchParams({ start: startIso, end: endIso }).toString();
 }
@@ -63,6 +85,17 @@ export const api = {
   },
   observationsCsvUrl: (startIso: string, endIso: string) =>
     `/api/observations.csv?${rangeQuery(startIso, endIso)}`,
+  cloudStatus: () => cloudCall("/api/cloud"),
+  cloudPair: (code: string, base_url?: string) =>
+    cloudCall("/api/cloud/pair", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(base_url ? { code, base_url } : { code }),
+    }),
+  cloudUnlink: async () => {
+    const resp = await fetch("/api/cloud", { method: "DELETE" });
+    if (resp.status >= 400) throw new Error((await resp.text()) || `HTTP ${resp.status}`);
+  },
   setSettings: (s: {
     audio_enabled?: boolean;
     cpu_cap?: boolean;

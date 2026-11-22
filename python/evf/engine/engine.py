@@ -33,6 +33,7 @@ from pathlib import Path
 from evf.camera.subprocess_mgr import SubprocessManager
 from evf.config.logging_setup import setup_logging
 from evf.config.manager import ConfigManager
+from evf.cloud.service import CloudService
 from evf.discovery import DiscoveryAdvertiser, txt_properties
 from evf.engine.audio import AudioAlert
 from evf.engine.frame_buffer import LatestFrame
@@ -154,6 +155,7 @@ class Engine:
         self._lx200: Lx200Server | None = None
         self._webserver: WebServer | None = None
         self._discovery: DiscoveryAdvertiser | None = None
+        self._cloud: CloudService | None = None
         self._observations: ObservationLogger | None = None
 
         # Held while a wizard step runs. Web requests each run on their own
@@ -609,11 +611,41 @@ class Engine:
                 sample_active=lambda: self._sample_injector.active_name,
                 actions=self,
                 observations=self._observations,
+                cloud=lambda: self._cloud,
             )
             self._webserver.start()
         except Exception as exc:
             logger.error("Failed to start web server: %s", exc)
             self._webserver = None
+
+    def startup_cloud(self) -> None:
+        """Start the optional Starlock Cloud link (idle until the Pi is linked).
+
+        Pointing updates use the same state the web UI shows, so this needs
+        the web server. Nothing reaches the network until the user links.
+        """
+        if self._webserver is None:
+            return
+        try:
+            try:
+                with open(version_json()) as f:
+                    version = json.load(f).get("app_version")
+            except (OSError, json.JSONDecodeError):
+                version = None
+            observations = self._observations
+            self._cloud = CloudService(
+                self._config.dir,
+                default_base_url=self._config.cloud_base_url,
+                device_local_id=self._config.device_id,
+                software_version=version,
+                snapshot=self._webserver.build_payload,
+                dwelling=lambda: bool(observations and observations.dwelling),
+                store=observations.store if observations else None,
+            )
+            self._cloud.start()
+        except Exception as exc:
+            logger.error("Failed to start Starlock Cloud link: %s", exc)
+            self._cloud = None
 
     def startup_discovery(self) -> None:
         """Advertise the web server over Bonjour / mDNS (``_starlock._tcp``).
@@ -1081,7 +1113,14 @@ class Engine:
             except Exception as exc:
                 logger.error("Error stopping LX200 server: %s", exc)
 
-        # 3a. Withdraw the mDNS advert, then stop the web server
+        # 3a. Tell Starlock Cloud the session ended (Live Activity), stop its
+        # workers, withdraw the mDNS advert, then stop the web server
+        if self._cloud:
+            try:
+                self._cloud.stop()
+            except Exception as exc:
+                logger.error("Error stopping Starlock Cloud link: %s", exc)
+
         if self._discovery:
             try:
                 self._discovery.stop(timeout=2)

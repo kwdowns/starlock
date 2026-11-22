@@ -158,6 +158,7 @@ def main() -> None:
     engine.startup_observation_log()
     engine.startup_webserver()
     engine.startup_discovery()
+    engine.startup_cloud()
 
     def _start_camera() -> None:
         """Spawn + connect the camera, then start the solver thread if it came up.

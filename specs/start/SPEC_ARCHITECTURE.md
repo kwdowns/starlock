@@ -694,6 +694,33 @@ API: `GET /api/observations`, `GET /api/observations.csv`,
 
 ---
 
+# 14c. Starlock Cloud Link (`cloud/`)
+
+Optional and opt-in: until the user pairs the Pi with a code from the phone
+app, the cloud workers run but never touch the network. HTTP contract:
+starlock-cloud `docs/pi-integration.md`.
+
+- **Pairing:** `POST /api/cloud/pair {"code", "base_url"?, "name"?}` from the
+  Settings sheet or the phone app over the LAN. The Pi claims the code and
+  stores `cloud.json` (base URL, device id, credential; mode 0600) next to
+  config.json. `GET /api/cloud` gives the status without the credential, and
+  `DELETE /api/cloud` unlinks. A 401 on any device call means the link was
+  revoked: `cloud.json` is deleted and cloud traffic stops.
+- **Pointing (`cloud-pointing` thread):** samples `WebServer.build_payload()`
+  twice a second and posts the cloud's pointing body. It sends on change at
+  most every 2 s, at once when state, target, on-target or dwelling change, a
+  30 s heartbeat while tracking, and `ended` on clean shutdown. Latest only,
+  no queue; after a failure it backs off 30 s .. 5 min.
+- **Observation backup (`cloud-upload` thread):** entries go up within
+  about 30 s of closing, and open ones at most every 5 min.
+  - Batches of up to 100.
+  - Entry ids are `<db uuid>-<row id>`; the uuid is in the `meta` table.
+  - `cloud_synced_*` columns record what was sent.
+  - Network errors, 429 and 5xx retry the batch with backoff (2 s .. 15 min).
+  - A 400, or a rejected entry, is logged and not retried.
+- `cloud.base_url` in config.json is the default service address (null until
+  a production domain exists); a pairing request may supply an https one.
+
 # 15. Future-Proofing
 
 Architecture must allow:

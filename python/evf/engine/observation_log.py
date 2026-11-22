@@ -23,6 +23,7 @@ import logging
 import sqlite3
 import threading
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -186,7 +187,17 @@ CREATE TABLE IF NOT EXISTS observations (
     clock TEXT NOT NULL DEFAULT 'system'
 );
 CREATE INDEX IF NOT EXISTS observations_start ON observations (start_utc);
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 """
+
+# Columns added after the first release; created on open when missing.
+# cloud_synced_end / cloud_synced_open: the end_utc / is_open last uploaded
+# to Starlock Cloud (NULL = never). cloud_synced_at: when, unix seconds.
+_CLOUD_COLUMNS = (
+    ("cloud_synced_end", "REAL"),
+    ("cloud_synced_open", "INTEGER"),
+    ("cloud_synced_at", "REAL"),
+)
 
 _COLUMNS = (
     "id, start_utc, end_utc, is_open, ra_j2000, dec_j2000, alt, az, "
@@ -231,11 +242,69 @@ class ObservationStore:
             # FULL sync: the Pi is unplugged without warning.
             self._db.execute("PRAGMA synchronous=FULL")
             self._db.executescript(_SCHEMA)
+            have = {r[1] for r in self._db.execute("PRAGMA table_info(observations)")}
+            for name, kind in _CLOUD_COLUMNS:
+                if name not in have:
+                    self._db.execute(f"ALTER TABLE observations ADD COLUMN {name} {kind}")
+            row = self._db.execute("SELECT value FROM meta WHERE key='db_uuid'").fetchone()
+            if row is None:
+                self._db_uuid = uuid.uuid4().hex
+                self._db.execute("INSERT INTO meta (key, value) VALUES ('db_uuid', ?)",
+                                 (self._db_uuid,))
+            else:
+                self._db_uuid = row[0]
             self._db.commit()
 
     def close(self) -> None:
         with self._lock:
             self._db.close()
+
+    @property
+    def db_uuid(self) -> str:
+        """Random id made when the database was created; part of cloud entry ids."""
+        return self._db_uuid
+
+    def cloud_entry_id(self, row_id: int) -> str:
+        return f"{self._db_uuid}-{row_id}"
+
+    def pending_cloud(self, *, now: float, open_interval_s: float,
+                      limit: int = 100) -> list[dict]:
+        """Entries Starlock Cloud doesn't have in their current form, oldest first.
+
+        Closed entries are due as soon as they change. An open entry is due
+        when it has never been sent, or its end moved and it was last sent
+        more than ``open_interval_s`` ago (its heartbeat moves the end every
+        30 s; the cloud doesn't need every one).
+        """
+        sql = (
+            f"SELECT {_COLUMNS} FROM observations WHERE "
+            "(is_open=0 AND (cloud_synced_end IS NULL OR cloud_synced_end != end_utc "
+            "                OR cloud_synced_open IS NULL OR cloud_synced_open != 0)) "
+            "OR (is_open=1 AND (cloud_synced_end IS NULL "
+            "                OR (cloud_synced_end != end_utc AND cloud_synced_at <= ?))) "
+            "ORDER BY start_utc, id LIMIT ?"
+        )
+        with self._lock:
+            rows = self._db.execute(sql, (now - open_interval_s, int(limit))).fetchall()
+        return [_row_dict(r) for r in rows]
+
+    def mark_cloud_synced(self, entries: list[dict], at: float) -> None:
+        """Record that these entries (as returned by pending_cloud) were uploaded."""
+        with self._lock:
+            self._db.executemany(
+                "UPDATE observations SET cloud_synced_end=?, cloud_synced_open=?, "
+                "cloud_synced_at=? WHERE id=?",
+                [(e["end_unix"], 1 if e["open"] else 0, at, e["id"]) for e in entries],
+            )
+            self._db.commit()
+
+    def reset_cloud_sync(self) -> None:
+        """Forget what was uploaded (after linking to a new account)."""
+        with self._lock:
+            self._db.execute(
+                "UPDATE observations SET cloud_synced_end=NULL, cloud_synced_open=NULL, "
+                "cloud_synced_at=NULL")
+            self._db.commit()
 
     def close_stale(self) -> int:
         """Mark entries left open by an unclean stop as closed.
@@ -403,6 +472,12 @@ class ObservationLogger:
                 logger.warning("Observation log step failed: %s", exc)
 
     # -- one sampling step (also called directly by tests) --------------------
+
+    @property
+    def dwelling(self) -> bool:
+        """An entry is open: the scope has dwelt here long enough to log it."""
+        with self._lock:
+            return self._entry_id is not None
 
     def _sample(self, mono: float) -> tuple[float, float] | None:
         snap = self._pointing.read()
