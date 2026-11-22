@@ -58,9 +58,9 @@ DEFAULT_CONFIG = {
     # Stable random id for this install, generated on first use. Lets apps
     # tell two Starlocks apart and recognise one that changed IP.
     "device": {"id": None},
-    # Optional Starlock Cloud (see evf/cloud/). Null until a production address
-    # exists; the phone app can pass the address along with a pairing code.
-    "cloud": {"base_url": None},
+    # Optional Starlock Cloud (see evf/cloud/). The phone app can pass another
+    # (https) address along with a pairing code, e.g. the dev service.
+    "cloud": {"base_url": "https://api.starlock.app"},
     "location": {"latitude": None, "longitude": None},
 }
 
