@@ -304,6 +304,7 @@ Detailed design docs live in `specs/start/`:
 - `SPEC_DISCOVERY.md` — Bonjour / mDNS service type and TXT record the native apps rely on
 - `SPEC_FIRST_RUN.md` — out-of-box setup: Pi image, hotspot/QR provisioning, owner tokens, factory reset, cloud ownership (design)
 - `SPEC_OBSERVING_LOG.md` — certifiable logbook: sessions, sightings, observations, equipment, sync, exports (design)
+- `SPEC_UPDATES.md` — Pi updates: signed apt repo, daily check, owner-installed only (never automatic), rollback (design)
 - `SPEC_PROTOCOL_LX200.md` — LX200 Classic ASCII protocol for SkySafari / Stellarium Mobile / INDI / ASCOM (JNow, port 4030)
 - `SPEC_BUILD_RELEASE.md` — build and release process
 - `ACCEPTANCE_TESTS.md` — acceptance criteria
