@@ -176,6 +176,19 @@ def web_dist_dir() -> Path:
     return _REPO_ROOT / "web" / "dist"
 
 
+def catalog_data_dir() -> Path:
+    """The web UI's catalog JSON (objects, openngc, hyg-bright), served to apps.
+
+    In the repo they live in web/src/data/; release builds copy them to
+    data/web_catalog/.
+    """
+    if _BUNDLE_MODE:
+        return _RESOURCES / "web_catalog"
+    if _LINUX_RELEASE or _WINDOWS_RELEASE:
+        return _RELEASE_ROOT / "data" / "web_catalog"
+    return _REPO_ROOT / "web" / "src" / "data"
+
+
 def samples_dir() -> Path | None:
     """Path to test sample images.
 

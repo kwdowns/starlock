@@ -143,6 +143,9 @@ find "$APP/python" -name __pycache__ -type d -prune -exec rm -rf {} +
 echo "==> Copying data"
 cp data/tetra3rs_gaia.bin data/VERSION.json "$APP/data/"
 cp -a data/sounds "$APP/data/sounds"
+# Catalog JSON for the native apps (/api/catalog/<name>)
+install -d "$APP/data/web_catalog"
+cp web/src/data/objects.json web/src/data/openngc.json web/src/data/hyg-bright.json     "$APP/data/web_catalog/"
 cp -a tests/samples "$APP/data/samples"
 cp marketing/inapp-title.png "$APP/marketing/"
 

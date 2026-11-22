@@ -24,6 +24,7 @@ loop.
 """
 
 import asyncio
+import hashlib
 import io
 import json
 import logging
@@ -38,6 +39,9 @@ from aiohttp import WSCloseCode, web
 from PIL import Image
 
 from evf.cloud.service import CloudService, PairingError
+
+# Catalog files served at /api/catalog/<name> (see catalog_data_dir()).
+CATALOG_NAMES = ("objects", "openngc", "hyg-bright")
 from evf.config.manager import ConfigManager
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
@@ -47,7 +51,7 @@ from evf.engine.observation_log import ObservationLogger, entries_to_csv
 from evf.engine.pointing import PointingState
 from evf.engine.state import StateMachine
 from evf.network import local_ip
-from evf.paths import sounds_dir, version_json, web_dist_dir
+from evf.paths import catalog_data_dir, sounds_dir, version_json, web_dist_dir
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +193,7 @@ class WebServer:
     ) -> None:
         self._observations = observations
         self._cloud_fn = cloud
+        self._catalog_cache: dict[str, tuple[bytes, str]] = {}
         self._pointing = pointing
         self._state_machine = state_machine
         self._goto_target = goto_target
@@ -305,6 +310,7 @@ class WebServer:
         app.router.add_get("/api/observations", self._api_observations)
         app.router.add_get("/api/observations.csv", self._api_observations_csv)
         app.router.add_delete("/api/observations", self._api_observations_delete)
+        app.router.add_get("/api/catalog/{name}", self._api_catalog)
         app.router.add_get("/api/cloud", self._api_cloud_status)
         app.router.add_post("/api/cloud/pair", self._api_cloud_pair)
         app.router.add_delete("/api/cloud", self._api_cloud_unlink)
@@ -651,6 +657,35 @@ class WebServer:
         n = await asyncio.to_thread(self._observations.store.delete, start, end)
         return web.json_response({"deleted": n})
 
+    # -- Catalog data ------------------------------------------------------------
+
+    async def _api_catalog(self, request: web.Request) -> web.Response:
+        """The web UI's catalog JSON, for native apps (fetched at runtime).
+
+        objects (curated), openngc (OpenNGC, CC-BY-SA 4.0) and hyg-bright
+        (HYG v3, CC-BY-SA 4.0). Gzipped when the client accepts it, with an
+        ETag so an app can keep a cached copy.
+        """
+        name = request.match_info["name"].removesuffix(".json")
+        if name not in CATALOG_NAMES:
+            raise web.HTTPNotFound(text="unknown catalog")
+        cached = self._catalog_cache.get(name)
+        if cached is None:
+            path = catalog_data_dir() / f"{name}.json"
+            try:
+                body = await asyncio.to_thread(path.read_bytes)
+            except OSError:
+                raise web.HTTPNotFound(text="catalog not installed")
+            cached = (body, '"' + hashlib.sha1(body).hexdigest() + '"')
+            self._catalog_cache[name] = cached
+        body, etag = cached
+        headers = {"ETag": etag, "Cache-Control": "no-cache"}
+        if request.headers.get("If-None-Match") == etag:
+            return web.Response(status=304, headers=headers)
+        resp = web.Response(body=body, content_type="application/json", headers=headers)
+        resp.enable_compression()
+        return resp
+
     # -- Starlock Cloud link ---------------------------------------------------
 
     def _cloud(self) -> "CloudService | None":
@@ -940,8 +975,10 @@ class WebServer:
         if not target.active:
             return None
 
-        obj_name = None
-        if self._stellarium_object:
+        # The name sent with the target (web UI, phone app) wins; otherwise the
+        # object selected in desktop Stellarium, which sends no name itself.
+        obj_name = getattr(target, "name", None)
+        if not obj_name and self._stellarium_object:
             obj = self._stellarium_object()
             if obj:
                 obj_name = obj.get("localized-name") or obj.get("name")
