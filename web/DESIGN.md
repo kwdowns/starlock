@@ -188,14 +188,15 @@ One screen, no top-level tabs.
 ```
 AppBar      logo · status (icon + text) · audio · full-screen · settings (opens a Sheet)
 Camera      live frame + overlays — sticky (top on phone, left column at md+)
+              pencil (top-left) toggles camera settings right under the frame:
+              SliderFields (exposure, gain) + solve stats (matches, prob, age);
+              open during setup, folded once tracking
 Step area   depends on engine state:
               SETUP / SYNC / SYNC_CONFIRM / CALIBRATE / WARMING_UP
-                 Steps · instruction card with the step's primary action ·
-                 camera SliderFields (exposure, gain) open, right under the frame
+                 Steps · instruction card with the step's primary action
               TRACKING
-                 target readout (name, distance, direction, Clear) ·
-                 camera controls collapsed in a Disclosure ·
-                 sky dome in a Disclosure
+                 target readout (name, magnitude, distance, direction, Clear) ·
+                 sky dome card, always open · Recenter on target · Restart setup
 Targets     always below the step area; primary content once tracking.
               SegmentedControl: Tonight · Search · Manual
               filter Chips · time control

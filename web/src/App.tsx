@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { isSetupPhase } from "@/lib/screen";
 import { useEngineState } from "@/hooks/useEngineState";
 import { useOnTargetFeedback } from "@/hooks/useOnTargetFeedback";
 import { LiveView } from "@/components/live-view/LiveView";
+import { CameraSettings } from "@/components/controls/CameraSettings";
 import { Splash } from "@/components/splash/Splash";
 import { TopBar } from "@/components/app/TopBar";
 import { StepArea } from "@/components/step/StepArea";
@@ -50,11 +52,32 @@ function useHeightVar<T extends HTMLElement>(mounted: boolean) {
 // Below the app bar (which also pads for the notch).
 const BELOW_BAR = "var(--app-bar-h) + var(--safe-top)";
 
+const CAMERA_SETTINGS_ID = "camera-settings";
+
+/**
+ * Camera settings under the frame (the pencil): open through the setup
+ * wizard, where focusing is the task, and folded away once tracking. A tap
+ * overrides that until the next change between the two.
+ */
+function useCameraSettingsOpen(setup: boolean) {
+  const [s, setS] = useState({ open: setup, setup });
+  if (s.setup !== setup) setS({ open: setup, setup });
+  const toggle = useCallback(() => setS((cur) => ({ ...cur, open: !cur.open })), []);
+  return [s.open, toggle] as const;
+}
+
 export default function App() {
   const state = useEngineState();
   useOnTargetFeedback(state);
   const [showStars, setShowStars] = useLocalStorageBool("starlock.show_stars", DEFAULT_SHOW_STARS);
   const leftCol = useHeightVar<HTMLDivElement>(state !== null);
+  const [editOpen, toggleEdit] = useCameraSettingsOpen(state !== null && isSetupPhase(state.state));
+  // Bumped when a target is picked: the sky dome spins once.
+  const [spinKey, setSpinKey] = useState(0);
+  const onTargetSet = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setSpinKey((k) => k + 1);
+  }, []);
 
   // A Pi in hotspot mode may have a wrong clock; tell it ours once we're connected
   // so observation-log times are right. Best effort.
@@ -82,16 +105,24 @@ export default function App() {
                 className="sticky z-sticky -mx-3 bg-background px-3 pt-3 pb-3 md:static md:mx-0 md:p-0"
                 style={{ top: `calc(${BELOW_BAR})` }}
               >
-                <LiveView state={state} showStars={showStars} className="md:[--frame-max-h:50svh]" />
+                <LiveView
+                  state={state}
+                  showStars={showStars}
+                  className="md:[--frame-max-h:50svh]"
+                  editOpen={editOpen}
+                  onToggleEdit={toggleEdit}
+                  editId={CAMERA_SETTINGS_ID}
+                />
               </div>
+              {editOpen && (
+                // Phone: the column is `contents`, so space it from the step area.
+                <CameraSettings state={state} id={CAMERA_SETTINGS_ID} className="mb-3 md:mb-0" />
+              )}
               <WifiWarning state={state} />
-              <StepArea state={state} />
+              <StepArea state={state} spinKey={spinKey} />
             </div>
             <div className="mt-6 flex min-w-0 flex-col gap-3 md:mt-0">
-              <Targets
-                state={state}
-                onTargetSet={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              />
+              <Targets state={state} onTargetSet={onTargetSet} />
             </div>
           </main>
         </div>

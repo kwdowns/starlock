@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { rememberTargetMagnitude } from "@/components/catalog/targetMagnitude";
 import { StepArea } from "./StepArea";
 import { payload } from "@/lib/testPayload";
 import type { ControlDescriptor } from "@/lib/types";
@@ -14,14 +15,12 @@ function section(container: HTMLElement) {
 }
 
 describe("StepArea", () => {
-  it("SETUP: progress, open sliders and a Next action", () => {
+  it("SETUP: progress and a Next action; the sliders live with the frame", () => {
     const { container } = render(<StepArea state={payload({ controls })} />);
     expect(section(container)).toBe("setup");
     expect(screen.getByText(/Step 1 of 4/)).toBeInTheDocument();
     expect(screen.getByText(/small, sharp dots/i)).toBeInTheDocument();
-    expect(screen.getByText("Exposure")).toBeInTheDocument();
-    expect(screen.getByText("Gain")).toBeInTheDocument();
-    expect(screen.getByText("100 ms")).toBeInTheDocument();
+    expect(screen.queryByText("Exposure")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^next$/i })).toBeEnabled();
   });
 
@@ -70,7 +69,7 @@ describe("StepArea", () => {
     expect(screen.getByText("Star #2")).toBeInTheDocument();
   });
 
-  it("TRACKING: target readout, camera and sky view folded away", () => {
+  it("TRACKING: target readout and an always-open sky view, no camera panel", () => {
     const nav = {
       active: true, target_name: "M 31", target_ra_deg: 10.68, target_dec_deg: 41.27,
       separation_deg: 3.21, direction_text: "Push up and left", in_fov: false,
@@ -93,11 +92,31 @@ describe("StepArea", () => {
     expect(screen.getByText("Push up and left")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /clear/i })).toBeInTheDocument();
     expect(screen.queryByText(/Step \d of 4/)).not.toBeInTheDocument();
-    // Collapsed: headers present, sliders not rendered.
-    expect(screen.getByRole("button", { name: /camera/i })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: /sky view/i })).toHaveAttribute("aria-expanded", "false");
+    // The dome is shown, with no toggle; the sliders are not here.
+    expect(screen.getByLabelText("Sky view")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sky view/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /camera/i })).not.toBeInTheDocument();
     expect(screen.queryByText("Exposure")).not.toBeInTheDocument();
-    expect(screen.getByText("100 ms · 40")).toBeInTheDocument(); // summary
+    expect(screen.queryByText("Matches")).not.toBeInTheDocument();
+  });
+
+  it("TRACKING: shows the magnitude this device sent with the target", () => {
+    const nav = {
+      active: true, target_name: "M 31", target_ra_deg: 10.68, target_dec_deg: 41.27,
+      separation_deg: 3.21, direction_text: "", in_fov: false,
+      pixel_x: null, pixel_y: null, camera_angle_deg: null,
+      edge_x: null, edge_y: null, edge_angle_deg: null, mount: null,
+    };
+    const state = payload({ state: "TRACKING", nav });
+    rememberTargetMagnitude(10.68, 41.27, 3.44);
+    const { unmount } = render(<StepArea state={state} />);
+    expect(screen.getByText("3.4")).toBeInTheDocument();
+    unmount();
+    // Another target (e.g. from SkySafari): no magnitude, nothing shown.
+    rememberTargetMagnitude(100, 20, 5);
+    render(<StepArea state={state} />);
+    expect(screen.queryByText(/Magnitude/)).not.toBeInTheDocument();
+    rememberTargetMagnitude(0, 0, undefined);
   });
 
   it("TRACKING without a target points at the list", () => {

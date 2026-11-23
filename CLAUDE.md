@@ -18,10 +18,13 @@ TXT record in `specs/start/SPEC_DISCOVERY.md`) so phone apps find it without an 
 The UI is a single screen with no tabs (design rules in `web/DESIGN.md`, red
 channel only for night vision; live component reference at `?gallery`):
 - **Camera** — live frame with plate-solve overlay and push-to arrow, sticky
-  under the app bar on phones and in the left column on tablets.
-- **Step area** — the setup wizard (camera, sync, calibrate) with the
-  exposure/gain sliders right under the frame; once tracking, the target
-  readout, with camera controls and the sky dome collapsed.
+  under the app bar on phones and in the left column on tablets. A pencil in
+  its top-left corner toggles the camera settings under it (exposure/gain
+  sliders and solve stats): open through the wizard, folded once tracking.
+- **Step area** — the setup wizard (camera, sync, calibrate); once tracking,
+  the target readout (with its magnitude when this device sent it), the
+  always-open sky dome (spins once when a target is picked), then Recenter
+  on target and Restart setup.
 - **Targets** — below the camera: Tonight (161 curated deep-sky objects,
   vendored from the Stargazing-Buddy site, with client-side visibility math),
   Search (NGC + bright stars) and Manual RA/Dec. Every row has a "Go to"

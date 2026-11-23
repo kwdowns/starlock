@@ -16,6 +16,7 @@ import {
   ReadoutGrid,
   Separator,
 } from "@/components/ui";
+import { targetMagnitude } from "@/components/catalog/targetMagnitude";
 import { useNearestObject } from "@/hooks/useNearestObject";
 import { api } from "@/lib/api";
 import { moonGlare, moonGlareText } from "@/lib/moonGlare";
@@ -38,6 +39,7 @@ function TargetReadout({ state }: Props) {
   const glare = moonGlare(
     { ra_deg: nav.target_ra_deg, dec_deg: nav.target_dec_deg, isMoon }, bodies, loc, now,
   );
+  const mag = targetMagnitude(nav);
   const deltas =
     p.valid && nav.in_fov && nav.pixel_x !== null && nav.pixel_y !== null
       ? mountDeltas(state, nav.pixel_x, nav.pixel_y)
@@ -48,6 +50,11 @@ function TargetReadout({ state }: Props) {
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-caption text-muted-foreground uppercase">Target</span>
           <span className="truncate text-heading">{nav.target_name ?? "Custom position"}</span>
+          {mag !== null && (
+            <span className="text-label text-muted-foreground">
+              Magnitude <span className="readout">{mag.toFixed(1)}</span>
+            </span>
+          )}
         </div>
         <Button
           variant="secondary"
@@ -88,9 +95,6 @@ function TargetReadout({ state }: Props) {
         </p>
       )}
       {glare && <p className="text-label">{moonGlareText(glare, nav.target_name ?? "The target")}</p>}
-      {p.valid && nav.separation_deg !== null && nav.separation_deg <= RECENTER_SHOW_DEG && (
-        <RecenterButton name={nav.target_name ?? "the target"} />
-      )}
       <p className="text-label text-muted-foreground">1° is about two full moons wide.</p>
     </div>
   );
@@ -98,6 +102,14 @@ function TargetReadout({ state }: Props) {
 
 /** Offered when the target is close: a bumped finder shows as a small, steady offset. */
 const RECENTER_SHOW_DEG = 3;
+
+/** "Recenter on target", while there is a target close to the scope. */
+export function RecenterTarget({ state }: Props) {
+  const nav = state.nav;
+  if (!nav?.active || !state.pointing.valid) return null;
+  if (nav.separation_deg === null || nav.separation_deg > RECENTER_SHOW_DEG) return null;
+  return <RecenterButton name={nav.target_name ?? "the target"} />;
+}
 
 /**
  * "It's centred in my eyepiece": re-aims the alignment on the target, for
@@ -177,19 +189,29 @@ function NearestObject({ state }: Props) {
   );
 }
 
+const DASH = "—";
+
 function PointingReadouts({ state }: Props) {
   const p = state.pointing;
-  const dash = "—";
   return (
     <ReadoutGrid cols={2} className="lg:grid-cols-3">
-      <Readout label="RA" value={p.valid ? formatRa(p.ra_deg) : dash} />
-      <Readout label="Dec" value={p.valid ? formatDec(p.dec_deg) : dash} />
-      <Readout label="Roll" value={p.valid ? `${p.roll_deg.toFixed(1)}°` : dash} />
-      <Readout label="Matches" value={p.valid ? p.matches : dash} />
-      <Readout label="Prob" value={p.valid ? p.prob.toExponential(1) : dash} />
+      <Readout label="RA" value={p.valid ? formatRa(p.ra_deg) : DASH} />
+      <Readout label="Dec" value={p.valid ? formatDec(p.dec_deg) : DASH} />
+      <Readout label="Roll" value={p.valid ? `${p.roll_deg.toFixed(1)}°` : DASH} />
+    </ReadoutGrid>
+  );
+}
+
+/** Plate-solve quality, for tuning exposure and gain. */
+export function SolveStats({ state }: Props) {
+  const p = state.pointing;
+  return (
+    <ReadoutGrid cols={3}>
+      <Readout label="Matches" value={p.valid ? p.matches : DASH} />
+      <Readout label="Prob" value={p.valid ? p.prob.toExponential(1) : DASH} />
       <Readout
         label="Age"
-        value={p.solve_age_s !== null ? `${p.solve_age_s.toFixed(1)} s` : dash}
+        value={p.solve_age_s !== null ? `${p.solve_age_s.toFixed(1)} s` : DASH}
       />
     </ReadoutGrid>
   );

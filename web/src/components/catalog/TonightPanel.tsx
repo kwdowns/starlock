@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Alert, Card, Disclosure, EmptyState, SegmentedControl } from "@/components/ui";
 import objectsData from "@/data/objects.json";
 import type { CatalogObject } from "@/lib/catalogTypes";
+import { angularSepDeg } from "@/lib/nearest";
 import { useSolarSystem } from "@/lib/solarSystem";
 import { CatalogFilters } from "./CatalogFilters";
 import { activeFilterCount, useCatalogFilters } from "./filterState";
@@ -60,6 +61,8 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
   );
 
   const bodies = useSolarSystem(location ? evalAt : null);
+  // The scope's position, when sorting nearest: rows show their distance.
+  const near = sort === "near" ? scope : null;
   const solarRows = useMemo(() => {
     if (!location) return [];
     return bodies
@@ -67,11 +70,14 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
       .map((b) => {
         const item = solarItem(b);
         const aa = altAzOf(item, location, evalAt);
-        return { item, altDeg: aa?.altDeg ?? null, azDeg: aa?.azDeg ?? null, mag: b.magnitude };
+        const sepDeg = near
+          ? angularSepDeg(near.ra_deg, near.dec_deg, item.ra_deg, item.dec_deg)
+          : null;
+        return { item, altDeg: aa?.altDeg ?? null, azDeg: aa?.azDeg ?? null, mag: b.magnitude, sepDeg };
       })
       .filter((r) => r.altDeg !== null && r.altDeg >= SOLAR_MIN_ALT_DEG)
-      .sort((a, b) => a.mag - b.mag);
-  }, [bodies, location, evalAt]);
+      .sort((a, b) => (a.sepDeg !== null && b.sepDeg !== null ? a.sepDeg - b.sepDeg : a.mag - b.mag));
+  }, [bodies, location, evalAt, near]);
 
   if (!location) {
     return (

@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/api";
 import { payload } from "@/lib/testPayload";
 import type { NavData } from "@/lib/types";
-import { TrackingPanel } from "./TrackingPanel";
+import { StepArea } from "./StepArea";
+import { RecenterTarget, TrackingPanel } from "./TrackingPanel";
 
 const nav = (sep: number): NavData => ({
   active: true, mount: null, target_name: "Andromeda Galaxy", target_ra_deg: 10.68,
@@ -22,7 +23,7 @@ afterEach(() => vi.restoreAllMocks());
 describe("Recenter on target", () => {
   it("asks first, then re-aims the alignment", async () => {
     const recenter = vi.spyOn(api, "recenter").mockResolvedValue({ shift_deg: 0.33 });
-    render(<TrackingPanel state={tracking(0.33)} />);
+    render(<RecenterTarget state={tracking(0.33)} />);
     fireEvent.click(screen.getByRole("button", { name: /recenter on target/i }));
     expect(screen.getByText(/Is Andromeda Galaxy centred in the eyepiece/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /it's centred/i }));
@@ -32,14 +33,25 @@ describe("Recenter on target", () => {
 
   it("shows the engine's reason when it refuses", async () => {
     vi.spyOn(api, "recenter").mockRejectedValue(new Error("Waiting for a solve. Try again in a moment."));
-    render(<TrackingPanel state={tracking(0.33)} />);
+    render(<RecenterTarget state={tracking(0.33)} />);
     fireEvent.click(screen.getByRole("button", { name: /recenter on target/i }));
     fireEvent.click(screen.getByRole("button", { name: /it's centred/i }));
     expect(await screen.findByText(/Waiting for a solve/)).toBeInTheDocument();
   });
 
   it("isn't offered when the target is far away", () => {
-    render(<TrackingPanel state={tracking(12)} />);
+    render(<RecenterTarget state={tracking(12)} />);
     expect(screen.queryByRole("button", { name: /recenter on target/i })).toBeNull();
+  });
+
+  it("sits just above Restart setup, not in the target readout", () => {
+    const { unmount } = render(<TrackingPanel state={tracking(0.33)} />);
+    expect(screen.queryByRole("button", { name: /recenter on target/i })).toBeNull();
+    unmount();
+    render(<StepArea state={tracking(0.33)} />);
+    const buttons = screen.getAllByRole("button").map((b) => b.textContent);
+    const recenter = buttons.findIndex((t) => /recenter on target/i.test(t ?? ""));
+    expect(recenter).toBeGreaterThanOrEqual(0);
+    expect(buttons[recenter + 1]).toMatch(/restart setup/i);
   });
 });

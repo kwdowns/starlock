@@ -1,7 +1,5 @@
-import { Orbit, SlidersHorizontal } from "lucide-react";
-import { Alert, Card, Disclosure, Spinner, Steps } from "@/components/ui";
-import { CameraControls } from "@/components/controls/CameraControls";
-import { cameraControlsSummary } from "@/lib/controlFormat";
+import { Orbit } from "lucide-react";
+import { Alert, Card, CardTitle, Spinner, Steps } from "@/components/ui";
 import { SkyDome } from "@/components/live-view/SkyDome";
 import { RetryCameraButton } from "@/components/RetryCameraButton";
 import { isSetupPhase, SETUP_STEPS, stepIndexFor } from "@/lib/screen";
@@ -13,7 +11,7 @@ import {
   SyncConfirmCard,
   WarmingUpCard,
 } from "./SetupCards";
-import { RestartSetupButton, TrackingPanel } from "./TrackingPanel";
+import { RecenterTarget, RestartSetupButton, TrackingPanel } from "./TrackingPanel";
 
 type Props = { state: EnginePayload };
 
@@ -28,33 +26,16 @@ function InstructionCard({ state }: Props) {
   }
 }
 
-/** Exposure / gain, open, for the setup steps. */
-function CameraCard({ state }: Props) {
-  return (
-    <Card aria-label="Camera controls">
-      <CameraControls controls={state.controls} />
-    </Card>
-  );
-}
-
-/** Exposure / gain tucked away once the wizard is done. */
-function CameraDisclosure({ state }: Props) {
-  return (
-    <Disclosure
-      title="Camera"
-      icon={<SlidersHorizontal aria-hidden />}
-      summary={cameraControlsSummary(state.controls)}
-    >
-      <CameraControls controls={state.controls} />
-    </Disclosure>
-  );
-}
-
-function SkyDomeDisclosure({ state }: Props) {
+/** The dome, always shown while tracking. */
+function SkyView({ state, spinKey }: Props & { spinKey?: number }) {
   const p = state.pointing;
   const nav = state.nav;
   return (
-    <Disclosure title="Sky view" icon={<Orbit aria-hidden />}>
+    <Card aria-label="Sky view">
+      <CardTitle className="flex items-center gap-2 [&_svg]:size-5">
+        <Orbit aria-hidden />
+        Sky view
+      </CardTitle>
       <SkyDome
         className="h-64 md:h-72"
         pointingRaDeg={p.valid ? p.ra_deg : null}
@@ -64,27 +45,25 @@ function SkyDomeDisclosure({ state }: Props) {
         targetLabel={nav?.target_name ?? null}
         latDeg={state.location.latitude}
         lonDeg={state.location.longitude}
+        spinKey={spinKey}
       />
-    </Disclosure>
+    </Card>
   );
 }
 
 /**
  * Everything under the camera frame that depends on the engine state:
- * setup → progress, camera sliders, instructions; tracking → target readout
- * with the camera controls and sky dome folded away.
+ * setup → progress and instructions; tracking → target readout and the sky
+ * dome. Exposure / gain live with the frame (its pencil), not here.
+ * `spinKey`: bump it to spin the dome once (a target was just picked).
  */
-export function StepArea({ state }: Props) {
+export function StepArea({ state, spinKey }: Props & { spinKey?: number }) {
   if (isSetupPhase(state.state)) {
     const step = stepIndexFor(state.state) ?? 0;
-    // On the first step the sliders are the task, so they lead.
-    const slidersFirst = state.state === "SETUP";
     return (
       <div className="flex flex-col gap-3" data-section="setup">
         <Steps steps={SETUP_STEPS} current={step} />
-        {slidersFirst && <CameraCard state={state} />}
         <InstructionCard state={state} />
-        {!slidersFirst && <CameraCard state={state} />}
       </div>
     );
   }
@@ -93,8 +72,8 @@ export function StepArea({ state }: Props) {
     return (
       <div className="flex flex-col gap-3" data-section="tracking">
         <TrackingPanel state={state} />
-        <CameraDisclosure state={state} />
-        <SkyDomeDisclosure state={state} />
+        <SkyView state={state} spinKey={spinKey} />
+        <RecenterTarget state={state} />
         <RestartSetupButton />
       </div>
     );
@@ -114,7 +93,6 @@ export function StepArea({ state }: Props) {
           Plug it back in, then retry.
         </Alert>
       )}
-      <CameraDisclosure state={state} />
     </div>
   );
 }

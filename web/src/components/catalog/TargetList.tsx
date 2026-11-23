@@ -8,7 +8,7 @@ export interface TargetRowData {
   item: TargetItem;
   altDeg: number | null;
   azDeg: number | null;
-  /** Distance from the scope; shown instead of alt/az when set. */
+  /** Distance from the scope; shown under alt/az when set. */
   sepDeg?: number | null;
 }
 
@@ -35,17 +35,22 @@ export function TargetList({
       {rows.map(({ item, altDeg, azDeg, sepDeg }) => {
         const active = actions.isActive(item);
         const below = altDeg !== null && altDeg < 0;
+        const altAz = altDeg !== null && azDeg !== null
+          ? `${Math.round(altDeg)}° ${azimuthCompass(azDeg)}`
+          : null;
+        const away = sepDeg != null ? `${formatDistance(sepDeg)} away` : null;
         return (
           <ListRow
             key={item.key}
             title={item.title}
             subtitle={item.subtitle}
             meta={
-              sepDeg != null
-                ? `${formatDistance(sepDeg)} away`
-                : altDeg !== null && azDeg !== null
-                  ? `${Math.round(altDeg)}° ${azimuthCompass(azDeg)}`
-                  : undefined
+              altAz && away ? (
+                <span className="flex flex-col">
+                  <span>{altAz}</span>
+                  <span>{away}</span>
+                </span>
+              ) : (altAz ?? away ?? undefined)
             }
             selected={active}
             onPress={() => actions.onOpen(item)}

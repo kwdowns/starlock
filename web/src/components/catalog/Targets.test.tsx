@@ -205,6 +205,8 @@ describe("Targets / Tonight nearest sort", () => {
     const away = screen.getAllByText(/° away$/).map((el) => parseFloat(el.textContent!));
     expect(away[0]).toBeLessThan(0.25);
     expect([...away].sort((a, b) => a - b)).toEqual(away);
+    // The distance is added under alt/az, not instead of it.
+    expect(screen.getAllByText(/^-?\d+° [NESW]{1,3}$/)).toHaveLength(away.length);
   });
 
   it("falls back to highest first without a solve, and says so", () => {

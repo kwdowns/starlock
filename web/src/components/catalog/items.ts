@@ -21,6 +21,8 @@ export interface TargetItem {
   dec_deg: number;
   /** Apparent size (major axis) in degrees, when known: widens "on target". */
   size_deg?: number;
+  /** Visual magnitude, when known: shown while it is the target. */
+  magnitude?: number;
   detail:
     | { kind: "buddy"; object: CatalogObject }
     | { kind: "advanced"; entry: Exclude<AdvancedEntry, { source: "manual" }> }
@@ -53,6 +55,7 @@ export function buddyItem(obj: CatalogObject): TargetItem | null {
     ra_deg: raHours * 15,
     dec_deg: decDeg,
     size_deg: sizeDeg((objectSizes as Record<string, number>)[obj.id]),
+    magnitude: typeof obj.magnitude === "number" ? obj.magnitude : undefined,
     detail: { kind: "buddy", object: obj },
   };
 }
@@ -88,6 +91,7 @@ export function solarItem(body: SolarBody): TargetItem {
     dec_deg: body.dec_j2000_deg,
     // The Moon is half a degree across; planets are points to the finder.
     size_deg: body.kind === "moon" ? 0.52 : undefined,
+    magnitude: body.magnitude,
     detail: { kind: "solar", body },
   };
 }
@@ -110,6 +114,7 @@ export function advancedItem(entry: NgcEntry | StarEntry): TargetItem {
     ra_deg: entry.ra_deg,
     dec_deg: entry.dec_deg,
     size_deg: entry.source === "ngc" ? sizeDeg(entry.size) : undefined,
+    magnitude: entry.mag ?? undefined,
     detail: { kind: "advanced", entry },
   };
 }

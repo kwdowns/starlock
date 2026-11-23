@@ -13,6 +13,8 @@ interface Props {
   latDeg: number | null;
   lonDeg: number | null;
   className?: string;
+  /** Change it to spin the dome once around (e.g. a new target was picked). */
+  spinKey?: number;
 }
 
 export function SkyDome({
@@ -24,6 +26,7 @@ export function SkyDome({
   latDeg,
   lonDeg,
   className,
+  spinKey,
 }: Props) {
   const colors = useThemeColors();
   const hasLocation = latDeg !== null && lonDeg !== null;
@@ -73,6 +76,7 @@ export function SkyDome({
                 : null
             }
             colors={colors}
+            spinKey={spinKey}
           />
         </Suspense>
       </Canvas>

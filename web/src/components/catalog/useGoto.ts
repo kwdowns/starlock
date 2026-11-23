@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { api } from "@/lib/api";
+import { rememberTargetMagnitude } from "./targetMagnitude";
 
 /**
  * Sets the goto target and tracks the request. Failures are kept in `error`
@@ -10,9 +11,13 @@ export function useGoto(onTargetSet?: () => void) {
   const [error, setError] = useState<string | null>(null);
 
   const go = useCallback(
-    async (key: string, raDeg: number, decDeg: number, name?: string, sizeDeg?: number): Promise<boolean> => {
+    async (
+      key: string, raDeg: number, decDeg: number, name?: string, sizeDeg?: number, magnitude?: number,
+    ): Promise<boolean> => {
       setPendingKey(key);
       setError(null);
+      // Before the request, so it is there when the engine reports the target.
+      rememberTargetMagnitude(raDeg, decDeg, magnitude);
       try {
         await api.setGoto(raDeg, decDeg, name, sizeDeg);
         onTargetSet?.();

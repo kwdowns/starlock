@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useFrame, useThree } from "@react-three/fiber";
 import { Edges, Line, OrbitControls } from "@react-three/drei";
 import { HemisphereGrid } from "./HemisphereGrid";
 import { Marker } from "./Marker";
@@ -28,6 +29,46 @@ interface Props {
   pointing: Pos | null;
   target: (Pos & { label?: string }) | null;
   colors: ThemeColors;
+  spinKey?: number;
+}
+
+const SPIN_S = 2.4;
+const UP = new THREE.Vector3(0, 1, 0);
+
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined"
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+}
+
+/**
+ * One full turn of the camera around the dome each time `spinKey` changes
+ * (not on mount). The orbit controls follow, so a drag afterwards starts
+ * from wherever the turn ended.
+ */
+function DomeSpin({ spinKey }: { spinKey?: number }) {
+  const controls = useThree((s) => s.controls) as { update?: () => void } | null;
+  const seen = useRef(spinKey);
+  const spin = useRef<{ t: number; angle: number } | null>(null);
+  useFrame(({ camera }, delta) => {
+    if (seen.current !== spinKey) {
+      seen.current = spinKey;
+      if (!prefersReducedMotion()) spin.current = { t: 0, angle: 0 };
+    }
+    const s = spin.current;
+    if (!s) return;
+    s.t = Math.min(1, s.t + delta / SPIN_S);
+    const angle = easeInOutCubic(s.t) * 2 * Math.PI;
+    camera.position.applyAxisAngle(UP, angle - s.angle);
+    s.angle = angle;
+    camera.lookAt(0, 0, 0);
+    controls?.update?.();
+    if (s.t >= 1) spin.current = null;
+  });
+  return null;
 }
 
 function Telescope({ direction, color }: { direction: THREE.Vector3; color: string }) {
@@ -50,7 +91,7 @@ function Telescope({ direction, color }: { direction: THREE.Vector3; color: stri
   );
 }
 
-export function SkyDomeCanvas({ pointing, target, colors }: Props) {
+export function SkyDomeCanvas({ pointing, target, colors, spinKey }: Props) {
   const pointingVec =
     pointing && pointing.altDeg >= 0
       ? altAzTo3D(pointing.altDeg, pointing.azDeg)
@@ -63,6 +104,7 @@ export function SkyDomeCanvas({ pointing, target, colors }: Props) {
   return (
     <>
       <OrbitControls
+        makeDefault
         enableZoom={true}
         enablePan={false}
         minDistance={3.5}
@@ -71,6 +113,7 @@ export function SkyDomeCanvas({ pointing, target, colors }: Props) {
         maxPolarAngle={Math.PI / 2}
         rotateSpeed={0.5}
       />
+      <DomeSpin spinKey={spinKey} />
       <ambientLight intensity={0.5} />
       <HemisphereGrid colors={colors} />
 

@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import { CameraOff, Moon, OctagonAlert, Sun } from "lucide-react";
+import { CameraOff, Moon, OctagonAlert, Pencil, Sun } from "lucide-react";
 import { Button } from "@/components/ui";
 import type { EnginePayload } from "@/lib/types";
 import { useLatestFrame } from "@/hooks/useLatestFrame";
@@ -14,6 +14,11 @@ interface Props {
   state: EnginePayload;
   showStars: boolean;
   className?: string;
+  /** Camera settings under the frame: shown, and its toggle (the pencil). */
+  editOpen?: boolean;
+  onToggleEdit?: () => void;
+  /** id of the camera settings section, for aria-controls. */
+  editId?: string;
 }
 
 /**
@@ -35,7 +40,7 @@ function loadNatural(): boolean {
 const FRAME_GAIN = 6;
 const FRAME_BLACK = 0.05; // ~13/255, a typical dark-sky background
 
-export function LiveView({ state, showStars, className }: Props) {
+export function LiveView({ state, showStars, className, editOpen = false, onToggleEdit, editId }: Props) {
   const { image_w, image_h } = state;
   const noStars = hasNoStars(state);
   // Red (night vision, the default) or the camera's own white-light image.
@@ -106,6 +111,19 @@ export function LiveView({ state, showStars, className }: Props) {
         {!noStars && <NavOverlay state={state} />}
         {state.state === "SYNC_CONFIRM" && <SyncCandidatesOverlay state={state} />}
       </svg>
+      {onToggleEdit && (
+        <Button
+          variant={editOpen ? "primary" : "secondary"}
+          size="icon-sm"
+          className={cn("absolute top-2 left-2", !editOpen && "bg-card/80")}
+          aria-label="Camera settings"
+          aria-expanded={editOpen}
+          aria-controls={editId}
+          onClick={onToggleEdit}
+        >
+          <Pencil />
+        </Button>
+      )}
       {frameUrl && (
         <Button
           variant="secondary"
@@ -121,7 +139,7 @@ export function LiveView({ state, showStars, className }: Props) {
       {noStars && (
         <div
           role="alert"
-          className="absolute top-3 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-lg border-[1.5px] border-primary bg-card px-3 py-2 text-label font-semibold"
+          className="absolute top-3 left-1/2 flex max-w-[calc(100%-7rem)] -translate-x-1/2 items-center gap-2 rounded-lg border-[1.5px] border-primary bg-card px-3 py-2 text-label font-semibold"
         >
           <OctagonAlert className="size-5 shrink-0" aria-hidden />
           No stars. Point at darker sky, or check for clouds.
