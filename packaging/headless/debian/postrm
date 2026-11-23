@@ -9,6 +9,14 @@ fi
 if [ "$1" = "purge" ]; then
     # Config, calibration and logs.
     rm -rf /var/lib/starlock-headless
+    # The hotspot connection the package (or the ready-made card) made. Skip
+    # it while it's the connection in use, so a purge over the hotspot
+    # doesn't cut off the SSH session that runs it.
+    if command -v nmcli >/dev/null 2>&1 \
+        && nmcli -g connection.id connection show starlock-hotspot >/dev/null 2>&1 \
+        && ! nmcli -t -f NAME connection show --active 2>/dev/null | grep -qx starlock-hotspot; then
+        nmcli connection delete starlock-hotspot >/dev/null 2>&1 || true
+    fi
     if getent passwd starlock >/dev/null; then
         deluser --quiet --system starlock || true
     fi

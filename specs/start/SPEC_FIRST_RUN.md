@@ -48,15 +48,53 @@ the network.
   - sets the Wi-Fi country to `IN` (hard-coded, marked "CHANGE");
   - writes `/etc/starlock-ssid` = `Starlock-XXXX` (last 4 hex of the board
     serial);
-  - creates a **permanent** NetworkManager hotspot (`ipv4.method shared`,
-    192.168.77.1/24, 2.4 GHz `band bg`, WPA2-PSK `starlock123` for every
-    unit, PMF off);
+  - creates the NetworkManager hotspot profile `starlock-hotspot`
+    (`ipv4.method shared`, 192.168.77.1/24, 2.4 GHz `band bg`, WPA2-PSK
+    `starlock123` for every unit, PMF off) with **autoconnect off**, and
+    brings it up once; the boot fallback below starts it on later boots;
   - installs the `.deb` from the boot partition with `apt-get install`.
-  - There is no station (home Wi-Fi) mode and no fallback logic. It is
-    tested by `tests/test_headless_user_data.py`.
-- The owner's own Pi has a hand-installed `starlock-wifi-fallback.service`
-  (hotspot only when home Wi-Fi isn't in range). It is **not** in the repo or
-  the package.
+  - It is tested by `tests/test_headless_user_data.py`.
+- **Built: Wi-Fi hotspot fallback** (the `auto` behaviour of 4.1 without the
+  helper or the mode switch), shipped in the `.deb` for every Pi, ready-made
+  card or not:
+  - `packaging/headless/starlock-wifi-fallback` (installed as
+    `/usr/lib/starlock-headless/wifi-fallback`, POSIX sh, root) run by the
+    one-shot `starlock-wifi-fallback.service` (`After=`/`Wants=NetworkManager.service`,
+    `ConditionPathExists=/usr/bin/nmcli`, `RemainAfterExit`, enabled by
+    postinst) once per boot. Output goes to the journal
+    (`journalctl -u starlock-wifi-fallback`).
+  - It polls `nmcli device status` every second. A connected wired device
+    (any state starting `connected`, including "externally") or a connected
+    Wi-Fi device ends it: nothing is started. Otherwise, when the wait is up,
+    it runs `nmcli connection up starlock-hotspot` on the Wi-Fi device (3
+    tries, 5 s apart; a client connection that appears meanwhile wins).
+  - Wait: **45 s** when a saved Wi-Fi client profile with autoconnect exists,
+    **10 s** when none does (only to let a cable come up; a fresh ready-made
+    card). If a Wi-Fi or wired device is still *connecting* when the wait is
+    up (not "need authentication"), it waits up to **45 s more**. Worst case
+    about 90 s after NetworkManager starts. Tunable by `STARLOCK_WIFI_WAIT`,
+    `STARLOCK_WIFI_WAIT_NONE`, `STARLOCK_WIFI_EXTRA`.
+  - No Wi-Fi device, no `nmcli`, or a Wi-Fi device NetworkManager leaves
+    unmanaged: it logs and exits 0, changing nothing.
+  - **One shot, no periodic re-check, on purpose.** Leaving the hotspot to
+    look for a home network needs the single radio, which drops any phone on
+    the hotspot (see 4.1); and a working client link is never taken down. The
+    cost: a Pi that booted before the router (power cut) stays on the hotspot
+    until the next reboot or `nmcli con up <network>`.
+  - The profile `starlock-hotspot` is created by postinst only if missing
+    (`wifi-fallback ensure-profile`: SSID from `/etc/starlock-ssid`, else
+    `Starlock-` + the last 4 characters of the serial; same options and
+    password as `user-data`; autoconnect off). A ready-made card's old
+    always-on profile `hotspot` (AP mode, 192.168.77.1) is renamed to
+    `starlock-hotspot` with autoconnect off instead of adding a second AP.
+    `apt purge` deletes `starlock-hotspot` unless it is the active connection.
+  - postinst enables the unit on first install and on an upgrade from before
+    0.5.1, then leaves the user's choice alone. A hand-installed
+    `/etc/systemd/system/starlock-wifi-fallback.service` overrides the
+    packaged unit of the same name (no double run); postinst leaves it and
+    prints the commands to switch, and prerm does not disable it.
+  - Tested by `tests/test_wifi_fallback.py` (fake `nmcli`). Not yet run on a
+    Pi.
 - `packaging/headless/starlock-headless.service` runs the engine as the
   unprivileged `starlock` user with `NoNewPrivileges`, `ProtectSystem=strict`.
   Root work is done only by `ExecStartPre=+` helpers (LEDs, cpufreq, debug
@@ -276,8 +314,9 @@ the same on Pi 4 and Zero 2 W.
 Modes (`network.mode` in a root-owned `/etc/starlock/network.json`):
 
 - `auto` (default once a home network is saved): at boot try saved networks
-  for up to 40 s; if none connects, start the hotspot. This is the owner's
-  `starlock-wifi-fallback.service` behaviour, productised.
+  for up to 40 s; if none connects, start the hotspot. **Built** as the
+  `starlock-wifi-fallback.service` boot fallback (1.1: 45 s, +45 s while a
+  connection is in progress), without the `network.json` mode switch.
 - `hotspot` ("standalone"): hotspot only, never tries saved networks. Factory
   default (no networks saved yet), and what the user picks to stay standalone.
 

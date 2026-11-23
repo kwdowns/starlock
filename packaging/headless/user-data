@@ -16,7 +16,10 @@
 # Result:
 #   Hotspot name : Starlock-XXXX       (XXXX = last 4 characters of the Pi's serial)
 #   Password     : starlock123
-#   Starlock      : http://192.168.77.1:8780   (also http://starlock.local:8780)
+#   Starlock     : http://192.168.77.1:8780   (also http://starlock.local:8780)
+#   Wi-Fi        : the hotspot starts at every boot where no known Wi-Fi network
+#                  (or wired link) is available; add your own Wi-Fi with nmcli
+#                  and the Pi joins it instead
 #   SSH login    : pi / starlock
 #
 # CHANGE BEFORE USE (search for "CHANGE"):
@@ -53,10 +56,14 @@ runcmd:
     | tail -c 4 | tr 'a-f' 'A-F');
     echo "Starlock-$SUFFIX" > /etc/starlock-ssid
 
-  # Permanent hotspot on 192.168.77.1/24 (DHCP + gateway served by NetworkManager).
+  # Hotspot profile on 192.168.77.1/24 (DHCP + gateway served by NetworkManager).
+  # It does not autoconnect: the Starlock .deb's boot-time Wi-Fi fallback
+  # starts it when no known Wi-Fi network or wired link is available, and
+  # stays out of the way when there is one (add your home Wi-Fi later and
+  # the Pi joins it). Keep the name: the fallback looks for "starlock-hotspot".
   # CHANGE: the hotspot password "starlock123" (8 characters or more).
   - >-
-    nmcli con add type wifi ifname wlan0 con-name hotspot autoconnect yes
+    nmcli con add type wifi ifname wlan0 con-name starlock-hotspot autoconnect no
     ssid "$(cat /etc/starlock-ssid)"
     802-11-wireless.mode ap 802-11-wireless.band bg
     ipv4.method shared ipv4.addresses 192.168.77.1/24
@@ -64,7 +71,7 @@ runcmd:
     wifi-sec.key-mgmt wpa-psk wifi-sec.psk "starlock123"
     wifi-sec.proto rsn wifi-sec.pairwise ccmp wifi-sec.group ccmp
     wifi-sec.pmf disable
-  - nmcli con up hotspot
+  - nmcli con up starlock-hotspot
 
   # Install Starlock from the .deb on the boot partition (no internet needed).
   # Found up to two folders deep, and matches both a local build's name

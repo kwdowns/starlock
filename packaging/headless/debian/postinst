@@ -3,6 +3,9 @@
 set -e
 
 UNIT=starlock-headless.service
+FALLBACK_UNIT=starlock-wifi-fallback.service
+FALLBACK_OVERRIDE=/etc/systemd/system/$FALLBACK_UNIT
+APP_DIR=/usr/lib/starlock-headless
 
 if [ "$1" = "configure" ]; then
     # Unprivileged system user for the service; `video` gives it the camera.
@@ -25,12 +28,38 @@ if [ "$1" = "configure" ]; then
         fi
     fi
 
+    # Wi-Fi hotspot fallback: make sure the NetworkManager "starlock-hotspot"
+    # connection exists (autoconnect off; the fallback unit starts it when no
+    # network is available). Only creates it when missing; never touches a
+    # running connection. Silent without NetworkManager (containers).
+    "$APP_DIR/wifi-fallback" ensure-profile || true
+
     if [ -d /run/systemd/system ]; then
         systemctl daemon-reload
         # Enable on first install only, so a later upgrade doesn't undo a
         # `systemctl disable starlock-headless` the user chose.
         if [ -z "$2" ]; then
             systemctl enable "$UNIT" >/dev/null 2>&1 || true
+        fi
+        # The Wi-Fi fallback is new in 0.5.1: also switch it on when upgrading
+        # from an older version, then leave the user's choice alone. It only
+        # takes effect at the next boot (and does nothing while a network is
+        # connected), so this never changes the connection in use.
+        if [ -z "$2" ] || dpkg --compare-versions "$2" lt 0.5.1~; then
+            systemctl enable "$FALLBACK_UNIT" >/dev/null 2>&1 || true
+        fi
+        # A hand-installed unit of the same name in /etc/systemd/system
+        # overrides the packaged one (and keeps running its own script). Leave
+        # it alone, but say so.
+        if [ -f "$FALLBACK_OVERRIDE" ] && [ ! -L "$FALLBACK_OVERRIDE" ]; then
+            echo ""
+            echo "Note: $FALLBACK_OVERRIDE exists and overrides the"
+            echo "Wi-Fi fallback that now ships with this package. It was left as it is."
+            echo "To use the packaged one, which waits longer for slow Wi-Fi and logs"
+            echo "to the journal, run:"
+            echo "  sudo systemctl disable starlock-wifi-fallback"
+            echo "  sudo rm $FALLBACK_OVERRIDE /usr/local/sbin/starlock-wifi-fallback"
+            echo "  sudo systemctl daemon-reload && sudo systemctl enable starlock-wifi-fallback"
         fi
         if systemctl is-enabled --quiet "$UNIT"; then
             systemctl restart "$UNIT" || true

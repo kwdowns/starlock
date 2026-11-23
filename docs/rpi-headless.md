@@ -34,7 +34,7 @@ the same.
 | | **A. Install with apt** | **B. Ready-made Starlock SD card** |
 |---|---|---|
 | **Best for** | People used to setting up a Pi, or a Pi that also does other things | A dedicated Starlock box, with no command line needed |
-| **Network** | Your existing Wi-Fi or Ethernet | The Pi's own Wi-Fi hotspot, `Starlock-XXXX` (no internet needed) |
+| **Network** | Your existing Wi-Fi or Ethernet; the Pi's own hotspot [when there is none](#wi-fi-hotspot-fallback) | The Pi's own Wi-Fi hotspot, `Starlock-XXXX` (no internet needed), until you add your own Wi-Fi |
 | **Open Starlock at** | `http://<pi-address>:8780` | `http://192.168.77.1:8780` |
 | **Setup** | Flash the card the usual way, SSH in, `apt install` the package | Flash the card, copy two files onto it, boot |
 | **Raspberry Pi OS** | 64-bit, bookworm or trixie | 64-bit **Lite**, **trixie** only |
@@ -128,6 +128,10 @@ boot. Lite is also what this setup was tested with.
    no internet: stay connected anyway. `http://starlock.local:8780` also
    works on phones that support `.local` names (iPhones do; many Android
    phones don't).
+
+The hotspot starts at every boot where the Pi has no Wi-Fi network it knows
+and no network cable, so it also works at a site with no Wi-Fi: see
+[Wi-Fi hotspot fallback](#wi-fi-hotspot-fallback).
 
 To log in to the Pi, connect to the hotspot and run `ssh pi@192.168.77.1`
 (password `starlock`, unless you changed it).
@@ -231,6 +235,50 @@ starts.
 - To see what the Pi reads, run
   `sudo /usr/lib/starlock-headless/python/bin/python3 -m evf.engine.debug_pin --check`.
 
+## Wi-Fi hotspot fallback
+
+The `starlock-headless` package includes a Wi-Fi hotspot fallback, so a Pi
+set up with apt behaves like a ready-made card when it has no network.
+When the Pi boots it waits up to about 45 seconds for a Wi-Fi network it
+already knows, or a network cable. If it connects, it stays on that network
+and the hotspot stays off. If it doesn't, for example at a dark-sky site
+away from home, it starts its own hotspot, `Starlock-XXXX` (password
+`starlock123` unless you changed it), so your phone can join it and open
+`http://192.168.77.1:8780`. The Pi decides once, at boot, and never drops a
+connection that works. To get back onto your home network after using the
+hotspot, restart the Pi while your home Wi-Fi is in range.
+
+Details:
+
+- A Pi with no saved Wi-Fi network (a fresh ready-made card) waits only
+  about 10 seconds, for a cable, before starting the hotspot. If a Wi-Fi
+  connection is still being made when the 45 seconds are up, it waits up to
+  45 more.
+- The hotspot is the NetworkManager connection `starlock-hotspot` (2.4 GHz,
+  WPA2, address `192.168.77.1`). The package creates it if it's missing
+  (with the name `Starlock-XXXX`, from the Pi's serial number). It's set not
+  to start by itself, so at home your own Wi-Fi always wins.
+- Change the hotspot password with
+  `sudo nmcli con mod starlock-hotspot wifi-sec.psk "<new password>"`.
+  If other people may be within Wi-Fi range, do.
+- To save your home Wi-Fi so the Pi joins it when it's in range:
+
+    ```bash
+    sudo nmcli con add type wifi ifname wlan0 con-name home         ssid "<your Wi-Fi name>" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "<password>"
+    ```
+
+- See what it did at the last boot with
+  `journalctl -u starlock-wifi-fallback`.
+- Turn it off with `sudo systemctl disable starlock-wifi-fallback`.
+  (It does nothing without NetworkManager, which Raspberry Pi OS uses.)
+- If you installed your own `starlock-wifi-fallback.service` in
+  `/etc/systemd/system` before this was part of the package, it keeps
+  working and overrides the packaged one. The install prints the commands
+  to switch to the packaged version.
+- A card made before the fallback existed has its hotspot connection named
+  `hotspot` and always on. Installing a newer package renames it to
+  `starlock-hotspot` and turns off its autoconnect.
+
 ## Managing the service
 
 | Task | Command |
@@ -306,23 +354,24 @@ that stays disabled.
 ### Ready-made card: going online
 
 The hotspot has no internet. To update Raspberry Pi OS or download a
-release directly on the Pi, put it on your home Wi-Fi for a while:
+release directly on the Pi, put it on your home Wi-Fi:
 
 ```bash
-sudo nmcli con add type wifi ifname wlan0 con-name home \
-    ssid "<your Wi-Fi name>" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "<password>"
-sudo nmcli con mod hotspot connection.autoconnect no
+sudo nmcli con add type wifi ifname wlan0 con-name home     ssid "<your Wi-Fi name>" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "<password>"
 sudo nmcli con up home    # the SSH session drops here
 ```
 
 The Pi is then on your home network, as `starlock.local` or at the address
-your router shows. When you're done, switch back to the hotspot:
+your router shows. From now on it joins `home` whenever it's in range at
+boot, and starts the hotspot when it isn't (see
+[Wi-Fi hotspot fallback](#wi-fi-hotspot-fallback)). To go back to the
+hotspot straight away:
 
 ```bash
-sudo nmcli con mod home connection.autoconnect no
-sudo nmcli con mod hotspot connection.autoconnect yes
-sudo nmcli con up hotspot    # the SSH session drops again
+sudo nmcli con up starlock-hotspot    # the SSH session drops again
 ```
+
+To forget your home network, `sudo nmcli con delete home`.
 
 ## Uninstall
 

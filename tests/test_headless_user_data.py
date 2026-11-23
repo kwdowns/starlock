@@ -48,7 +48,10 @@ def test_hotspot_and_install_steps(config):
     steps = "\n".join(config["runcmd"])
     assert "do_wifi_country" in steps
     assert "802-11-wireless.mode ap" in steps and "192.168.77.1/24" in steps
-    assert "nmcli con up hotspot" in steps
+    # Same profile name the .deb's Wi-Fi fallback starts; it must not
+    # autoconnect, or the fallback could never leave the home network alone.
+    assert "con-name starlock-hotspot autoconnect no" in steps
+    assert "nmcli con up starlock-hotspot" in steps
     assert "starlock-headless_*_arm64.deb" in steps
 
 

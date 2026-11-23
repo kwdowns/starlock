@@ -18,7 +18,8 @@
 
 # Install-and-run smoke test for the starlock-headless .deb in clean Debian
 # containers (no systemd, no camera). Checks that apt resolves the
-# dependencies, postinst creates the `starlock` user in `video`, and the
+# dependencies, postinst creates the `starlock` user in `video`, the Wi-Fi
+# fallback is installed and harmless without NetworkManager, and the
 # engine started as that user loads the star database and serves
 # /api/version.
 #
@@ -47,6 +48,9 @@ apt-get update -qq >/dev/null
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl "/deb/$DEB_NAME" >/tmp/apt.log 2>&1 \
     || { tail -30 /tmp/apt.log; exit 1; }
 id -nG starlock | grep -qw video || { echo "FAIL: starlock not in video"; exit 1; }
+[ -f /usr/lib/systemd/system/starlock-wifi-fallback.service ] || { echo "FAIL: no Wi-Fi fallback unit"; exit 1; }
+# No NetworkManager in the container: the fallback must say so and exit 0.
+/usr/lib/starlock-headless/wifi-fallback run | grep -q "nothing to do"     || { echo "FAIL: Wi-Fi fallback without NetworkManager"; exit 1; }
 su -s /bin/sh starlock -c 'cd /var/lib && HOME=/tmp XDG_CONFIG_HOME=/tmp/c XDG_STATE_HOME=/tmp/s starlock-headless' \
     >/tmp/run.log 2>&1 &
 version=""

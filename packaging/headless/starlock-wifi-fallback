@@ -1,0 +1,237 @@
+#!/bin/sh
+# starlock-headless: Wi-Fi hotspot fallback (installed as
+# /usr/lib/starlock-headless/wifi-fallback, run at boot by
+# starlock-wifi-fallback.service, as root).
+#
+# At boot: if the Pi has joined a known Wi-Fi network, or has a wired
+# connection, do nothing. Otherwise start Starlock's own hotspot
+# (NetworkManager profile "starlock-hotspot", 192.168.77.1) so a phone can
+# connect. The profile has autoconnect off: this script is what turns it on,
+# so at home the home network always wins.
+#
+#   wifi-fallback [run]        wait for a connection, else start the hotspot
+#   wifi-fallback ensure-profile
+#                              create the hotspot profile if it is missing
+#                              (called by the package's postinst)
+#
+# Never touches a working connection: once a Wi-Fi or wired device is
+# connected this exits, and it never takes the Wi-Fi radio from a client
+# network. It runs once per boot; there is no periodic re-check, because
+# bringing the hotspot down to look for the home network would drop a phone
+# that is using it. Reboot to go back to the home network.
+#
+# Environment (for testing / tuning):
+#   STARLOCK_WIFI_WAIT       seconds to wait for a known Wi-Fi network (45)
+#   STARLOCK_WIFI_WAIT_NONE  seconds to wait when no Wi-Fi network is saved,
+#                            only to let a wired link come up (10)
+#   STARLOCK_WIFI_EXTRA      extra seconds granted if a connection attempt is
+#                            still in progress when the wait ends (45)
+#   STARLOCK_HOTSPOT_PSK     password of a profile this script creates
+#                            (starlock123, like the ready-made card)
+set -u
+
+PROFILE=starlock-hotspot
+LEGACY_PROFILE=hotspot        # the ready-made card's first-boot name
+ADDRESS=192.168.77.1/24
+WAIT_KNOWN="${STARLOCK_WIFI_WAIT:-45}"
+WAIT_NONE="${STARLOCK_WIFI_WAIT_NONE:-10}"
+WAIT_EXTRA="${STARLOCK_WIFI_EXTRA:-45}"
+PSK="${STARLOCK_HOTSPOT_PSK:-starlock123}"
+
+log() { echo "starlock-wifi-fallback: $*"; }
+
+# "<device>:<type>:<state>:<connection>" per line, e.g. wlan0:wifi:connected:Home
+device_status() {
+    nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status 2>/dev/null
+}
+
+wifi_device() {
+    device_status | while IFS=: read -r dev type state rest; do
+        if [ "$type" = wifi ]; then echo "$dev"; break; fi
+    done
+}
+
+# Success if any device of TYPE ("wifi", "ethernet" or "any") is connected.
+# Anything NetworkManager reports as connected counts, including
+# "connected (externally)", so a link set up by something else is respected.
+connected_device() {
+    device_status | while IFS=: read -r dev type state rest; do
+        case "$type" in lo|bridge|loopback|tun|wireguard|dummy|veth|bond) continue ;; esac
+        case "$1:$type" in any:*|wifi:wifi|ethernet:ethernet) ;; *) continue ;; esac
+        case "$state" in connected*) echo "$dev"; break ;; esac
+    done
+}
+
+# A device is mid-connect (prepare, configure, get an IP ...). A wrong
+# password ("need authentication") is not progress.
+connecting() {
+    device_status | while IFS=: read -r dev type state rest; do
+        case "$type" in wifi|ethernet) ;; *) continue ;; esac
+        case "$state" in
+            *authentication*) ;;
+            connecting*) echo "$dev"; break ;;
+        esac
+    done
+}
+
+# Is at least one saved Wi-Fi client network set to autoconnect?
+has_known_wifi() {
+    nmcli -t -f UUID,TYPE connection show 2>/dev/null \
+        | sed -n 's/^\([^:]*\):802-11-wireless$/\1/p' > "$TMP_LIST"
+    while read -r uuid; do
+        [ -n "$uuid" ] || continue
+        info=$(nmcli -g 802-11-wireless.mode,connection.autoconnect \
+            connection show uuid "$uuid" 2>/dev/null) || continue
+        mode=$(echo "$info" | sed -n 1p)
+        auto=$(echo "$info" | sed -n 2p)
+        case "$mode" in ap|adhoc|mesh) continue ;; esac
+        [ "$auto" = no ] && continue
+        return 0
+    done < "$TMP_LIST"
+    return 1
+}
+
+profile_exists() {
+    nmcli -g connection.id connection show "$1" >/dev/null 2>&1
+}
+
+# Hotspot name: Starlock-XXXX, XXXX = last 4 characters of the board serial
+# (the ready-made card writes the same thing to /etc/starlock-ssid).
+hotspot_ssid() {
+    if [ -s /etc/starlock-ssid ]; then
+        head -n 1 /etc/starlock-ssid
+        return
+    fi
+    suffix=$({ tr -d '\0' < /sys/firmware/devicetree/base/serial-number \
+        | tail -c 4 | tr 'a-f' 'A-F'; } 2>/dev/null)
+    echo "Starlock-${suffix:-Pi}"
+}
+
+ensure_profile() {
+    wlan=$(wifi_device)
+    if [ -z "$wlan" ]; then
+        log "no Wi-Fi device, so no hotspot profile"
+        return 0
+    fi
+    if profile_exists "$PROFILE"; then
+        return 0
+    fi
+    # The ready-made SD card used to call its always-on hotspot "hotspot".
+    # Adopt it (same SSID, password and address) instead of creating a
+    # second access point; changing the id and autoconnect leaves a running
+    # hotspot up.
+    if profile_exists "$LEGACY_PROFILE" \
+        && [ "$(nmcli -g 802-11-wireless.mode connection show "$LEGACY_PROFILE" 2>/dev/null)" = ap ] \
+        && nmcli -g ipv4.addresses connection show "$LEGACY_PROFILE" 2>/dev/null | grep -q '^192\.168\.77\.1/'; then
+        if nmcli connection modify "$LEGACY_PROFILE" \
+            connection.id "$PROFILE" connection.autoconnect no >/dev/null 2>&1; then
+            log "renamed the ready-made card's '$LEGACY_PROFILE' connection to '$PROFILE' (autoconnect off)"
+            return 0
+        fi
+    fi
+    ssid=$(hotspot_ssid)
+    if nmcli connection add type wifi ifname "$wlan" con-name "$PROFILE" \
+        autoconnect no ssid "$ssid" \
+        802-11-wireless.mode ap 802-11-wireless.band bg \
+        ipv4.method shared ipv4.addresses "$ADDRESS" ipv6.method disabled \
+        wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$PSK" \
+        wifi-sec.proto rsn wifi-sec.pairwise ccmp wifi-sec.group ccmp \
+        wifi-sec.pmf disable >/dev/null 2>&1; then
+        log "created the hotspot profile '$PROFILE' (SSID $ssid)"
+        return 0
+    fi
+    log "could not create the hotspot profile '$PROFILE'"
+    return 1
+}
+
+run() {
+    if [ "$(id -u)" != 0 ]; then
+        log "must run as root"
+        return 1
+    fi
+    if ! command -v nmcli >/dev/null 2>&1; then
+        log "NetworkManager (nmcli) is not installed; nothing to do"
+        return 0
+    fi
+
+    if has_known_wifi; then
+        wait_for=$WAIT_KNOWN
+        log "known Wi-Fi network saved; waiting up to ${wait_for}s for it"
+    else
+        wait_for=$WAIT_NONE
+        log "no Wi-Fi network saved; waiting up to ${wait_for}s for a wired link"
+    fi
+
+    # Wait for a connection. A device that is still connecting when the wait
+    # runs out gets up to WAIT_EXTRA more seconds (slow association or DHCP).
+    elapsed=0
+    limit=$wait_for
+    max=$((wait_for + WAIT_EXTRA))
+    while :; do
+        dev=$(connected_device ethernet)
+        if [ -n "$dev" ]; then
+            log "wired connection up on $dev; no hotspot"
+            return 0
+        fi
+        dev=$(connected_device wifi)
+        if [ -n "$dev" ]; then
+            log "Wi-Fi connected on $dev; no hotspot"
+            return 0
+        fi
+        if [ "$elapsed" -ge "$limit" ]; then
+            if [ -n "$(connecting)" ] && [ "$limit" -lt "$max" ]; then
+                limit=$max
+                log "a connection is still being made; waiting up to ${max}s in all"
+            else
+                break
+            fi
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+
+    wlan=$(wifi_device)
+    if [ -z "$wlan" ]; then
+        log "no Wi-Fi device; nothing to do"
+        return 0
+    fi
+    state=$(device_status | while IFS=: read -r dev type state rest; do
+        [ "$dev" = "$wlan" ] && { echo "$state"; break; }
+    done)
+    case "$state" in
+        unmanaged*)
+            log "$wlan is not managed by NetworkManager; leaving it alone"
+            return 0 ;;
+    esac
+
+    ensure_profile || return 1
+    log "no network after ${elapsed}s; starting the hotspot '$PROFILE' on $wlan"
+    tries=0
+    while [ "$tries" -lt 3 ]; do
+        if nmcli --wait 30 connection up "$PROFILE" ifname "$wlan"; then
+            log "hotspot is up: connect to Wi-Fi '$(hotspot_ssid)' and open http://${ADDRESS%/*}:8780"
+            return 0
+        fi
+        # A client network may have come up in the meantime: leave it alone.
+        dev=$(connected_device any)
+        if [ -n "$dev" ]; then
+            log "$dev connected after all; no hotspot"
+            return 0
+        fi
+        tries=$((tries + 1))
+        log "starting the hotspot failed (attempt $tries of 3); is Wi-Fi blocked? try: rfkill list, raspi-config nonint do_wifi_country <CC>"
+        sleep 5
+    done
+    return 1
+}
+
+TMP_LIST=$(mktemp 2>/dev/null || echo /tmp/starlock-wifi-fallback.$$)
+trap 'rm -f "$TMP_LIST"' EXIT
+
+case "${1:-run}" in
+    run) run ;;
+    ensure-profile)
+        command -v nmcli >/dev/null 2>&1 || exit 0
+        ensure_profile ;;
+    *) echo "usage: $0 [run|ensure-profile]" >&2; exit 2 ;;
+esac

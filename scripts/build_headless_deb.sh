@@ -155,6 +155,10 @@ cp marketing/inapp-title.png "$APP/marketing/"
 install -D -m 755 "$PKG_DIR/starlock-headless" "$STAGE/usr/bin/starlock-headless"
 install -D -m 644 "$PKG_DIR/starlock-headless.service" \
     "$STAGE/usr/lib/systemd/system/starlock-headless.service"
+# Wi-Fi hotspot fallback: a one-shot at boot (script + unit)
+install -D -m 755 "$PKG_DIR/starlock-wifi-fallback" "$APP/wifi-fallback"
+install -D -m 644 "$PKG_DIR/starlock-wifi-fallback.service" \
+    "$STAGE/usr/lib/systemd/system/starlock-wifi-fallback.service"
 install -d "$STAGE/usr/share/doc/starlock-headless"
 cat > "$STAGE/usr/share/doc/starlock-headless/copyright" <<'EOF'
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/

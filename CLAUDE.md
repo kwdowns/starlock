@@ -88,6 +88,15 @@ connects or sends a target (the servers' `on_client_connected` callbacks
 and `GotoTarget` changes). The LEDs are only writable because the
 unit's `ExecStartPre=+`/`ExecStopPost=+` run `evf.engine.led_helper
 take`/`restore` as root; `led.enabled` in config.json turns it off.
+The package also ships a Wi-Fi hotspot fallback: the one-shot
+`starlock-wifi-fallback.service` runs `/usr/lib/starlock-headless/wifi-fallback`
+(source `packaging/headless/starlock-wifi-fallback`) once per boot. If no known
+Wi-Fi network or wired link connects (45 s, 10 s when no Wi-Fi is saved, +45 s
+while a connection is in progress), it starts the NetworkManager connection
+`starlock-hotspot` (`Starlock-XXXX`, 192.168.77.1, autoconnect off, created by
+postinst if missing); it never touches a working connection and does not
+re-check later. A hand-installed same-named unit in `/etc/systemd/system`
+overrides it (postinst prints a note). Details in `specs/start/SPEC_FIRST_RUN.md` 1.1.
 The same way, `evf.engine.cpufreq_helper take`/`restore` saves the CPU's
 cpufreq `scaling_max_freq` and lets group starlock write it; the engine
 (`evf/engine/cpufreq.py`) then caps the clock at `power.max_freq_mhz`
@@ -205,12 +214,12 @@ hardware/                       # 3D-printable mechanical designs (OpenSCAD)
     vendor/                     # threads.scad (CC0), YAPP_Box (MIT)
     stls/                       # pre-built STL files ready for printing
 marketing/                      # app branding assets (logo, in-app title)
-packaging/headless/             # starlock-headless .deb: launcher, systemd unit, debian/ maintainer scripts,
+packaging/headless/             # starlock-headless .deb: launcher, systemd units (service + Wi-Fi hotspot fallback), debian/ maintainer scripts,
                                 #   and user-data (first-boot config for the ready-made SD card, attached to releases)
 build/                          # build output (gitignored)
 scripts/                        # build and dev scripts
   build_headless_deb.sh         # Raspberry Pi starlock-headless .deb build
-  smoke_test_headless_deb.sh    # container install/run test for the .deb
+  smoke_test_headless_deb.sh    # container install/run test for the .deb (incl. the Wi-Fi fallback without NetworkManager)
   build_camera_mac.sh           # compile Swift camera server
   run_dev.sh                    # dev launch (macOS)
   run_dev_linux.sh              # dev launch (Linux)

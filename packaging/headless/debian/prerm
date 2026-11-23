@@ -3,12 +3,19 @@
 set -e
 
 UNIT=starlock-headless.service
+FALLBACK_UNIT=starlock-wifi-fallback.service
 
 if [ -d /run/systemd/system ]; then
     case "$1" in
         remove)
             systemctl stop "$UNIT" || true
             systemctl disable "$UNIT" >/dev/null 2>&1 || true
+            # The Wi-Fi fallback is a one-shot (nothing to stop; stopping it
+            # would not take a running hotspot down). Unless a hand-installed
+            # copy in /etc overrides ours, take its enable link out.
+            if [ ! -f "/etc/systemd/system/$FALLBACK_UNIT" ] || [ -L "/etc/systemd/system/$FALLBACK_UNIT" ]; then
+                systemctl disable "$FALLBACK_UNIT" >/dev/null 2>&1 || true
+            fi
             ;;
         upgrade|deconfigure)
             # postinst restarts it with the new version.

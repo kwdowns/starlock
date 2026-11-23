@@ -28,7 +28,7 @@ Connectivity also lists the clients: **LX200 (SkySafari, Stellarium Mobile)** an
 !!! tip "Make sure your phone and the Pi are on the same Wi-Fi network"
     Starlock doesn't need the internet, but your phone must be on the same local network as the Pi. If they can't see each other, the apps below won't connect.
 
-    **No Wi-Fi at your observing site?** With a ready-made SD card, the Pi brings its own hotspot: join `Starlock-XXXX` on your phone and use `192.168.77.1`, port `4030`. Your phone may warn that the network has no internet: stay connected anyway.
+    **No Wi-Fi at your observing site?** When the Pi finds no Wi-Fi network it knows at boot (and no network cable), it brings its own hotspot ([details](rpi-headless.md#wi-fi-hotspot-fallback)): join `Starlock-XXXX` on your phone and use `192.168.77.1`, port `4030`. Your phone may warn that the network has no internet: stay connected anyway.
 
 !!! tip "Moving between networks: update the app's preset each time"
     The Pi's IP address is assigned by whichever network it's on, so it can differ between your home Wi-Fi, an observing-site Wi-Fi, and the Pi's hotspot. A SkySafari / Stellarium Mobile / INDI / ASCOM preset saved on one network won't connect on another. The IP in the preset points to an address that doesn't exist on the new network.

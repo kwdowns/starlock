@@ -4,6 +4,7 @@ Architecture: arm64
 Maintainer: Kyle Downs <12downsk@gmail.com>
 Installed-Size: @INSTALLED_SIZE@
 Depends: libc6 (>= 2.36), libjpeg62-turbo, adduser
+Suggests: network-manager
 Conflicts: pushnav-headless
 Replaces: pushnav-headless
 Section: science
@@ -17,6 +18,10 @@ Description: Starlock plate-solving push-to for Raspberry Pi (headless)
  with no window, and is controlled from a phone or laptop browser at
  http://<pi-ip>:8780. SkySafari / Stellarium Mobile connect over LX200
  on port 4030, Stellarium desktop on port 10001.
+ .
+ With NetworkManager, a boot-time fallback starts the Pi's own Wi-Fi
+ hotspot (Starlock-XXXX, 192.168.77.1) when no known Wi-Fi network or wired
+ link is available, so a phone can still connect.
  .
  It bundles its own Python 3.12 runtime under /usr/lib/starlock-headless.
  Starlock is a fork of PushNav and replaces the pushnav-headless package.

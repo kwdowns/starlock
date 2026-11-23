@@ -1,0 +1,23 @@
+[Unit]
+Description=Starlock: open the Wi-Fi hotspot when no known network is available
+Documentation=https://kwdowns.github.io/starlock/rpi-headless/
+After=NetworkManager.service
+Wants=NetworkManager.service
+# Nothing to do without NetworkManager (a container, or a Pi managed another way).
+ConditionPathExists=/usr/bin/nmcli
+
+[Service]
+# Runs once per boot. Waits up to ~45 s (90 s if a connection is still being
+# made) for a known Wi-Fi network or a wired link, and starts the
+# "starlock-hotspot" connection only if there is none. It never touches a
+# working connection. See /usr/lib/starlock-headless/wifi-fallback.
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/starlock-headless/wifi-fallback run
+TimeoutStartSec=240
+SyslogIdentifier=starlock-wifi-fallback
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
