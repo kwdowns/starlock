@@ -301,8 +301,11 @@ later). They share one version scheme:
 - **Releases are git tags `vX.Y.Z`** in each repo, on the commit whose
   version file says `X.Y.Z`.
 - **Build numbers** (iOS `CFBundleVersion`) are a separate, ever-increasing
-  counter (the CI run number). TestFlight shows them as "0.4.0 (37)"; the
-  App Store shows only "0.4.0".
+  counter (the CI run number). Apple always has both: TestFlight shows
+  "version (build)", the App Store only the version.
+- **Every TestFlight upload bumps the app's `PATCH`**, so testers see
+  "0.5.1 (20)", "0.5.2 (21)" rather than the same version with a new build
+  number. Several uploads of one version are allowed but hard to tell apart.
 
 Where each component keeps its version (the one place to edit):
 
