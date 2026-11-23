@@ -66,7 +66,7 @@ export function Targets({ state, onTargetSet }: TargetsProps) {
   const nav = state.nav;
 
   const goTo = useCallback(
-    (item: TargetItem) => { void go(item.key, item.ra_deg, item.dec_deg, item.title); },
+    (item: TargetItem) => { void go(item.key, item.ra_deg, item.dec_deg, item.title, item.size_deg); },
     [go],
   );
 
@@ -147,7 +147,7 @@ export function Targets({ state, onTargetSet }: TargetsProps) {
         error={error}
         onClose={() => { setDetail(null); clearError(); }}
         onGo={(item) => {
-          void go(item.key, item.ra_deg, item.dec_deg, item.title).then((ok) => {
+          void go(item.key, item.ra_deg, item.dec_deg, item.title, item.size_deg).then((ok) => {
             if (ok) setDetail(null);
           });
         }}

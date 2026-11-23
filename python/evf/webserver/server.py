@@ -41,12 +41,16 @@ from PIL import Image
 from evf.cloud.service import CloudService, PairingError
 
 # Catalog files served at /api/catalog/<name> (see catalog_data_dir()).
-CATALOG_NAMES = ("objects", "openngc", "hyg-bright")
+CATALOG_NAMES = ("objects", "openngc", "hyg-bright", "object_sizes")
 from evf.config.manager import ConfigManager
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
 from evf.engine.mount import MOUNT_MODES, compute_mount_guidance, mount_axes
-from evf.engine.navigation import compute_navigation, edge_arrow_position
+from evf.engine.navigation import (
+    compute_navigation,
+    edge_arrow_position,
+    on_target_radius_deg,
+)
 from evf.engine.observation_log import ObservationLogger, entries_to_csv
 from evf.wifi_signal import WifiSignal
 from evf.engine.pointing import PointingState
@@ -680,14 +684,24 @@ class WebServer:
         ra = float(body["ra_deg"])
         dec = float(body["dec_deg"])
         name = body.get("name")
-        if isinstance(name, str) and name.strip():
-            name = name.strip()[:120]
+        name = name.strip()[:120] if isinstance(name, str) and name.strip() else None
+        # Optional apparent size (major axis, degrees): big objects count as
+        # on target over more of their extent.
+        size = body.get("size_deg")
+        try:
+            size = float(size) if size is not None else None
+        except (TypeError, ValueError):
+            return web.Response(status=400, text="size_deg must be a number")
+        if size is not None and not (0 < size <= 90):
+            size = None
+        if size is None:
+            if name is None:
+                return await self._handle_api(
+                    request, lambda: self._actions.set_goto_target(ra, dec))
             return await self._handle_api(
-                request, lambda: self._actions.set_goto_target(ra, dec, name)
-            )
+                request, lambda: self._actions.set_goto_target(ra, dec, name))
         return await self._handle_api(
-            request, lambda: self._actions.set_goto_target(ra, dec)
-        )
+            request, lambda: self._actions.set_goto_target(ra, dec, name, size))
 
     # -- observation log ------------------------------------------------------
 
@@ -1144,11 +1158,15 @@ class WebServer:
             if obj:
                 obj_name = obj.get("localized-name") or obj.get("name")
 
+        size = getattr(target, "size_deg", None)
         base = {
             "active": True,
             "target_name": obj_name,
             "target_ra_deg": target.ra_j2000,
             "target_dec_deg": target.dec_j2000,
+            "target_size_deg": size,
+            # Clients and Starlock Cloud use this for "on target".
+            "on_target_deg": on_target_radius_deg(size),
         }
 
         if not snap.valid:

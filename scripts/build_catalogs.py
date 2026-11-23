@@ -157,6 +157,8 @@ def trim_openngc(csv_path: Path) -> list[dict]:
                 "dec_deg": round(dec_deg, 6),
                 "mag": round(mag, 2) if mag is not None else None,
                 "constellation": (row.get("Const") or "").strip() or None,
+                # Major axis in arcmin (on-target radius for big objects).
+                "size": _parse_float(row.get("MajAx", "")),
             })
     return out
 

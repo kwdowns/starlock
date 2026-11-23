@@ -10,11 +10,11 @@ export function useGoto(onTargetSet?: () => void) {
   const [error, setError] = useState<string | null>(null);
 
   const go = useCallback(
-    async (key: string, raDeg: number, decDeg: number, name?: string): Promise<boolean> => {
+    async (key: string, raDeg: number, decDeg: number, name?: string, sizeDeg?: number): Promise<boolean> => {
       setPendingKey(key);
       setError(null);
       try {
-        await api.setGoto(raDeg, decDeg, name);
+        await api.setGoto(raDeg, decDeg, name, sizeDeg);
         onTargetSet?.();
         return true;
       } catch (e) {

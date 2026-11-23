@@ -14,7 +14,8 @@ import {
 } from "@/components/ui";
 import { riseSetTransitUtc } from "@/lib/astronomy";
 import { azimuthCompass, type CatalogObject } from "@/lib/catalogTypes";
-import { SOLAR_KIND_LABELS } from "@/lib/solarSystem";
+import { moonGlare, moonGlareText } from "@/lib/moonGlare";
+import { SOLAR_KIND_LABELS, useSolarSystem } from "@/lib/solarSystem";
 import {
   advancedTypeLabel,
   capitalise,
@@ -82,6 +83,11 @@ function DetailBody({
   const d = item.detail;
   const nearSun = d.kind === "solar" && d.body.near_sun;
   const below = (aa !== null && aa.altDeg < 0) || nearSun;
+  const bodies = useSolarSystem(evalAt);
+  const glare = moonGlare(
+    { ra_deg: item.ra_deg, dec_deg: item.dec_deg, isMoon: d.kind === "solar" && d.body.kind === "moon" },
+    bodies, location, evalAt,
+  );
   // The Moon moves about its own width an hour: a fixed-position rise/set
   // would be off by most of an hour, so leave it out.
   const rst = location && !(d.kind === "solar" && d.body.kind === "moon")
@@ -114,6 +120,11 @@ function DetailBody({
           </Alert>
         ) : below && (
           <Alert variant="warning">This object is below the horizon right now.</Alert>
+        )}
+        {glare && !nearSun && (
+          <Alert variant="warning" title={glare.kind === "is-moon" ? "Hard to solve on the Moon" : "Near a bright Moon"}>
+            {moonGlareText(glare, item.title)}
+          </Alert>
         )}
         {error && (
           <Alert variant="error" title="Couldn't set the target">

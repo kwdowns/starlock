@@ -238,9 +238,10 @@ class Engine:
 
     def set_goto_target(
         self, ra_deg: float, dec_deg: float, name: str | None = None,
+        size_deg: float | None = None,
     ) -> None:
         """Set the GOTO target. Used by the catalog 'Set as target' flow."""
-        self._goto_target.set(float(ra_deg), float(dec_deg), name)
+        self._goto_target.set(float(ra_deg), float(dec_deg), name, size_deg)
 
     def set_audio_enabled(self, enabled: bool) -> None:
         self.audio_enabled = enabled

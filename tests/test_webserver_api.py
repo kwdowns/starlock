@@ -270,3 +270,36 @@ async def test_pwa_manifest_and_icons_served(server_and_actions, tmp_path, monke
         async with s.get(f"{base}/") as r:
             assert r.status == 200
             assert "no-cache" in r.headers["Cache-Control"]
+
+
+def test_on_target_radius_grows_with_size():
+    from evf.engine.navigation import on_target_radius_deg
+    assert on_target_radius_deg(None) == 0.15
+    assert on_target_radius_deg(0.05) == 0.15          # small galaxy: the floor
+    assert abs(on_target_radius_deg(185 / 60) - 0.925) < 1e-9  # Alpha Persei Cluster
+    assert on_target_radius_deg(15.0) == 1.5           # Great Square: capped
+
+
+@pytest.mark.asyncio
+async def test_goto_set_with_size(server_and_actions):
+    ws, actions = server_and_actions
+    url = f"http://127.0.0.1:{ws._port}/api/goto/set"
+    async with ClientSession() as s:
+        async with s.post(url, json={"ra_deg": 51.0, "dec_deg": 49.0,
+                                     "name": "Alpha Persei Cluster", "size_deg": 3.08}) as resp:
+            assert resp.status == 204
+        actions.set_goto_target.assert_called_with(51.0, 49.0, "Alpha Persei Cluster", 3.08)
+        async with s.post(url, json={"ra_deg": 1.0, "dec_deg": 2.0, "size_deg": "big"}) as resp:
+            assert resp.status == 400
+        async with s.post(url, json={"ra_deg": 1.0, "dec_deg": 2.0, "size_deg": -1}) as resp:
+            assert resp.status == 204
+        actions.set_goto_target.assert_called_with(1.0, 2.0)
+
+
+def test_goto_target_keeps_size():
+    from evf.engine.goto_target import GotoTarget
+    t = GotoTarget()
+    t.set(10.0, 20.0, "M45", 1.83)
+    assert t.read().size_deg == 1.83
+    t.set(10.0, 20.0, "Vega")
+    assert t.read().size_deg is None

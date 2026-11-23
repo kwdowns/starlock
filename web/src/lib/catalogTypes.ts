@@ -61,6 +61,8 @@ export interface NgcEntry {
   dec_deg: number;
   mag: number | null;
   constellation: string | null;
+  /** Major axis in arcminutes, when OpenNGC lists one. */
+  size?: number | null;
 }
 
 export interface StarEntry {

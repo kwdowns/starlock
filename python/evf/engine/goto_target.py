@@ -44,6 +44,7 @@ class GotoTargetSnapshot:
     dec_j2000: float  # degrees
     active: bool
     name: str | None = None  # label from the client that set it, if any
+    size_deg: float | None = None  # apparent size (major axis), when the client knows it
 
 
 class GotoTarget:
@@ -55,6 +56,7 @@ class GotoTarget:
         self._dec_j2000: float = 0.0
         self._active: bool = False
         self._name: str | None = None
+        self._size_deg: float | None = None
         self._on_change: list[Callable[[], None]] = []
 
     def add_on_change(self, callback: Callable[[], None]) -> None:
@@ -64,6 +66,7 @@ class GotoTarget:
 
     def set(
         self, ra_j2000_deg: float, dec_j2000_deg: float, name: str | None = None,
+        size_deg: float | None = None,
     ) -> None:
         """Set a new GOTO target. Called by Stellarium server thread."""
         with self._lock:
@@ -71,6 +74,7 @@ class GotoTarget:
             self._dec_j2000 = dec_j2000_deg
             self._active = True
             self._name = name or None
+            self._size_deg = size_deg if size_deg and size_deg > 0 else None
         for cb in self._on_change:
             try:
                 cb()
@@ -106,4 +110,5 @@ class GotoTarget:
                 dec_j2000=self._dec_j2000,
                 active=self._active,
                 name=self._name,
+                size_deg=self._size_deg,
             )

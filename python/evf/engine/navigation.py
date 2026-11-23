@@ -40,6 +40,22 @@ class NavigationResult:
     in_fov: bool  # True if target falls within the image bounds
 
 
+# On target within this of the target centre, for point-like targets.
+ON_TARGET_DEG = 0.15
+# Big targets (clusters, asterisms, large nebulae): on target anywhere in
+# the inner part of the object, this fraction of its major axis from the
+# centre, but never more than ON_TARGET_MAX_DEG.
+ON_TARGET_SIZE_FRACTION = 0.3
+ON_TARGET_MAX_DEG = 1.5
+
+
+def on_target_radius_deg(size_deg: float | None) -> float:
+    """How close to the target centre counts as on target."""
+    if not size_deg or size_deg <= 0:
+        return ON_TARGET_DEG
+    return min(ON_TARGET_MAX_DEG, max(ON_TARGET_DEG, size_deg * ON_TARGET_SIZE_FRACTION))
+
+
 def angular_separation(ra1: float, dec1: float, ra2: float, dec2: float) -> float:
     """Angular separation between two sky positions using the Vincenty formula.
 

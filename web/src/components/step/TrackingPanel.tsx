@@ -17,7 +17,9 @@ import {
 } from "@/components/ui";
 import { useNearestObject } from "@/hooks/useNearestObject";
 import { api } from "@/lib/api";
+import { moonGlare, moonGlareText } from "@/lib/moonGlare";
 import { CENTERED_DEG } from "@/lib/nearest";
+import { useSolarSystem } from "@/lib/solarSystem";
 import { formatDec, formatDistance, formatMountMove, formatRa, mountDeltas } from "@/lib/screen";
 import type { EnginePayload } from "@/lib/types";
 
@@ -26,6 +28,15 @@ type Props = { state: EnginePayload };
 function TargetReadout({ state }: Props) {
   const nav = state.nav!;
   const p = state.pointing;
+  const now = new Date();
+  const bodies = useSolarSystem(now);
+  const loc = state.location.latitude !== null && state.location.longitude !== null
+    ? { latitude: state.location.latitude, longitude: state.location.longitude }
+    : null;
+  const isMoon = bodies.some((b) => b.kind === "moon" && b.name === nav.target_name);
+  const glare = moonGlare(
+    { ra_deg: nav.target_ra_deg, dec_deg: nav.target_dec_deg, isMoon }, bodies, loc, now,
+  );
   const deltas =
     p.valid && nav.in_fov && nav.pixel_x !== null && nav.pixel_y !== null
       ? mountDeltas(state, nav.pixel_x, nav.pixel_y)
@@ -75,6 +86,7 @@ function TargetReadout({ state }: Props) {
           Set your location in Settings to get turn and raise directions.
         </p>
       )}
+      {glare && <p className="text-label">{moonGlareText(glare, nav.target_name ?? "The target")}</p>}
       <p className="text-label text-muted-foreground">1° is about two full moons wide.</p>
     </div>
   );

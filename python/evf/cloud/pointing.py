@@ -72,7 +72,7 @@ def build_pointing_body(payload: dict, *, dwelling: bool, now: float) -> dict:
                   "decJ2000Deg": _r(nav.get("target_dec_deg"), 4)}
         sep = nav.get("separation_deg")
         if solved and sep is not None:
-            on_target = sep <= ON_TARGET_DEG
+            on_target = sep <= (nav.get("on_target_deg") or ON_TARGET_DEG)
             mount = nav.get("mount")
             mode = (payload.get("mount") or {}).get("mode")
             if mount:

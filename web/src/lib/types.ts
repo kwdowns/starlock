@@ -46,6 +46,10 @@ export interface NavData {
   target_name: string | null;
   target_ra_deg: number;
   target_dec_deg: number;
+  /** Apparent size sent with the target, degrees (older engines: missing). */
+  target_size_deg?: number | null;
+  /** On target within this of the centre; grows with the target's size. */
+  on_target_deg?: number;
   separation_deg: number | null;
   direction_text: string;
   in_fov: boolean;

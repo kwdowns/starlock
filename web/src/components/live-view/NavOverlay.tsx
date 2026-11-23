@@ -5,12 +5,17 @@ interface Props {
   state: EnginePayload;
 }
 
+/** Older engines don't send nav.on_target_deg. */
 const LOCKED_THRESHOLD_DEG = 0.15;
+
+function lockedDeg(nav: NavData): number {
+  return nav.on_target_deg ?? LOCKED_THRESHOLD_DEG;
+}
 
 type Zone = "PUSH" | "CONVERGE" | "LOCKED";
 
 function pickZone(nav: NavData): Zone {
-  if (nav.in_fov && nav.separation_deg !== null && nav.separation_deg <= LOCKED_THRESHOLD_DEG) {
+  if (nav.in_fov && nav.separation_deg !== null && nav.separation_deg <= lockedDeg(nav)) {
     return "LOCKED";
   }
   if (nav.in_fov) return "CONVERGE";
@@ -197,7 +202,7 @@ export function NavOverlay({ state }: Props) {
     const ty = nav.pixel_y;
     // Ring showing the lock zone around the eyepiece centre.
     const scale = state.image_w / (2 * Math.tan((state.fov_h_deg / 2) * (Math.PI / 180)));
-    const lockR = Math.tan(LOCKED_THRESHOLD_DEG * (Math.PI / 180)) * scale;
+    const lockR = Math.tan(lockedDeg(nav) * (Math.PI / 180)) * scale;
     const dx = tx - ox;
     const dy = ty - oy;
     const len = Math.hypot(dx, dy) || 1;

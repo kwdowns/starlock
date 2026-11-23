@@ -7,6 +7,7 @@ import {
   type StarEntry,
 } from "@/lib/catalogTypes";
 import { SOLAR_KIND_LABELS, type SolarBody } from "@/lib/solarSystem";
+import objectSizes from "@/data/object_sizes.json";
 import type { NavData } from "@/lib/types";
 
 export type Location = { latitude: number; longitude: number };
@@ -18,10 +19,16 @@ export interface TargetItem {
   subtitle: string;
   ra_deg: number;
   dec_deg: number;
+  /** Apparent size (major axis) in degrees, when known: widens "on target". */
+  size_deg?: number;
   detail:
     | { kind: "buddy"; object: CatalogObject }
     | { kind: "advanced"; entry: Exclude<AdvancedEntry, { source: "manual" }> }
     | { kind: "solar"; body: SolarBody };
+}
+
+function sizeDeg(arcmin: number | null | undefined): number | undefined {
+  return arcmin && arcmin > 0 ? arcmin / 60 : undefined;
 }
 
 export function capitalise(s: string): string {
@@ -45,6 +52,7 @@ export function buddyItem(obj: CatalogObject): TargetItem | null {
     subtitle: parts.join(" · "),
     ra_deg: raHours * 15,
     dec_deg: decDeg,
+    size_deg: sizeDeg((objectSizes as Record<string, number>)[obj.id]),
     detail: { kind: "buddy", object: obj },
   };
 }
@@ -78,6 +86,8 @@ export function solarItem(body: SolarBody): TargetItem {
     subtitle: parts.join(" · "),
     ra_deg: body.ra_j2000_deg,
     dec_deg: body.dec_j2000_deg,
+    // The Moon is half a degree across; planets are points to the finder.
+    size_deg: body.kind === "moon" ? 0.52 : undefined,
     detail: { kind: "solar", body },
   };
 }
@@ -99,6 +109,7 @@ export function advancedItem(entry: NgcEntry | StarEntry): TargetItem {
     subtitle: parts.join(" · "),
     ra_deg: entry.ra_deg,
     dec_deg: entry.dec_deg,
+    size_deg: entry.source === "ngc" ? sizeDeg(entry.size) : undefined,
     detail: { kind: "advanced", entry },
   };
 }

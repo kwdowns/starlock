@@ -165,6 +165,7 @@ web/                            # React + Vite + TS + Tailwind + shadcn/ui front
       objects.json              # vendored buddy catalog (161 curated entries)
       openngc.json              # OpenNGC trimmed to ~12.5k NGC objects (CC-BY-SA 4.0)
       hyg-bright.json           # HYG v3 trimmed to ~8.8k bright stars (CC-BY-SA 4.0)
+      object_sizes.json         # apparent size (arcmin) of the curated objects, for the size-aware on-target radius (scripts/build_object_sizes.py)
   public/                       # logo, inapp-title, favicons, PWA manifest.webmanifest + icons (red on #0a0000;
                                 #   regenerate with scripts/make_pwa_icons.py). No service worker: plain HTTP on the LAN
   dist/                         # build output (gitignored)
@@ -215,6 +216,7 @@ scripts/                        # build and dev scripts
   starlock.iss                   # Inno Setup installer script (Windows)
   sync_catalog.py               # vendor objects.json from ~/Devel/Github/stargazing-buddy-site
   update_minor_planets.py       # refresh data/minor_planets.json from JPL's Small-Body Database
+  build_object_sizes.py         # web/src/data/object_sizes.json from OpenNGC + a table of asterisms / big clusters
   make_pwa_icons.py             # regenerate web/public PWA/apple-touch icons from marketing/logo.png (red on #0a0000)
   make_pi_label.py              # 50 x 20 mm SVG + PNG label for a ready-made Pi (QR + hotspot details)
   fonts/                        # Atkinson Hyperlegible (OFL), used only by make_pi_label.py

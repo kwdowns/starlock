@@ -74,8 +74,14 @@ export const api = {
   },
   setControl: (name: string, value: number) => post("/api/control", { name, value }),
   clearGoto: () => post("/api/goto/clear"),
-  setGoto: (ra_deg: number, dec_deg: number, name?: string) =>
-    post("/api/goto/set", name ? { ra_deg, dec_deg, name } : { ra_deg, dec_deg }),
+  /** `size_deg`: apparent size (major axis), so big objects count as on target over more of their extent. */
+  setGoto: (ra_deg: number, dec_deg: number, name?: string, size_deg?: number) =>
+    post("/api/goto/set", {
+      ra_deg,
+      dec_deg,
+      ...(name ? { name } : {}),
+      ...(size_deg ? { size_deg } : {}),
+    }),
   /** Tell the engine this device's clock (for a Pi whose own clock is wrong). */
   reportClock: () => post("/api/clock", { unix_ms: Date.now() }),
   observations: async (startIso: string, endIso: string): Promise<ObservationList> => {
