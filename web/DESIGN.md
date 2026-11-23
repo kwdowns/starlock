@@ -190,7 +190,7 @@ AppBar      logo · status (icon + text) · audio · full-screen · settings (op
 Camera      live frame + overlays — sticky (top on phone, left column at md+)
               pencil (top-left) toggles camera settings right under the frame:
               SliderFields (exposure, gain) + solve stats (matches, prob, age);
-              open during setup, folded once tracking
+              always shown (no pencil) during setup, folded once tracking
 Step area   depends on engine state:
               SETUP / SYNC / SYNC_CONFIRM / CALIBRATE / WARMING_UP
                  Steps · instruction card with the step's primary action

@@ -52,4 +52,9 @@ describe("Camera settings", () => {
     fireEvent.click(pencil);
     expect(screen.queryByText("Exposure")).not.toBeInTheDocument();
   });
+
+  it("has no pencil when there is nothing to toggle (setup shows the settings)", () => {
+    render(<LiveView state={payload({ state: "SETUP", controls })} showStars={false} editOpen />);
+    expect(screen.queryByRole("button", { name: "Camera settings" })).not.toBeInTheDocument();
+  });
 });

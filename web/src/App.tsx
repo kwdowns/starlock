@@ -55,15 +55,14 @@ const BELOW_BAR = "var(--app-bar-h) + var(--safe-top)";
 const CAMERA_SETTINGS_ID = "camera-settings";
 
 /**
- * Camera settings under the frame (the pencil): open through the setup
- * wizard, where focusing is the task, and folded away once tracking. A tap
- * overrides that until the next change between the two.
+ * Camera settings under the frame. Always shown through the setup wizard,
+ * where focusing is the task, with no pencil to hide them; once tracking,
+ * the pencil on the frame shows and hides them (closed to start).
  */
 function useCameraSettingsOpen(setup: boolean) {
-  const [s, setS] = useState({ open: setup, setup });
-  if (s.setup !== setup) setS({ open: setup, setup });
-  const toggle = useCallback(() => setS((cur) => ({ ...cur, open: !cur.open })), []);
-  return [s.open, toggle] as const;
+  const [open, setOpen] = useState(false);
+  const toggle = useCallback(() => setOpen((o) => !o), []);
+  return [setup || open, setup ? undefined : toggle] as const;
 }
 
 export default function App() {

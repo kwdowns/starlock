@@ -20,7 +20,8 @@ channel only for night vision; live component reference at `?gallery`):
 - **Camera** — live frame with plate-solve overlay and push-to arrow, sticky
   under the app bar on phones and in the left column on tablets. A pencil in
   its top-left corner toggles the camera settings under it (exposure/gain
-  sliders and solve stats): open through the wizard, folded once tracking.
+  sliders and solve stats) once tracking; through the wizard they are always
+  shown and there is no pencil.
 - **Step area** — the setup wizard (camera, sync, calibrate); once tracking,
   the target readout (with its magnitude when this device sent it), the
   always-open sky dome (spins once when a target is picked), then Recenter
