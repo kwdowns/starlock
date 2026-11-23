@@ -92,11 +92,16 @@ def test_send_policy():
     assert p.due(a, 0)
     p.sent(a, 0)
     assert not p.due(a, 1)                               # unchanged
-    moved = {**a, "offsets": {**a["offsets"], "axis1Deg": 0.2}}
-    assert not p.due(moved, 1.0)                         # changed, but < 2 s
-    assert p.due(moved, 2.1)
+    sep = a["offsets"]["separationDeg"]
+    step = max(0.2, min(2.0, sep * 0.25))
+    nudged = {**a, "offsets": {**a["offsets"], "axis1Deg": a["offsets"]["axis1Deg"] + step / 2}}
+    assert not p.due(nudged, 30)                         # too small to matter
+    moved = {**a, "offsets": {**a["offsets"], "axis1Deg": a["offsets"]["axis1Deg"] + step * 1.1}}
+    assert not p.due(moved, 10)                          # meaningful, but < 15 s
+    assert p.due(moved, 15.1)
     on = {**a, "onTarget": True}
-    assert p.due(on, 0.5)                                # key change: at once
+    assert not p.due(on, 1.0)                            # major change: within 2 s
+    assert p.due(on, 2.1)
     assert p.due(a, HEARTBEAT_S + 0.1)                   # heartbeat while tracking
     idle = {**a, "state": "idle"}
     p.sent(idle, 100)
@@ -104,6 +109,36 @@ def test_send_policy():
     delay = p.failed(200)
     assert delay == 30 and not p.due(on, 229) and p.due(on, 231)
     assert p.failed(231) == 60
+
+
+def test_send_policy_when_nobody_watches():
+    p = SendPolicy()
+    a = build_pointing_body(payload(nav=nav()), dwelling=False, now=0)
+    p.sent(a, 0, watching=False)
+    moved = {**a, "offsets": {**a["offsets"], "axis1Deg": a["offsets"]["axis1Deg"] + 5}}
+    assert not p.due(moved, 30)                          # minor changes skipped
+    assert p.due({**a, "onTarget": True}, 30)            # major changes still go
+    assert p.due(moved, HEARTBEAT_S + 0.1)               # heartbeat: learns when someone watches
+    p.sent(moved, 61, watching=True)
+    again = {**moved, "offsets": {**moved["offsets"], "axis1Deg": moved["offsets"]["axis1Deg"] + 5}}
+    assert p.due(again, 61 + 15.1)
+    p.sent(again, 80)                                    # no answer: keep the last word
+    assert p.watching is True
+
+
+def test_an_hour_of_tracking_sends_a_few_hundred_updates_at_most():
+    # The scope sweeps toward a target and the solve jitters every update:
+    # the old 2 s rule posted ~1,800 times an hour.
+    p = SendPolicy()
+    base = build_pointing_body(payload(nav=nav()), dwelling=False, now=0)
+    sent = 0
+    for i in range(7200):                                # 0.5 s polls for an hour
+        t = i * 0.5
+        body = {**base, "offsets": {**base["offsets"], "axis1Deg": (i % 40) * 0.3}}
+        if p.due(body, t):
+            p.sent(body, t)
+            sent += 1
+    assert sent <= 250
 
 
 class FakeClient:
@@ -115,9 +150,12 @@ class FakeClient:
         if self.fail:
             raise self.fail
 
+    response = None
+
     def post_pointing(self, body, session):
         self._maybe_fail()
         self.pointing.append((body, session))
+        return self.response
 
     def post_observations(self, entries):
         self._maybe_fail()
@@ -134,10 +172,17 @@ def test_reporter_seq_session_and_ended():
     assert r.step() and not r.step()
     snap["p"] = payload(nav=nav(sep=0.1))
     t["mono"] = 0.5
+    assert not r.step()                                  # on target: a major change, but < 2 s
+    t["mono"] = 2.1
     assert r.step()
+    assert r._policy.watching is True                    # the service said nothing
+    client.response = {"pushed": False, "watching": False}
+    t["mono"] = 70.0
+    assert r.step()                                      # heartbeat
+    assert r._policy.watching is False
     r.stop(send_ended=True)
     seqs = [b["seq"] for b, _ in client.pointing]
-    assert seqs == [1, 2, 3]
+    assert seqs == [1, 2, 3, 4]
     assert len({s for _, s in client.pointing}) == 1
     assert client.pointing[-1][0]["state"] == "ended"
 

@@ -2,10 +2,16 @@
 
 The body is built from the same state dict the web UI gets over /ws
 (``WebServer._build_payload``), so the cloud sees exactly what the UI shows.
-The service does the APNs throttling; the Pi just follows the send rules:
-on change at most every 2 s, at once when state / target / on-target /
-dwelling change, a 30 s heartbeat while tracking, latest only (no queue),
-and a 30 s .. 5 min backoff after a failure.
+The service does the APNs throttling; the Pi follows the send rules in
+Starlock Cloud's docs/pi-integration.md so it doesn't post more than the
+service can use:
+
+- major changes (state, target, on-target, dwelling) within 2 s;
+- minor changes (offsets or pointing moved by a meaningful amount) at most
+  every 15 s, and only while a phone is watching (the service says so in
+  each response: ``watching``);
+- a 60 s heartbeat while tracking or lost;
+- latest only (no queue), and a 30 s .. 5 min backoff after a failure.
 """
 
 from __future__ import annotations
@@ -28,7 +34,15 @@ ON_TARGET_DEG = 0.15
 # A solve older than this means "lost".
 STALE_SOLVE_S = 5.0
 MIN_INTERVAL_S = 2.0
-HEARTBEAT_S = 30.0
+MINOR_INTERVAL_S = 15.0
+HEARTBEAT_S = 60.0
+# A minor change: an offset or the separation moved by this fraction of the
+# last-sent separation, clamped to [MIN, MAX] degrees (the service's rule).
+OFFSET_CHANGE_FRACTION = 0.25
+MIN_OFFSET_CHANGE_DEG = 0.2
+MAX_OFFSET_CHANGE_DEG = 2.0
+# Without a target: the pointing moved this far.
+POINTING_CHANGE_DEG = 1.0
 BACKOFF_S = (30.0, 60.0, 120.0, 240.0, 300.0)
 
 _SETUP_STATES = {"SETUP", "SYNC", "SYNC_CONFIRM", "CALIBRATE", "WARMING_UP"}
@@ -103,6 +117,34 @@ def ended_body() -> dict:
             "onTarget": False, "dwelling": False}
 
 
+def _minor_change(last: dict, body: dict) -> bool:
+    """Moved enough to be worth a Live Activity update (same test as the service)."""
+    lo, no = last.get("offsets"), body.get("offsets")
+    if (lo is None) != (no is None):
+        return True
+    if lo is not None and no is not None:
+        if lo.get("frame") != no.get("frame"):
+            return True
+        threshold = min(MAX_OFFSET_CHANGE_DEG,
+                        max(MIN_OFFSET_CHANGE_DEG, (lo.get("separationDeg") or 0) * OFFSET_CHANGE_FRACTION))
+        return any(abs((no.get(k) or 0) - (lo.get(k) or 0)) >= threshold
+                   for k in ("axis1Deg", "axis2Deg", "separationDeg"))
+    if body.get("target"):
+        return False  # with a target, the offsets carry the motion
+    lp, np_ = last.get("pointing"), body.get("pointing")
+    if (lp is None) != (np_ is None):
+        return True
+    if lp is None or np_ is None:
+        return False
+    return _sep_deg(lp["raJ2000Deg"], lp["decJ2000Deg"], np_["raJ2000Deg"], np_["decJ2000Deg"]) >= POINTING_CHANGE_DEG
+
+
+def _sep_deg(ra1: float, dec1: float, ra2: float, dec2: float) -> float:
+    r1, d1, r2, d2 = map(math.radians, (ra1, dec1, ra2, dec2))
+    c = math.sin(d1) * math.sin(d2) + math.cos(d1) * math.cos(d2) * math.cos(r1 - r2)
+    return math.degrees(math.acos(max(-1.0, min(1.0, c))))
+
+
 class SendPolicy:
     """When to send, per the contract. Pure; times are monotonic seconds."""
 
@@ -111,6 +153,8 @@ class SendPolicy:
         self._last_sent = -math.inf
         self._not_before = -math.inf
         self._failures = 0
+        # The service's last word on whether a phone is watching this device.
+        self.watching = True
 
     @staticmethod
     def _key(body: dict) -> tuple:
@@ -122,18 +166,22 @@ class SendPolicy:
         if now < self._not_before:
             return False
         last = self._last_body
-        if last is None or self._key(body) != self._key(last):
+        if last is None:
             return True
         since = now - self._last_sent
-        if body != last and since >= MIN_INTERVAL_S:
+        if self._key(body) != self._key(last):
+            return since >= MIN_INTERVAL_S
+        if self.watching and since >= MINOR_INTERVAL_S and _minor_change(last, body):
             return True
-        return body["state"] == "tracking" and since >= HEARTBEAT_S
+        return body["state"] in ("tracking", "lost") and since >= HEARTBEAT_S
 
-    def sent(self, body: dict, now: float) -> None:
+    def sent(self, body: dict, now: float, watching: bool | None = None) -> None:
         self._last_body = body
         self._last_sent = now
         self._failures = 0
         self._not_before = -math.inf
+        if watching is not None:
+            self.watching = watching
 
     def failed(self, now: float, retry_after: float | None = None) -> float:
         delay = BACKOFF_S[min(self._failures, len(BACKOFF_S) - 1)]
@@ -222,7 +270,7 @@ class PointingReporter:
             if not self._policy.due(body, now):
                 return False
         try:
-            self._send(client, body)
+            response = self._send(client, body)
         except Unauthorized:
             self._on_unauthorized()
             return False
@@ -233,15 +281,16 @@ class PointingReporter:
                 logger.info("Cloud pointing update failed (%s); next try in %.0f s", exc, delay)
             self.last_error = str(exc)
             return False
+        watching = response.get("watching") if isinstance(response, dict) else None
         with self._lock:
-            self._policy.sent(body, now)
+            self._policy.sent(body, now, watching if isinstance(watching, bool) else None)
         self.last_error = None
         self.last_sent_at = self._wall()
         return True
 
-    def _send(self, client: CloudClient, body: dict) -> None:
+    def _send(self, client: CloudClient, body: dict) -> dict | None:
         with self._lock:
             self._seq += 1
             seq = self._seq
-        client.post_pointing({"seq": seq, "sentAtUnix": round(self._wall(), 1), **body},
-                             self._session)
+        return client.post_pointing({"seq": seq, "sentAtUnix": round(self._wall(), 1), **body},
+                                    self._session)
