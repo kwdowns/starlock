@@ -63,8 +63,9 @@ export function buddyItem(obj: CatalogObject): TargetItem | null {
 // "M 31" / "M 35": a Messier alias, not "MWSC ..." or "MCG ...".
 const MESSIER_RE = /^M\s+\d/;
 // Anything that looks like a catalogue ID: alpha prefix followed by digits
-// (PGC, NGC, IC, UGC, HIP, HD, ...), a Bayer letter, or a Flamsteed number.
-const DESIGNATION_RE = /^([A-Z][A-Za-z0-9]*\s*\d|[α-ω]\s+[A-Z]|\d+\s+[A-Z])/;
+// (PGC, NGC, IC, UGC, HIP, HD, ...), a Bayer letter, a Flamsteed number, or a
+// survey name starting with a digit ("2MASX J0040…", "6dFGS …").
+const DESIGNATION_RE = /^([A-Z][A-Za-z0-9]*\s*\d|[α-ω]\s+[A-Z]|\d+\s+[A-Z]|\d+[A-Za-z]+[\s\dJ])/;
 
 function ngcNames(entry: NgcEntry): string[] {
   const messier = entry.aliases.find((a) => MESSIER_RE.test(a));
