@@ -5,7 +5,8 @@ import ngcData from "@/data/openngc.json";
 import starData from "@/data/hyg-bright.json";
 import { advancedSearch } from "@/lib/advancedSearch";
 import type { NgcEntry, StarEntry } from "@/lib/catalogTypes";
-import { advancedItem, altAzOf, type Location, type TargetItem } from "./items";
+import { useSolarSystem } from "@/lib/solarSystem";
+import { advancedItem, altAzOf, solarItem, type Location, type TargetItem } from "./items";
 import { readStored, writeStored } from "./storage";
 import { TargetList, type TargetActions } from "./TargetList";
 
@@ -38,12 +39,24 @@ export default function SearchPanel({ location, now, actions, onOpen }: Props) {
     writeStored(QUERY_KEY, v === "" ? null : v);
   };
 
-  const results = useMemo(() => advancedSearch(deferred, allEntries) as (NgcEntry | StarEntry)[], [deferred]);
   const evalAt = useMemo(() => new Date(now), [now]);
+  const bodies = useSolarSystem(evalAt);
+  const solarMatches = useMemo(() => {
+    const q = deferred.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return bodies.filter((b) => b.name.toLowerCase().startsWith(q)).map(solarItem);
+  }, [bodies, deferred]);
+  const catalogResults = useMemo(
+    () => advancedSearch(deferred, allEntries) as (NgcEntry | StarEntry)[],
+    [deferred],
+  );
+  const results: TargetItem[] = useMemo(
+    () => [...solarMatches, ...catalogResults.map(advancedItem)],
+    [solarMatches, catalogResults],
+  );
   const rows = useMemo(
     () =>
-      results.slice(0, shown).map((entry) => {
-        const item = advancedItem(entry);
+      results.slice(0, shown).map((item) => {
         const aa = altAzOf(item, location, evalAt);
         return { item, altDeg: aa?.altDeg ?? null, azDeg: aa?.azDeg ?? null };
       }),
@@ -55,7 +68,7 @@ export default function SearchPanel({ location, now, actions, onOpen }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <Field label="Search" hint="NGC, IC, Messier or a star name, such as M31 or Vega.">
+      <Field label="Search" hint="A planet, NGC, IC, Messier or a star name, such as Saturn, M31 or Vega.">
         <Input
           type="text"
           inputMode="search"

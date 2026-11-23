@@ -6,6 +6,7 @@ import {
   type NgcEntry,
   type StarEntry,
 } from "@/lib/catalogTypes";
+import { SOLAR_KIND_LABELS, type SolarBody } from "@/lib/solarSystem";
 import type { NavData } from "@/lib/types";
 
 export type Location = { latitude: number; longitude: number };
@@ -19,7 +20,8 @@ export interface TargetItem {
   dec_deg: number;
   detail:
     | { kind: "buddy"; object: CatalogObject }
-    | { kind: "advanced"; entry: Exclude<AdvancedEntry, { source: "manual" }> };
+    | { kind: "advanced"; entry: Exclude<AdvancedEntry, { source: "manual" }> }
+    | { kind: "solar"; body: SolarBody };
 }
 
 export function capitalise(s: string): string {
@@ -63,6 +65,21 @@ function ngcNames(entry: NgcEntry): string[] {
 function starNames(entry: StarEntry): string[] {
   const others = entry.aliases.filter((a) => a !== entry.id).slice(0, 2);
   return [entry.id, ...others];
+}
+
+/** The Moon, a planet or an asteroid at the time it was fetched for. */
+export function solarItem(body: SolarBody): TargetItem {
+  const parts = [SOLAR_KIND_LABELS[body.kind], `mag ${body.magnitude.toFixed(1)}`];
+  if (body.constellation) parts.push(body.constellation);
+  if (body.near_sun) parts.push("too close to the Sun");
+  return {
+    key: `solar:${body.id}`,
+    title: body.name,
+    subtitle: parts.join(" · "),
+    ra_deg: body.ra_j2000_deg,
+    dec_deg: body.dec_j2000_deg,
+    detail: { kind: "solar", body },
+  };
 }
 
 export function advancedTypeLabel(entry: NgcEntry | StarEntry): string {

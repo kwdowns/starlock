@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { riseSetTransitUtc } from "@/lib/astronomy";
 import { azimuthCompass, type CatalogObject } from "@/lib/catalogTypes";
+import { SOLAR_KIND_LABELS } from "@/lib/solarSystem";
 import {
   advancedTypeLabel,
   capitalise,
@@ -78,8 +79,12 @@ function DetailBody({
 }: Omit<Props, "detail" | "onClose"> & { detail: DetailState }) {
   const { item, evalAt } = detail;
   const aa = altAzOf(item, location, evalAt);
-  const below = aa !== null && aa.altDeg < 0;
-  const rst = location
+  const d = item.detail;
+  const nearSun = d.kind === "solar" && d.body.near_sun;
+  const below = (aa !== null && aa.altDeg < 0) || nearSun;
+  // The Moon moves about its own width an hour: a fixed-position rise/set
+  // would be off by most of an hour, so leave it out.
+  const rst = location && !(d.kind === "solar" && d.body.kind === "moon")
     ? riseSetTransitUtc({
         raHours: item.ra_deg / 15,
         decDeg: item.dec_deg,
@@ -89,10 +94,12 @@ function DetailBody({
       })
     : null;
 
-  const d = item.detail;
-  const kind = d.kind === "buddy" ? typeLabel(d.object) : advancedTypeLabel(d.entry);
-  const mag = d.kind === "buddy" ? d.object.magnitude : d.entry.mag;
-  const constellation = d.kind === "buddy" ? d.object.constellation : d.entry.constellation;
+  const kind = d.kind === "buddy" ? typeLabel(d.object)
+    : d.kind === "solar" ? SOLAR_KIND_LABELS[d.body.kind] : advancedTypeLabel(d.entry);
+  const mag = d.kind === "buddy" ? d.object.magnitude
+    : d.kind === "solar" ? d.body.magnitude : d.entry.mag;
+  const constellation = d.kind === "buddy" ? d.object.constellation
+    : d.kind === "solar" ? d.body.constellation : d.entry.constellation;
 
   return (
     <>
@@ -101,7 +108,11 @@ function DetailBody({
         <SheetDescription>{item.subtitle}</SheetDescription>
       </SheetHeader>
       <SheetBody>
-        {below && (
+        {nearSun ? (
+          <Alert variant="error" title="Too close to the Sun">
+            Never point a telescope near the Sun. This one is {Math.round(d.body.elongation_deg)}° from it.
+          </Alert>
+        ) : below && (
           <Alert variant="warning">This object is below the horizon right now.</Alert>
         )}
         {error && (
@@ -126,6 +137,17 @@ function DetailBody({
           <Readout label="Rises" value={formatClock(rst?.rise ?? null)} />
           <Readout label="Transit" value={formatClock(rst?.transit ?? null)} />
           <Readout label="Sets" value={formatClock(rst?.set ?? null)} />
+          {d.kind === "solar" && d.body.phase_fraction !== null && (
+            <Readout label="Lit" value={`${Math.round(d.body.phase_fraction * 100)}%`} />
+          )}
+          {d.kind === "solar" && (
+            <Readout
+              label="Distance"
+              value={d.body.kind === "moon"
+                ? `${Math.round(d.body.distance_au * 149_597_871).toLocaleString("en-US")} km`
+                : `${d.body.distance_au.toFixed(2)} AU`}
+            />
+          )}
           {d.kind === "buddy" && (
             <>
               <Readout label="Equipment" value={EQUIPMENT_LABELS[d.object.minEquipment] ?? d.object.minEquipment} />

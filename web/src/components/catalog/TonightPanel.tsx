@@ -2,16 +2,19 @@ import { useMemo, useState } from "react";
 import { Alert, Card, Disclosure, EmptyState, SegmentedControl } from "@/components/ui";
 import objectsData from "@/data/objects.json";
 import type { CatalogObject } from "@/lib/catalogTypes";
+import { useSolarSystem } from "@/lib/solarSystem";
 import { CatalogFilters } from "./CatalogFilters";
 import { activeFilterCount, useCatalogFilters } from "./filterState";
 import { DarknessBanner } from "./DarknessBanner";
-import type { Location, TargetItem } from "./items";
+import { altAzOf, solarItem, type Location, type TargetItem } from "./items";
 import { readStored, writeStored } from "./storage";
 import { TargetList, type TargetActions } from "./TargetList";
 import { TimeControl } from "./TimeControl";
 import { ALT_THRESHOLD_DEG, tonightRows, type SkyPoint, type SortKey } from "./tonight";
 
 const objects = objectsData as CatalogObject[];
+/** Planets are worth showing lower than the curated list's threshold. */
+export const SOLAR_MIN_ALT_DEG = 5;
 const SORT_KEY = "starlock.catalog.sort";
 
 const SORT_OPTIONS = [
@@ -56,6 +59,20 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
     [location, filters, evalAt, sort, scope],
   );
 
+  const bodies = useSolarSystem(location ? evalAt : null);
+  const solarRows = useMemo(() => {
+    if (!location) return [];
+    return bodies
+      .filter((b) => !b.near_sun)
+      .map((b) => {
+        const item = solarItem(b);
+        const aa = altAzOf(item, location, evalAt);
+        return { item, altDeg: aa?.altDeg ?? null, azDeg: aa?.azDeg ?? null, mag: b.magnitude };
+      })
+      .filter((r) => r.altDeg !== null && r.altDeg >= SOLAR_MIN_ALT_DEG)
+      .sort((a, b) => a.mag - b.mag);
+  }, [bodies, location, evalAt]);
+
   if (!location) {
     return (
       <Alert variant="info" title="Set your location">
@@ -99,6 +116,15 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
         appliedOffsetMin={offsetMin}
         onApply={setOffsetMin}
       />
+
+      {solarRows.length > 0 && (
+        <section aria-label="Solar system" className="flex flex-col gap-2">
+          <p className="text-label text-muted-foreground">
+            Moon, planets and bright asteroids above {SOLAR_MIN_ALT_DEG}°
+          </p>
+          <TargetList rows={solarRows} actions={{ ...actions, onOpen: openRow }} />
+        </section>
+      )}
 
       {rows.length === 0 ? (
         <EmptyState

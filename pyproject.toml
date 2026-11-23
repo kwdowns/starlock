@@ -14,6 +14,7 @@ dependencies = [
     "aiohttp",
     "pyerfa>=2.0.0",
     "zeroconf>=0.154.0",
+    "astronomy-engine>=2.1.19",
 ]
 
 [dependency-groups]

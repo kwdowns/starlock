@@ -141,7 +141,7 @@ find "$APP/python" -name __pycache__ -type d -prune -exec rm -rf {} +
 # Phase 4: data (same set as the Linux release, see build_linux.sh)
 # -------------------------------------------------------------------------
 echo "==> Copying data"
-cp data/tetra3rs_gaia.bin data/VERSION.json "$APP/data/"
+cp data/tetra3rs_gaia.bin data/VERSION.json data/minor_planets.json "$APP/data/"
 cp -a data/sounds "$APP/data/sounds"
 # Catalog JSON for the native apps (/api/catalog/<name>)
 install -d "$APP/data/web_catalog"

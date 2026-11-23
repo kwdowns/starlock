@@ -102,6 +102,15 @@ def version_json() -> Path:
     return _REPO_ROOT / "data" / "VERSION.json"
 
 
+def minor_planets_json() -> Path:
+    """Orbital elements of the bright asteroids (scripts/update_minor_planets.py)."""
+    if _BUNDLE_MODE:
+        return _RESOURCES / "minor_planets.json"
+    if _LINUX_RELEASE or _WINDOWS_RELEASE:
+        return _RELEASE_ROOT / "data" / "minor_planets.json"
+    return _REPO_ROOT / "data" / "minor_planets.json"
+
+
 def sounds_dir() -> Path:
     if _BUNDLE_MODE:
         return _RESOURCES / "sounds"

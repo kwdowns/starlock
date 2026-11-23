@@ -312,6 +312,7 @@ class WebServer:
         self._activity = activity
         self._stellarium_location = stellarium_location
         self._location_fn = location
+        self._minor_planet_cache = None
         self._dev_mode = dev_mode
         self._sample_active = sample_active
         self._actions = actions
@@ -418,6 +419,7 @@ class WebServer:
         app.router.add_get("/api/observations.csv", self._api_observations_csv)
         app.router.add_delete("/api/observations", self._api_observations_delete)
         app.router.add_get("/api/observations/{id}/frame.jpg", self._api_observation_frame)
+        app.router.add_get("/api/solar-system", self._api_solar_system)
         app.router.add_get("/api/catalog/{name}", self._api_catalog)
         app.router.add_get("/api/cloud", self._api_cloud_status)
         app.router.add_post("/api/cloud/pair", self._api_cloud_pair)
@@ -778,6 +780,37 @@ class WebServer:
             return web.Response(status=404, text="No frame for this entry")
         return web.Response(body=jpeg, content_type="image/jpeg",
                             headers={"Cache-Control": "private, max-age=86400"})
+
+    async def _api_solar_system(self, request: web.Request) -> web.Response:
+        """Moon, planets and bright asteroids at ``at`` (ISO time, default
+        now), J2000 RA/Dec, topocentric when the observer location is known.
+        They move, so unlike /api/catalog this is computed per request."""
+        from evf.engine.solar_system import positions
+        if "at" in request.query:
+            try:
+                when = datetime.fromisoformat(request.query["at"].replace("Z", "+00:00"))
+            except ValueError:
+                return web.Response(status=400, text="at must be an ISO 8601 time")
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+        else:
+            now = self._observations.clock.now() if self._observations is not None else time.time()
+            when = datetime.fromtimestamp(now, timezone.utc)
+        loc = (self._location_fn() if self._location_fn else None) or {}
+        bodies = await asyncio.to_thread(
+            positions, when, loc.get("latitude"), loc.get("longitude"), self._minor_planets())
+        return web.json_response({
+            "at_utc": when.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "topocentric": loc.get("latitude") is not None and loc.get("longitude") is not None,
+            "bodies": bodies,
+        }, headers={"Cache-Control": "no-store"})
+
+    def _minor_planets(self):
+        if self._minor_planet_cache is None:
+            from evf.engine.solar_system import load_minor_planets
+            from evf.paths import minor_planets_json
+            self._minor_planet_cache = load_minor_planets(minor_planets_json())
+        return self._minor_planet_cache
 
     # -- Catalog data ------------------------------------------------------------
 

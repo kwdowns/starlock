@@ -117,6 +117,7 @@ python/evf/                     # main Python package
     sample_injector.py          # dev-mode sample-image injector
     audio.py                    # audio feedback (lock/lost sounds)
     epoch.py                    # J2000 <-> JNow precession (pyerfa)
+    solar_system.py             # Moon, planets, Pluto (astronomy-engine) + bright asteroids (two-body from data/minor_planets.json), served at /api/solar-system
     observation_log.py          # observation log: dwell tracker, SQLite store (observations.sqlite3 next to config.json) + one frame per entry (observation_frames/, oldest trimmed past a quota), CSV, client-corrected clock
   camera/                       # TCP camera client
     client.py                   # camera TCP client
@@ -173,6 +174,7 @@ camera/
 data/
   tetra3rs_gaia.bin             # tetra3rs Gaia star catalog (~50 MB)
   VERSION.json                  # app + protocol + db version metadata
+  minor_planets.json            # JPL orbital elements for Ceres, Vesta, Pallas, Juno, Iris, Hebe (scripts/update_minor_planets.py; refresh before a release)
   sounds/                       # audio feedback WAVs (lock, lost, goto_ack)
   web_dist/                     # React build output (release-only — copied here by build scripts)
 docs/                           # GitHub Pages documentation
@@ -211,6 +213,7 @@ scripts/                        # build and dev scripts
   run_mock_camera.sh            # launch mock camera for testing
   starlock.iss                   # Inno Setup installer script (Windows)
   sync_catalog.py               # vendor objects.json from ~/Devel/Github/stargazing-buddy-site
+  update_minor_planets.py       # refresh data/minor_planets.json from JPL's Small-Body Database
   make_pwa_icons.py             # regenerate web/public PWA/apple-touch icons from marketing/logo.png (red on #0a0000)
   make_pi_label.py              # 50 x 20 mm SVG + PNG label for a ready-made Pi (QR + hotspot details)
   fonts/                        # Atkinson Hyperlegible (OFL), used only by make_pi_label.py
@@ -233,6 +236,7 @@ specs/start/                    # design specifications
 - **aiohttp** — HTTP + WebSocket server (serves the React build, /ws state, /frame.jpg + /frame.mjpg, /api/*)
 - **qrcode.react** (npm) — QR-code rendering for the LAN URL in the Settings panel
 - **pyerfa** — IAU 2006 precession (J2000 ↔ JNow) for the LX200 protocol server
+- **astronomy-engine** (MIT) — Moon, planet and Pluto positions and magnitudes for the solar-system targets
 - **pyyaml** (dev group) — used by `scripts/sync_catalog.py` to parse the
   buddy-site markdown frontmatter when refreshing `web/src/data/objects.json`,
   by `tests/test_headless_user_data.py` to check `packaging/headless/user-data`,
