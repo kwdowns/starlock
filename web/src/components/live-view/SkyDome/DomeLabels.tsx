@@ -12,6 +12,8 @@ export interface MarkerLabel {
   color: string;
   altDeg: number;
   azDeg: number;
+  /** Dot radius in scene units (ring outer radius for the target). */
+  radius: number;
 }
 
 interface Props {
@@ -45,8 +47,11 @@ export function DomeLabels({ markers, gridColor }: Props) {
   );
 
   const tmp = useMemo(() => new THREE.Vector3(), []);
+  const fwd = useMemo(() => new THREE.Vector3(), []);
+  const origin = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   useFrame(() => {
+    camera.getWorldDirection(fwd);
     const project = (v: THREE.Vector3) => {
       tmp.copy(v).project(camera);
       return {
@@ -54,22 +59,37 @@ export function DomeLabels({ markers, gridColor }: Props) {
         y: ((1 - tmp.y) / 2) * size.height,
       };
     };
+    // Pixels per scene unit at v's depth, for the dot radii.
+    const pxPerUnit = (v: THREE.Vector3) => {
+      const depth = Math.max(tmp.copy(v).sub(camera.position).dot(fwd), 1e-3);
+      const fov = ((camera as THREE.PerspectiveCamera).fov * Math.PI) / 180;
+      return size.height / 2 / Math.tan(fov / 2) / depth;
+    };
     const dims = (id: string) => {
       const el = els.current.get(id);
       return { w: el?.offsetWidth ?? 40, h: el?.offsetHeight ?? 12 };
     };
+    const centre = project(origin);
+    const segments = markerPos.map((p) => {
+      const e = project(p);
+      return { x1: centre.x, y1: centre.y, x2: e.x, y2: e.y };
+    });
     const result = placeLabels(
-      markers.map((m, i) => ({ id: m.id, ...project(markerPos[i]), ...dims(m.id) })),
+      markers.map((m, i) => ({
+        id: m.id,
+        ...project(markerPos[i]),
+        radius: m.radius * pxPerUnit(markerPos[i]),
+        ...dims(m.id),
+      })),
       grid.map((g) => ({ id: g.id, ...project(g.pos), ...dims(g.id) })),
+      { w: size.width, h: size.height },
+      segments,
     );
     for (const [id, p] of Object.entries(result)) {
       const el = els.current.get(id);
       if (!el) continue;
       el.style.visibility = p.visible ? "visible" : "hidden";
-      if (!id.startsWith("grid-")) {
-        el.style.transform =
-          p.side === "above" ? "translateY(calc(-100% - 10px))" : "translateY(10px)";
-      }
+      el.style.transform = `translate(${p.dx}px, ${p.dy}px)`;
     }
   });
 
@@ -93,7 +113,6 @@ export function DomeLabels({ markers, gridColor }: Props) {
             style={{
               ...LABEL_STYLE,
               color: m.color,
-              transform: "translateY(calc(-100% - 10px))",
             }}
           >
             {m.text}

@@ -1,26 +1,35 @@
 /**
  * Screen-space placement of the sky dome's labels, so none ever overlap.
  * Pure (no three.js): the dome projects the anchors to pixels each frame and
- * applies the result.
+ * applies the result. Mirrors the iOS StarlockKit SkyDomeLabels.swift.
  *
- * Rule:
- *  1. Marker labels (target first, then scope) sit above their dot by
- *     default. A later marker whose dot lies within `coincidePx` of an
- *     earlier one (on target) hides its label: one name is enough.
- *  2. Otherwise a marker label tries "above", then "below"; the first spot
- *     that touches no placed label or dot wins. If neither is free it is
- *     hidden.
- *  3. Compass / zenith labels (centred on their anchor) are hidden when
- *     they touch any visible marker label or marker dot.
+ * Rule (px, y down; gap = 3):
+ *  - Obstacles: every marker dot (a circle's bounding square, padded gap/2),
+ *    the canvas edge, and every label already placed (padded gap/2).
+ *  - Marker labels (target first, then scope) are never hidden. Candidate
+ *    centres, in order: above, below, right, left of the dot, at a distance of
+ *    radius + 2*gap + half the label's height (above/below) or width
+ *    (right/left). The first with zero cost wins; otherwise the lowest cost.
+ *    cost = label area outside the canvas + overlap area with placed boxes.
+ *  - Exception: a marker whose dot is closer than 1.6 * max(radius) to an
+ *    earlier marker's dot (scope on target) gets no label.
+ *  - Compass / zenith labels (droppable) have one spot, centred on their
+ *    anchor; hidden if their box would overlap anything placed, leave the
+ *    canvas, or touch a line segment (scope shaft, lines to the target).
  */
 
-export type LabelSide = "above" | "below";
+export interface Bounds {
+  w: number;
+  h: number;
+}
 
 export interface MarkerLabelInput {
   id: string;
   /** Dot centre, px. */
   x: number;
   y: number;
+  /** Dot radius, px. */
+  radius: number;
   /** Label size, px. */
   w: number;
   h: number;
@@ -28,27 +37,28 @@ export interface MarkerLabelInput {
 
 export interface GridLabelInput {
   id: string;
+  /** Label centre, px. */
   x: number;
   y: number;
   w: number;
   h: number;
 }
 
-export interface LabelPlacement {
-  visible: boolean;
-  side: LabelSide;
+export interface Segment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 }
 
-export interface PlaceOptions {
-  /** Gap between the dot centre and the label's near edge, px. */
-  gap?: number;
-  /** Dots closer than this count as the same spot, px. */
-  coincidePx?: number;
-  /** Radius of the keep-clear area around a dot, px. */
-  dotRadius?: number;
-  /** Extra clearance between labels, px. */
-  pad?: number;
+export interface LabelPlacement {
+  visible: boolean;
+  /** Label centre minus anchor, px. */
+  dx: number;
+  dy: number;
 }
+
+export const MERGE_RADII = 1.6;
 
 interface Rect {
   l: number;
@@ -57,71 +67,115 @@ interface Rect {
   b: number;
 }
 
-function overlaps(a: Rect, b: Rect, pad: number): boolean {
-  return a.l < b.r + pad && a.r > b.l - pad && a.t < b.b + pad && a.b > b.t - pad;
+const area = (a: Rect) => Math.max(0, a.r - a.l) * Math.max(0, a.b - a.t);
+
+function overlapArea(a: Rect, b: Rect): number {
+  const w = Math.min(a.r, b.r) - Math.max(a.l, b.l);
+  const h = Math.min(a.b, b.b) - Math.max(a.t, b.t);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+const grow = (a: Rect, p: number): Rect => ({
+  l: a.l - p,
+  t: a.t - p,
+  r: a.r + p,
+  b: a.b + p,
+});
+
+const centred = (x: number, y: number, w: number, h: number): Rect => ({
+  l: x - w / 2,
+  t: y - h / 2,
+  r: x + w / 2,
+  b: y + h / 2,
+});
+
+/** Does the segment pass through the rectangle (Liang-Barsky)? */
+export function segmentHitsRect(s: Segment, r: Rect): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = s.x2 - s.x1;
+  const dy = s.y2 - s.y1;
+  const edges: [number, number][] = [
+    [-dx, s.x1 - r.l],
+    [dx, r.r - s.x1],
+    [-dy, s.y1 - r.t],
+    [dy, r.b - s.y1],
+  ];
+  for (const [p, q] of edges) {
+    if (p === 0) {
+      if (q < 0) return false;
+    } else {
+      const t = q / p;
+      if (p < 0) {
+        if (t > t1) return false;
+        t0 = Math.max(t0, t);
+      } else {
+        if (t < t0) return false;
+        t1 = Math.min(t1, t);
+      }
+    }
+  }
+  return true;
 }
 
 export function placeLabels(
   markers: MarkerLabelInput[],
   grid: GridLabelInput[],
-  opts: PlaceOptions = {},
+  bounds: Bounds,
+  segments: Segment[] = [],
+  gap = 3,
 ): Record<string, LabelPlacement> {
-  const gap = opts.gap ?? 10;
-  const coincidePx = opts.coincidePx ?? 12;
-  const dotRadius = opts.dotRadius ?? 8;
-  const pad = opts.pad ?? 2;
-
+  const canvas: Rect = { l: 0, t: 0, r: bounds.w, b: bounds.h };
+  const pad = gap / 2;
+  const placed: Rect[] = markers.map((m) =>
+    grow(centred(m.x, m.y, m.radius * 2, m.radius * 2), pad),
+  );
   const out: Record<string, LabelPlacement> = {};
-  const taken: Rect[] = [];
-  const placedDots: { x: number; y: number }[] = [];
 
+  const cost = (rect: Rect): number => {
+    const padded = grow(rect, pad);
+    let total = area(rect) - overlapArea(rect, canvas);
+    for (const o of placed) total += overlapArea(padded, o);
+    return total < 1e-6 ? 0 : total;
+  };
+
+  const seen: MarkerLabelInput[] = [];
   for (const m of markers) {
-    const dot: Rect = {
-      l: m.x - dotRadius,
-      t: m.y - dotRadius,
-      r: m.x + dotRadius,
-      b: m.y + dotRadius,
-    };
-    const onTop = placedDots.some((d) => Math.hypot(d.x - m.x, d.y - m.y) < coincidePx);
-    placedDots.push({ x: m.x, y: m.y });
-    if (onTop) {
-      out[m.id] = { visible: false, side: "above" };
+    const merged = seen.some(
+      (o) => Math.hypot(o.x - m.x, o.y - m.y) < Math.max(o.radius, m.radius) * MERGE_RADII,
+    );
+    seen.push(m);
+    if (merged) {
+      out[m.id] = { visible: false, dx: 0, dy: -m.radius - 2 * gap - m.h / 2 };
       continue;
     }
-    const box = (side: LabelSide): Rect => {
-      const l = m.x - m.w / 2;
-      return side === "above"
-        ? { l, r: l + m.w, b: m.y - gap, t: m.y - gap - m.h }
-        : { l, r: l + m.w, t: m.y + gap, b: m.y + gap + m.h };
-    };
-    let chosen: LabelSide | null = null;
-    for (const side of ["above", "below"] as const) {
-      const b = box(side);
-      if (!taken.some((t) => overlaps(b, t, pad))) {
-        chosen = side;
-        break;
+    const dy = m.radius + 2 * gap + m.h / 2;
+    const dx = m.radius + 2 * gap + m.w / 2;
+    const candidates: [number, number][] = [
+      [0, -dy],
+      [0, dy],
+      [dx, 0],
+      [-dx, 0],
+    ];
+    let best = candidates[0];
+    let bestCost = Infinity;
+    for (const c of candidates) {
+      const k = cost(centred(m.x + c[0], m.y + c[1], m.w, m.h));
+      if (k < bestCost) {
+        best = c;
+        bestCost = k;
+        if (k === 0) break;
       }
     }
-    taken.push(dot);
-    if (chosen) {
-      taken.push(box(chosen));
-      out[m.id] = { visible: true, side: chosen };
-    } else {
-      out[m.id] = { visible: false, side: "above" };
-    }
+    placed.push(grow(centred(m.x + best[0], m.y + best[1], m.w, m.h), pad));
+    out[m.id] = { visible: true, dx: best[0], dy: best[1] };
   }
 
   for (const g of grid) {
-    const b: Rect = {
-      l: g.x - g.w / 2,
-      r: g.x + g.w / 2,
-      t: g.y - g.h / 2,
-      b: g.y + g.h / 2,
-    };
-    out[g.id] = {
-      visible: !taken.some((t) => overlaps(b, t, pad)),
-      side: "above",
-    };
+    const rect = centred(g.x, g.y, g.w, g.h);
+    const hit = cost(rect) > 0 || segments.some((s) => segmentHitsRect(s, grow(rect, pad)));
+    if (!hit) placed.push(grow(rect, pad));
+    out[g.id] = { visible: !hit, dx: 0, dy: 0 };
   }
   return out;
 }

@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Edges, Line, OrbitControls } from "@react-three/drei";
@@ -35,6 +35,35 @@ interface Props {
 
 const SPIN_S = 2.4;
 const UP = new THREE.Vector3(0, 1, 0);
+// The hemisphere spans y 0..RADIUS, so frame the middle of it, not the origin.
+const DOME_CENTER = new THREE.Vector3(0, 0.85, 0);
+// Bounding radius of the dome plus its compass labels and a margin.
+const FIT_RADIUS = 2.35;
+
+/**
+ * Keeps the dome centred and filling the canvas: on mount and whenever the
+ * canvas is resized, moves the camera along its current direction to the
+ * distance at which the dome's bounding sphere fits the narrower field of view.
+ */
+function FitCamera() {
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
+  const controls = useThree((s) => s.controls) as { update?: () => void } | null;
+  useEffect(() => {
+    const vHalf = (camera.fov * Math.PI) / 360;
+    const hHalf = Math.atan(Math.tan(vHalf) * (size.width / Math.max(size.height, 1)));
+    const dist = Math.min(
+      FIT_DISTANCE_MAX,
+      FIT_RADIUS / Math.sin(Math.min(vHalf, hHalf)),
+    );
+    const dir = camera.position.clone().sub(DOME_CENTER).normalize();
+    camera.position.copy(DOME_CENTER).addScaledVector(dir, dist);
+    camera.lookAt(DOME_CENTER);
+    controls?.update?.();
+  }, [camera, controls, size.width, size.height]);
+  return null;
+}
+const FIT_DISTANCE_MAX = 11;
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
@@ -65,7 +94,7 @@ function DomeSpin({ spinKey }: { spinKey?: number }) {
     const angle = easeInOutCubic(s.t) * 2 * Math.PI;
     camera.position.applyAxisAngle(UP, angle - s.angle);
     s.angle = angle;
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(DOME_CENTER);
     controls?.update?.();
     if (s.t >= 1) spin.current = null;
   });
@@ -106,10 +135,10 @@ export function SkyDomeCanvas({ pointing, target, colors, spinKey }: Props) {
     const list: MarkerLabel[] = [];
     // Target first: when the scope is on it, the target's name is the one kept.
     if (target && target.altDeg >= 0) {
-      list.push({ id: "target", text: target.label || "Target", color: colors.target, ...target });
+      list.push({ id: "target", text: target.label || "Target", color: colors.target, radius: 0.08, ...target });
     }
     if (pointing && pointing.altDeg >= 0) {
-      list.push({ id: "scope", text: "Scope", color: colors.pointing, ...pointing });
+      list.push({ id: "scope", text: "Scope", color: colors.pointing, radius: 0.05, ...pointing });
     }
     return list;
   }, [pointing, target, colors.target, colors.pointing]);
@@ -118,14 +147,16 @@ export function SkyDomeCanvas({ pointing, target, colors, spinKey }: Props) {
     <>
       <OrbitControls
         makeDefault
+        target={DOME_CENTER}
         enableZoom={true}
         enablePan={false}
-        minDistance={3.5}
-        maxDistance={8}
+        minDistance={2.5}
+        maxDistance={12}
         minPolarAngle={0}
         maxPolarAngle={Math.PI / 2}
         rotateSpeed={0.5}
       />
+      <FitCamera />
       <DomeSpin spinKey={spinKey} />
       <ambientLight intensity={0.5} />
       <HemisphereGrid colors={colors} />
