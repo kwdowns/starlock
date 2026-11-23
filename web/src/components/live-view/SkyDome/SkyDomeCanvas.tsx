@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Edges, Line, OrbitControls } from "@react-three/drei";
 import { HemisphereGrid } from "./HemisphereGrid";
+import { DomeLabels, type MarkerLabel } from "./DomeLabels";
 import { Marker } from "./Marker";
 import type { ThemeColors } from "./types";
 
@@ -101,6 +102,18 @@ export function SkyDomeCanvas({ pointing, target, colors, spinKey }: Props) {
       ? altAzTo3D(target.altDeg, target.azDeg)
       : null;
 
+  const labels = useMemo(() => {
+    const list: MarkerLabel[] = [];
+    // Target first: when the scope is on it, the target's name is the one kept.
+    if (target && target.altDeg >= 0) {
+      list.push({ id: "target", text: target.label || "Target", color: colors.target, ...target });
+    }
+    if (pointing && pointing.altDeg >= 0) {
+      list.push({ id: "scope", text: "Scope", color: colors.pointing, ...pointing });
+    }
+    return list;
+  }, [pointing, target, colors.target, colors.pointing]);
+
   return (
     <>
       <OrbitControls
@@ -143,7 +156,6 @@ export function SkyDomeCanvas({ pointing, target, colors, spinKey }: Props) {
           altDeg={pointing.altDeg}
           azDeg={pointing.azDeg}
           color={colors.pointing}
-          label="Scope"
           size={0.05}
         />
       )}
@@ -152,11 +164,12 @@ export function SkyDomeCanvas({ pointing, target, colors, spinKey }: Props) {
           altDeg={target.altDeg}
           azDeg={target.azDeg}
           color={colors.target}
-          label={target.label || "Target"}
           size={0.04}
           hollow
         />
       )}
+
+      <DomeLabels markers={labels} gridColor={colors.gridLabels} />
     </>
   );
 }

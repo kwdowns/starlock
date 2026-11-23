@@ -1,29 +1,11 @@
 import { useMemo } from "react";
 import * as THREE from "three";
-import { Html, Line } from "@react-three/drei";
-import { LABEL_Z_INDEX_RANGE } from "./constants";
+import { Line } from "@react-three/drei";
+import { AZIMUTH_DIRECTIONS } from "./geometry";
 import type { ThemeColors } from "./types";
 
 const RADIUS = 2;
 const ALTITUDE_STEPS = [15, 30, 45, 60, 75];
-const AZIMUTH_DIRECTIONS = [
-  { az: 0, label: "N" },
-  { az: 22.5, label: "" },
-  { az: 45, label: "NE" },
-  { az: 67.5, label: "" },
-  { az: 90, label: "E" },
-  { az: 112.5, label: "" },
-  { az: 135, label: "SE" },
-  { az: 157.5, label: "" },
-  { az: 180, label: "S" },
-  { az: 202.5, label: "" },
-  { az: 225, label: "SW" },
-  { az: 247.5, label: "" },
-  { az: 270, label: "W" },
-  { az: 292.5, label: "" },
-  { az: 315, label: "NW" },
-  { az: 337.5, label: "" },
-];
 
 function altAzTo3D(altDeg: number, azDeg: number, radius: number) {
   const alt = altDeg * (Math.PI / 180);
@@ -54,16 +36,6 @@ function createAzimuthLine(azDeg: number, radius: number): THREE.Vector3[] {
   }
   return points;
 }
-
-const LABEL_STYLE: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 600,
-  lineHeight: 1,
-  whiteSpace: "nowrap",
-  pointerEvents: "none",
-  userSelect: "none",
-  textShadow: "0 0 4px rgb(0 0 0 / 80%)",
-};
 
 export function HemisphereGrid({ colors }: { colors: ThemeColors }) {
   const altitudeCircles = useMemo(
@@ -112,32 +84,6 @@ export function HemisphereGrid({ colors }: { colors: ThemeColors }) {
           opacity={0.35}
         />
       ))}
-
-      {AZIMUTH_DIRECTIONS.filter((d) => d.label !== "").map((dir) => {
-        const pos = altAzTo3D(0, dir.az, RADIUS + 0.2);
-        return (
-          <Html
-            key={`label-${dir.label}`}
-            position={[pos.x, 0.02, pos.z]}
-            center
-            pointerEvents="none"
-            zIndexRange={LABEL_Z_INDEX_RANGE}
-          >
-            <div style={{ ...LABEL_STYLE, color: colors.gridLabels }}>
-              {dir.label}
-            </div>
-          </Html>
-        );
-      })}
-
-      <Html
-        position={[0, RADIUS + 0.15, 0]}
-        center
-        pointerEvents="none"
-        zIndexRange={LABEL_Z_INDEX_RANGE}
-      >
-        <div style={{ ...LABEL_STYLE, color: colors.gridLabels }}>Z</div>
-      </Html>
     </group>
   );
 }
