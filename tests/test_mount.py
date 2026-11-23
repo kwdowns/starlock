@@ -147,6 +147,23 @@ def test_eq_guidance():
     assert g.pointing_alt_deg is None
 
 
+@pytest.mark.parametrize("mode", ["eq", "altaz"])
+def test_guidance_is_json_serializable(mode):
+    """The /ws payload json.dumps these fields: a numpy bool broke it."""
+    ra0, dec0 = _altaz_point_j2000(60.0, 100.0)
+    ra_t, dec_t = _altaz_point_j2000(62.0, 104.0)
+    g = compute_mount_guidance(mode, ra0, dec0, 0.0, ra_t, dec_t, LOC, NOW)
+    fields = {
+        "axis1_deg": g.axis1_deg,
+        "axis2_deg": g.axis2_deg,
+        "near_pole": g.near_pole,
+        "pointing_alt_deg": g.pointing_alt_deg,
+        "target_alt_deg": g.target_alt_deg,
+    }
+    assert type(g.near_pole) is bool
+    json.dumps(fields)
+
+
 def test_jnow_helpers_roundtrip():
     ra, dec = j2000_to_jnow(*jnow_to_j2000(33.0, 44.0))
     assert ra == pytest.approx(33.0, abs=1e-9) and dec == pytest.approx(44.0, abs=1e-9)

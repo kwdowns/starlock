@@ -165,7 +165,7 @@ def compute_mount_guidance(
             axes=axes,
             axis1_deg=_wrap180(ra_t - ra_c),
             axis2_deg=dec_t - dec_c,
-            near_pole=max(abs(dec_c), abs(dec_t)) > NEAR_POLE_DEC_DEG,
+            near_pole=bool(max(abs(dec_c), abs(dec_t)) > NEAR_POLE_DEC_DEG),
             pointing_alt_deg=None,
             target_alt_deg=None,
         )
@@ -178,7 +178,7 @@ def compute_mount_guidance(
         axes=axes,
         axis1_deg=_wrap180(az_t - az_c),
         axis2_deg=alt_t - alt_c,
-        near_pole=max(alt_c, alt_t) > NEAR_ZENITH_ALT_DEG,
+        near_pole=bool(max(alt_c, alt_t) > NEAR_ZENITH_ALT_DEG),
         pointing_alt_deg=alt_c,
         target_alt_deg=alt_t,
     )
