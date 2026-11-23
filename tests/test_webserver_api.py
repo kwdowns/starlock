@@ -303,3 +303,90 @@ def test_goto_target_keeps_size():
     assert t.read().size_deg == 1.83
     t.set(10.0, 20.0, "Vega")
     assert t.read().size_deg is None
+
+
+def test_on_target_latch_hysteresis():
+    from evf.engine.navigation import OnTargetLatch, off_target_radius_deg
+    latch = OnTargetLatch()
+    key = (10.0, 41.0, None)
+    assert off_target_radius_deg(0.15) == 0.5
+    assert latch.update(key, 0.3, 0.15) is False      # not yet on it
+    assert latch.update(key, 0.10, 0.15) is True       # on target
+    assert latch.update(key, 0.33, 0.15) is True       # nudged by eye: still on
+    assert latch.update(key, None, 0.15) is False      # solve lost: reports off...
+    assert latch.update(key, 0.4, 0.15) is True        # ...but keeps the latch
+    assert latch.update(key, 0.6, 0.15) is False       # really off
+    assert latch.update(key, 0.3, 0.15) is False       # must re-enter
+    assert latch.update(key, 0.1, 0.15) is True
+    assert latch.update((11.0, 41.0, None), 0.1, 0.15) is True   # new target starts fresh
+    assert latch.update((12.0, 41.0, None), 0.3, 0.15) is False
+
+
+@pytest.mark.asyncio
+async def test_recenter_endpoint(server_and_actions):
+    from evf.engine.engine import RecenterError
+    ws, actions = server_and_actions
+    url = f"http://127.0.0.1:{ws._port}/api/sync/recenter"
+    actions.recenter_on_target.return_value = 0.33
+    async with ClientSession() as s:
+        async with s.post(url) as resp:
+            assert resp.status == 200 and (await resp.json()) == {"shift_deg": 0.33}
+        actions.recenter_on_target.side_effect = RecenterError("Set a target first.")
+        async with s.post(url) as resp:
+            assert resp.status == 409 and await resp.text() == "Set a target first."
+
+
+def test_recentered_sync_points_at_the_target():
+    import numpy as np
+    from evf.solver.sync import apply_body_frame_sync, compute_body_frame_sync
+    cam = (10.5, 41.0, 37.0)
+    target = (10.68, 41.27)  # M31
+    d = compute_body_frame_sync(*cam, *target)
+    ra, dec = apply_body_frame_sync(d, *cam)
+    assert abs(ra - target[0]) < 1e-6 and abs(dec - target[1]) < 1e-6
+    assert abs(np.linalg.norm(d) - 1) < 1e-9
+
+
+def _recenter_engine(state, target_active=True, raw_age=0.5, old=None):
+    import time
+    from types import SimpleNamespace
+    from evf.engine.goto_target import GotoTargetSnapshot
+    cfg = SimpleNamespace(sync_d_body=old)
+    solver = MagicMock()
+    solver.last_raw_solve.return_value = (10.5, 41.0, 37.0, time.monotonic() - raw_age)
+    return SimpleNamespace(
+        _state_machine=SimpleNamespace(state=state),
+        _goto_target=SimpleNamespace(read=lambda: GotoTargetSnapshot(10.68, 41.27, target_active, "M31")),
+        _solver_thread=solver,
+        _config=cfg,
+    )
+
+
+def test_engine_recenter_rules():
+    import numpy as np
+    from evf.engine.engine import Engine, RecenterError
+    from evf.engine.state import EngineState
+    from evf.solver.sync import compute_body_frame_sync
+
+    for kwargs, msg in [
+        (dict(state=EngineState.SYNC), "while tracking"),
+        (dict(state=EngineState.TRACKING, target_active=False), "Set a target"),
+        (dict(state=EngineState.TRACKING, raw_age=10), "Waiting for a solve"),
+    ]:
+        with pytest.raises(RecenterError, match=msg):
+            Engine.recenter_on_target(_recenter_engine(**kwargs))
+
+    # A small bump: accepted and saved
+    near = compute_body_frame_sync(10.5, 41.0, 37.0, 10.9, 41.27).tolist()
+    e = _recenter_engine(EngineState.TRACKING, old=near)
+    shift = Engine.recenter_on_target(e)
+    assert 0.1 < shift < 0.3
+    assert np.allclose(e._config.sync_d_body, compute_body_frame_sync(10.5, 41.0, 37.0, 10.68, 41.27))
+    e._solver_thread.set_sync_d_body.assert_called_once()
+
+    # A big jump isn't a bump: refused, nothing saved
+    far = compute_body_frame_sync(10.5, 41.0, 37.0, 20.0, 45.0).tolist()
+    e = _recenter_engine(EngineState.TRACKING, old=far)
+    with pytest.raises(RecenterError, match="more than a bump"):
+        Engine.recenter_on_target(e)
+    assert e._config.sync_d_body == far

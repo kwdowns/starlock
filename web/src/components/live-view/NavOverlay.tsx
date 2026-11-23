@@ -15,6 +15,12 @@ function lockedDeg(nav: NavData): number {
 type Zone = "PUSH" | "CONVERGE" | "LOCKED";
 
 function pickZone(nav: NavData): Zone {
+  // The engine latches on target (it stays on until off_target_deg), so a
+  // by-eye centre the solve puts a little off doesn't bring back guidance.
+  if (nav.on_target !== undefined) {
+    if (nav.on_target) return "LOCKED";
+    return nav.in_fov ? "CONVERGE" : "PUSH";
+  }
   if (nav.in_fov && nav.separation_deg !== null && nav.separation_deg <= lockedDeg(nav)) {
     return "LOCKED";
   }

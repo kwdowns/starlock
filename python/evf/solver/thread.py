@@ -68,6 +68,9 @@ class SolverThread:
         self._consecutive_failures = 0
         self._lock = threading.Lock()
         self._sync_d_body = None  # np.ndarray | None — body-frame sync vector
+        # Last good raw solve (camera RA, Dec, Roll, monotonic time), before
+        # the body-frame sync; used to recenter the sync on the target.
+        self._last_raw: tuple[float, float, float, float] | None = None
         # Calibration state
         self._cal_ref_ra: float = 0.0
         self._cal_ref_dec: float = 0.0
@@ -101,6 +104,11 @@ class SolverThread:
     def consecutive_failures(self) -> int:
         with self._lock:
             return self._consecutive_failures
+
+    def last_raw_solve(self) -> tuple[float, float, float, float] | None:
+        """(camera RA, Dec, Roll, monotonic time) of the last good solve."""
+        with self._lock:
+            return self._last_raw
 
     def set_sync_d_body(self, d_body) -> None:
         """Set or clear the body-frame sync vector applied to solve results."""
@@ -247,6 +255,8 @@ class SolverThread:
                 max_prob=self._config.max_prob,
             ):
                 ra, dec = result["RA"], result["Dec"]
+                with self._lock:
+                    self._last_raw = (ra, dec, result["Roll"], time.monotonic())
 
                 # Calibration check (uses raw plate-solve, before body-frame sync)
                 if self._state_machine.state == EngineState.CALIBRATE:

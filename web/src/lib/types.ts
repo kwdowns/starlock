@@ -50,6 +50,10 @@ export interface NavData {
   target_size_deg?: number | null;
   /** On target within this of the centre; grows with the target's size. */
   on_target_deg?: number;
+  /** Once on target, stays on until this far off. */
+  off_target_deg?: number;
+  /** On target, with hysteresis (older engines: missing). */
+  on_target?: boolean;
   separation_deg: number | null;
   direction_text: string;
   in_fov: boolean;

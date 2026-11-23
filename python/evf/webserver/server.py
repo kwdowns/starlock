@@ -48,7 +48,9 @@ from evf.engine.goto_target import GotoTarget
 from evf.engine.mount import MOUNT_MODES, compute_mount_guidance, mount_axes
 from evf.engine.navigation import (
     compute_navigation,
+    OnTargetLatch,
     edge_arrow_position,
+    off_target_radius_deg,
     on_target_radius_deg,
 )
 from evf.engine.observation_log import ObservationLogger, entries_to_csv
@@ -83,6 +85,7 @@ class EngineActions(Protocol):
     def sync_retry(self) -> None: ...
     def set_sync_selected(self, idx: int) -> None: ...
     def use_previous_calibration(self) -> None: ...
+    def recenter_on_target(self) -> float: ...
     def retry_camera(self) -> bool: ...
     def set_control(self, name: str, value: int) -> None: ...
     def clear_goto_target(self) -> None: ...
@@ -319,6 +322,7 @@ class WebServer:
         self._location_fn = location
         self._minor_planet_cache = None
         self._wifi = WifiSignal()
+        self._on_target = OnTargetLatch()
         self._dev_mode = dev_mode
         self._sample_active = sample_active
         self._actions = actions
@@ -415,6 +419,7 @@ class WebServer:
         app.router.add_post("/api/wizard/advance", self._api_wizard_advance)
         app.router.add_post("/api/sync/retry", self._api_sync_retry)
         app.router.add_post("/api/sync/select", self._api_sync_select)
+        app.router.add_post("/api/sync/recenter", self._api_sync_recenter)
         app.router.add_post("/api/calibration/use-previous", self._api_use_previous_calibration)
         app.router.add_post("/api/camera/retry", self._api_camera_retry)
         app.router.add_post("/api/control", self._api_set_control)
@@ -650,6 +655,20 @@ class WebServer:
 
     async def _api_sync_retry(self, request):
         return await self._handle_api(request, lambda: self._actions.sync_retry())
+
+    async def _api_sync_recenter(self, request):
+        """The target is centred in the eyepiece: re-aim the sync on it.
+        200 {shift_deg}, or 409 with a message for the user."""
+        if self._actions is None:
+            return web.Response(status=503, text="No actions wired")
+        try:
+            shift = await asyncio.to_thread(self._actions.recenter_on_target)
+        except Exception as exc:
+            if type(exc).__name__ == "RecenterError":
+                return web.Response(status=409, text=str(exc))
+            logger.exception("Recenter failed: %s", exc)
+            return web.Response(status=500, text=str(exc))
+        return web.json_response({"shift_deg": round(float(shift or 0.0), 3)})
 
     async def _api_sync_select(self, request):
         body = await request.json()
@@ -1167,10 +1186,13 @@ class WebServer:
             "target_size_deg": size,
             # Clients and Starlock Cloud use this for "on target".
             "on_target_deg": on_target_radius_deg(size),
+            "off_target_deg": off_target_radius_deg(on_target_radius_deg(size)),
         }
+        latch_key = (target.ra_j2000, target.dec_j2000, size)
 
         if not snap.valid:
-            return {**base, "separation_deg": None, "direction_text": "--",
+            self._on_target.update(latch_key, None, base["on_target_deg"])
+            return {**base, "on_target": False, "separation_deg": None, "direction_text": "--",
                     "in_fov": False, "pixel_x": None, "pixel_y": None,
                     "camera_angle_deg": None, "edge_x": None, "edge_y": None,
                     "edge_angle_deg": None, "mount": None}
@@ -1237,6 +1259,10 @@ class WebServer:
 
         return {
             **base,
+            # Latched: stays true until off_target_deg, so a by-eye centre
+            # that the solve puts a little off doesn't bring back guidance.
+            "on_target": self._on_target.update(
+                latch_key, nav.separation_deg, base["on_target_deg"]),
             "mount": mount_nav,
             "separation_deg": nav.separation_deg,
             "direction_text": nav.direction_text,

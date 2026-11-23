@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Crosshair, RotateCcw, X } from "lucide-react";
 import {
+  Alert,
   Button,
   Card,
   Dialog,
@@ -87,8 +88,67 @@ function TargetReadout({ state }: Props) {
         </p>
       )}
       {glare && <p className="text-label">{moonGlareText(glare, nav.target_name ?? "The target")}</p>}
+      {p.valid && nav.separation_deg !== null && nav.separation_deg <= RECENTER_SHOW_DEG && (
+        <RecenterButton name={nav.target_name ?? "the target"} />
+      )}
       <p className="text-label text-muted-foreground">1° is about two full moons wide.</p>
     </div>
+  );
+}
+
+/** Offered when the target is close: a bumped finder shows as a small, steady offset. */
+const RECENTER_SHOW_DEG = 3;
+
+/**
+ * "It's centred in my eyepiece": re-aims the alignment on the target, for
+ * when the finder or shoe got bumped. Confirmed first; the engine refuses
+ * anything bigger than a bump.
+ */
+function RecenterButton({ name }: { name: string }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const confirm = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { shift_deg } = await api.recenter();
+      setDone(`Recentered: the alignment moved ${shift_deg.toFixed(2)}°.`);
+      setOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setError(null); }}>
+      <div className="flex flex-col gap-1">
+        <Button variant="secondary" size="sm" className="self-start" onClick={() => { setDone(null); setOpen(true); }}>
+          <Crosshair aria-hidden />
+          Recenter on target
+        </Button>
+        {done && <p className="text-label text-muted-foreground">{done}</p>}
+      </div>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Is {name} centred in the eyepiece?</DialogTitle>
+          <DialogDescription>
+            Starlock will take where the scope points now as exactly on {name}, and
+            correct its alignment for the rest of the session. Use it when the finder
+            or shoe got bumped.
+          </DialogDescription>
+        </DialogHeader>
+        {error && <Alert variant="error" title="Couldn't recenter">{error}</Alert>}
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="secondary">Cancel</Button>
+          </DialogClose>
+          <Button loading={busy} onClick={() => void confirm()}>It's centred</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

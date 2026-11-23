@@ -49,6 +49,42 @@ ON_TARGET_SIZE_FRACTION = 0.3
 ON_TARGET_MAX_DEG = 1.5
 
 
+# Once on target, stay on target until this far off: aiming by eye at the
+# eyepiece is never as exact as the solve, and the guidance shouldn't nag.
+OFF_TARGET_MIN_DEG = 0.5
+OFF_TARGET_FACTOR = 1.5
+
+
+def off_target_radius_deg(on_target_deg: float) -> float:
+    return max(OFF_TARGET_MIN_DEG, on_target_deg * OFF_TARGET_FACTOR)
+
+
+class OnTargetLatch:
+    """On-target state with hysteresis, per target.
+
+    Enters within ``on_target_deg``, leaves only beyond
+    ``off_target_radius_deg``. A new target resets it. A missing solve
+    (separation None) reports False but keeps the latch, so a brief loss
+    doesn't make the user re-centre.
+    """
+
+    def __init__(self) -> None:
+        self._key: tuple | None = None
+        self._locked = False
+
+    def update(self, key: tuple, separation_deg: float | None, on_target_deg: float) -> bool:
+        if key != self._key:
+            self._key = key
+            self._locked = False
+        if separation_deg is None:
+            return False
+        if self._locked:
+            self._locked = separation_deg <= off_target_radius_deg(on_target_deg)
+        else:
+            self._locked = separation_deg <= on_target_deg
+        return self._locked
+
+
 def on_target_radius_deg(size_deg: float | None) -> float:
     """How close to the target centre counts as on target."""
     if not size_deg or size_deg <= 0:

@@ -74,6 +74,12 @@ export const api = {
   },
   setControl: (name: string, value: number) => post("/api/control", { name, value }),
   clearGoto: () => post("/api/goto/clear"),
+  /** The target is centred in the eyepiece: re-aim the alignment on it. */
+  recenter: async (): Promise<{ shift_deg: number }> => {
+    const resp = await fetch("/api/sync/recenter", { method: "POST" });
+    if (resp.status >= 400) throw new Error(await resp.text());
+    return await resp.json();
+  },
   /** `size_deg`: apparent size (major axis), so big objects count as on target over more of their extent. */
   setGoto: (ra_deg: number, dec_deg: number, name?: string, size_deg?: number) =>
     post("/api/goto/set", {

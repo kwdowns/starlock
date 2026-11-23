@@ -68,6 +68,15 @@ from evf.webserver.server import WebServer
 
 logger = logging.getLogger(__name__)
 
+# Recenter: a solve at most this old, and no bigger correction than this
+# (anything larger isn't a bump; the user should redo the sync).
+RECENTER_MAX_AGE_S = 3.0
+RECENTER_MAX_SHIFT_DEG = 5.0
+
+
+class RecenterError(Exception):
+    """Recenter refused; the message is shown to the user."""
+
 _VERSION_PATH = version_json()
 
 
@@ -1019,6 +1028,40 @@ class Engine:
         if self._mount_axes_known():
             logger.info("Mount axes known from location/mode — skipping rotation calibration")
             self._solver_thread.skip_calibrate()  # CALIBRATE → WARMING_UP on the first solve
+
+    def recenter_on_target(self) -> float:
+        """Re-aim the sync so the current pointing is exactly the goto target.
+
+        For when the scope is centred on the target in the eyepiece but the
+        Starlock says it's off (the finder or shoe got bumped). Keeps the
+        rest of the calibration. Returns how far the sync moved, degrees.
+        Raises RecenterError with a message for the user.
+        """
+        if self._state_machine.state != EngineState.TRACKING:
+            raise RecenterError("Recenter works while tracking.")
+        target = self._goto_target.read()
+        if not target.active:
+            raise RecenterError("Set a target first, then centre it in the eyepiece.")
+        raw = self._solver_thread.last_raw_solve() if self._solver_thread else None
+        if raw is None or time.monotonic() - raw[3] > RECENTER_MAX_AGE_S:
+            raise RecenterError("Waiting for a solve. Try again in a moment.")
+        d_new = compute_body_frame_sync(raw[0], raw[1], raw[2],
+                                        target.ra_j2000, target.dec_j2000)
+        shift = 0.0
+        old = self._config.sync_d_body
+        if old is not None:
+            o = np.asarray(old, dtype=float)
+            o = o / np.linalg.norm(o)
+            shift = float(np.degrees(np.arccos(np.clip(o @ d_new, -1.0, 1.0))))
+            if shift > RECENTER_MAX_SHIFT_DEG:
+                raise RecenterError(
+                    f"That's {shift:.1f}° from the current alignment, more than a bump. "
+                    "Check the target is really in the eyepiece, or restart setup to sync again."
+                )
+        self._solver_thread.set_sync_d_body(d_new)
+        self._config.sync_d_body = d_new.tolist()
+        logger.info("Recentered sync on %s: moved %.2f°", target.name or "the target", shift)
+        return shift
 
     def sync_retry(self) -> None:
         """Go back to SYNC to redo the current solve (preserves earlier pairs)."""
