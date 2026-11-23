@@ -48,6 +48,7 @@ from evf.engine.goto_target import GotoTarget
 from evf.engine.mount import MOUNT_MODES, compute_mount_guidance, mount_axes
 from evf.engine.navigation import compute_navigation, edge_arrow_position
 from evf.engine.observation_log import ObservationLogger, entries_to_csv
+from evf.wifi_signal import WifiSignal
 from evf.engine.pointing import PointingState
 from evf.engine.state import StateMachine
 from evf.network import local_ip
@@ -313,6 +314,7 @@ class WebServer:
         self._stellarium_location = stellarium_location
         self._location_fn = location
         self._minor_planet_cache = None
+        self._wifi = WifiSignal()
         self._dev_mode = dev_mode
         self._sample_active = sample_active
         self._actions = actions
@@ -1095,6 +1097,8 @@ class WebServer:
         return {
             "state": state.value,
             "failures": failures,
+            # The Pi's own Wi-Fi link (None on Ethernet / hotspot / desktop).
+            "wifi": self._wifi.snapshot(),
             "pointing": pointing_data,
             "nav": nav_data,
             "origin_x": origin_x,

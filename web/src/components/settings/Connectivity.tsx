@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button, SegmentedControl, StatusDot } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { ActivityLine, EnginePayload } from "@/lib/types";
+import { wifiSummary } from "@/components/app/WifiWarning";
 
 // --red-300 on --red-950. qrcode.react writes these into SVG attributes,
 // where CSS variables don't resolve, so they are spelled out.
@@ -57,6 +58,16 @@ export function Connectivity({ state }: { state: EnginePayload }) {
             </div>
           )}
         </>
+      )}
+
+      {state.wifi && (
+        <div className="flex flex-col gap-1">
+          <span className="text-label text-foreground">Starlock's Wi-Fi signal</span>
+          <span className="readout text-body">{wifiSummary(state.wifi)}</span>
+          <span className="text-label text-muted-foreground">
+            Better than -70 dBm is comfortable; below -75 dBm the live view starts to suffer.
+          </span>
+        </div>
       )}
 
       <div className="flex flex-col">

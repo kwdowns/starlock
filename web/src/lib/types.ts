@@ -115,6 +115,16 @@ export interface CameraBlock {
   matched_centroids: number[][] | null; // [[y, x], ...]
 }
 
+/** The Pi's own Wi-Fi client link, smoothed over ~20 s. */
+export interface WifiInfo {
+  interface: string;
+  level_dbm: number;
+  avg_dbm: number;
+  quality: "good" | "fair" | "weak" | "poor";
+  /** Weak for long enough to tell the user (with hysteresis). */
+  warn: boolean;
+}
+
 export interface EnginePayload {
   state: EngineState;
   failures: number;
@@ -156,4 +166,6 @@ export interface EnginePayload {
   min_matches: number;
   max_prob: number;
   sample_active: string | null;
+  /** Null on Ethernet, in hotspot mode, or off the Pi; missing from older engines. */
+  wifi?: WifiInfo | null;
 }

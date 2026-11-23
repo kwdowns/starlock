@@ -105,6 +105,7 @@ python/evf/                     # main Python package
   main.py                       # entry point — engine + pywebview
   paths.py                      # centralized path resolution (dev vs release bundles)
   network.py                    # shared LAN-IP probe used by webserver + engine
+  wifi_signal.py                # the Pi's Wi-Fi signal (/proc/net/wireless), smoothed, for the weak-signal warning (/ws `wifi`)
   discovery.py                  # Bonjour / mDNS advert of the web server (_starlock._tcp, zeroconf)
   engine/                       # core engine, state machine, threading
     engine.py                   # main engine (owns all subsystems)

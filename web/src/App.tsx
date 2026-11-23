@@ -5,6 +5,7 @@ import { LiveView } from "@/components/live-view/LiveView";
 import { Splash } from "@/components/splash/Splash";
 import { TopBar } from "@/components/app/TopBar";
 import { StepArea } from "@/components/step/StepArea";
+import { WifiWarning } from "@/components/app/WifiWarning";
 import { Targets } from "@/components/catalog/Targets";
 import { DEFAULT_SHOW_STARS } from "@/components/settings/Settings";
 
@@ -81,6 +82,7 @@ export default function App() {
               >
                 <LiveView state={state} showStars={showStars} className="md:[--frame-max-h:50svh]" />
               </div>
+              <WifiWarning state={state} />
               <StepArea state={state} />
             </div>
             <div className="mt-6 flex min-w-0 flex-col gap-3 md:mt-0">
