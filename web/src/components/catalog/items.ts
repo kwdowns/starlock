@@ -66,10 +66,19 @@ const MESSIER_RE = /^M\s+\d/;
 // (PGC, NGC, IC, UGC, HIP, HD, ...), a Bayer letter, a Flamsteed number, or a
 // survey name starting with a digit ("2MASX J0040…", "6dFGS …").
 const DESIGNATION_RE = /^([A-Z][A-Za-z0-9]*\s*\d|[α-ω]\s+[A-Z]|\d+\s+[A-Z]|\d+[A-Za-z]+[\s\dJ])/;
+// An upper-case catalogue acronym followed by a number in any form:
+// "MCG +07-02-014", "ESO-LV 123", "SDSS J1234…", "PN G010…", "BD+40 1".
+const ACRONYM_RE = /^[A-Z][A-Z0-9-]*(?=[\s+\-\d]|$)/;
+
+export function isDesignation(name: string): boolean {
+  if (DESIGNATION_RE.test(name)) return true;
+  if (/^[A-Z0-9-]+$/.test(name)) return true; // a bare acronym such as "HD"
+  return ACRONYM_RE.test(name) && /\d/.test(name);
+}
 
 function ngcNames(entry: NgcEntry): string[] {
   const messier = entry.aliases.find((a) => MESSIER_RE.test(a));
-  const common = entry.aliases.find((a) => a !== messier && !DESIGNATION_RE.test(a));
+  const common = entry.aliases.find((a) => a !== messier && !isDesignation(a));
   // Common name first, then Messier, then the NGC/IC id.
   return [common, messier, entry.id].filter((s): s is string => !!s);
 }
