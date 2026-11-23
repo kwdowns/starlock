@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { AppBar, Button } from "@/components/ui";
 import { useFullscreen } from "@/hooks/useFullscreen";
-import { api } from "@/lib/api";
+import { useOnTargetSound } from "@/hooks/useOnTargetFeedback";
 import { cn } from "@/lib/utils";
 import { statusBadgeFor } from "@/lib/screen";
 import type { EnginePayload } from "@/lib/types";
@@ -26,6 +26,7 @@ export function TopBar({ state, showStars, setShowStars }: Props) {
   const fullscreen = useFullscreen();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const badge = statusBadgeFor(state);
+  const [sound, setSound] = useOnTargetSound();
 
   return (
     <AppBar>
@@ -58,13 +59,11 @@ export function TopBar({ state, showStars, setShowStars }: Props) {
         <Button
           variant="ghost"
           size="icon"
-          aria-label={state.audio_enabled ? "Mute audio" : "Unmute audio"}
-          aria-pressed={state.audio_enabled}
-          onClick={() =>
-            api.setSettings({ audio_enabled: !state.audio_enabled }).catch(console.error)
-          }
+          aria-label={sound ? "Mute the on-target sound" : "Unmute the on-target sound"}
+          aria-pressed={sound}
+          onClick={() => setSound(!sound)}
         >
-          {state.audio_enabled ? <Volume2 /> : <VolumeX />}
+          {sound ? <Volume2 /> : <VolumeX />}
         </Button>
         {fullscreen.supported && (
           <Button

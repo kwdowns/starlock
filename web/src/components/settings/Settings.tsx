@@ -2,6 +2,7 @@ import { RotateCcw } from "lucide-react";
 import { Button, Field, Input, SegmentedControl, Separator, SettingRow, Switch } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { EnginePayload, MountMode } from "@/lib/types";
+import { useOnTargetSound } from "@/hooks/useOnTargetFeedback";
 
 export const DEFAULT_SHOW_STARS = false;
 const DEFAULT_AUDIO_ENABLED = true;
@@ -55,7 +56,11 @@ export function Settings({ state, showStars, setShowStars }: Props) {
       <SettingRow label="Show detected stars" description="Circle every star the solver found.">
         <Switch checked={showStars} onCheckedChange={setShowStars} />
       </SettingRow>
-      <SettingRow label="Audio feedback" description="Sounds on lock, loss and new targets.">
+      <OnTargetSoundRow />
+      <SettingRow
+        label="Sounds on the Starlock"
+        description="Lock, loss and new-target sounds played by the Starlock itself. A Pi needs a speaker for these."
+      >
         <Switch
           checked={state.audio_enabled}
           onCheckedChange={(v) => api.setSettings({ audio_enabled: v }).catch(console.error)}
@@ -110,5 +115,19 @@ export function Settings({ state, showStars, setShowStars }: Props) {
         Reset to defaults
       </Button>
     </section>
+  );
+}
+
+
+/** This browser's on-target chime (and vibration where the browser supports it). */
+function OnTargetSoundRow() {
+  const [on, setOn] = useOnTargetSound();
+  return (
+    <SettingRow
+      label="On-target sound"
+      description="A chime on this device when the scope arrives on target (and a buzz on Android)."
+    >
+      <Switch checked={on} onCheckedChange={setOn} />
+    </SettingRow>
   );
 }

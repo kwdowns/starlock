@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useEngineState } from "@/hooks/useEngineState";
+import { useOnTargetFeedback } from "@/hooks/useOnTargetFeedback";
 import { LiveView } from "@/components/live-view/LiveView";
 import { Splash } from "@/components/splash/Splash";
 import { TopBar } from "@/components/app/TopBar";
@@ -51,6 +52,7 @@ const BELOW_BAR = "var(--app-bar-h) + var(--safe-top)";
 
 export default function App() {
   const state = useEngineState();
+  useOnTargetFeedback(state);
   const [showStars, setShowStars] = useLocalStorageBool("starlock.show_stars", DEFAULT_SHOW_STARS);
   const leftCol = useHeightVar<HTMLDivElement>(state !== null);
 
