@@ -20,4 +20,3 @@ Description: Starlock plate-solving push-to for Raspberry Pi (headless)
  .
  It bundles its own Python 3.12 runtime under /usr/lib/starlock-headless.
  Starlock is a fork of PushNav and replaces the pushnav-headless package.
- For a PC or laptop, use the regular Starlock desktop release instead.

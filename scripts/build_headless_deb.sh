@@ -105,7 +105,7 @@ cp -a "$WORK/web/dist" "$APP/data/web_dist"
 
 # -------------------------------------------------------------------------
 # Phase 3: bundled Python (python-build-standalone, relocatable) with the
-# runtime deps — no `desktop` group, so no pywebview / PyQt6.
+# runtime deps only (no dev or docs groups).
 # -------------------------------------------------------------------------
 PY_VERSION="$(cat .python-version)"
 echo "==> Bundling Python $PY_VERSION"
@@ -117,7 +117,7 @@ PY="$APP/python/bin/python3"
 PY_LIB="$APP/python/lib/python${PY_VERSION%.*}"
 rm -f "$PY_LIB/EXTERNALLY-MANAGED"
 
-"$UV" export --quiet --frozen --no-dev --no-group desktop --no-emit-project \
+"$UV" export --quiet --frozen --no-dev --no-emit-project \
     --project "$REPO_ROOT" -o "$WORK/requirements.txt"
 "$UV" pip install --quiet --python "$PY" -r "$WORK/requirements.txt"
 "$UV" pip install --quiet --python "$PY" --no-deps "$REPO_ROOT"
@@ -138,7 +138,7 @@ find "$APP/python" -name __pycache__ -type d -prune -exec rm -rf {} +
 "$PY" -m compileall -q -j0 --invalidation-mode unchecked-hash "$APP/python/lib" >/dev/null
 
 # -------------------------------------------------------------------------
-# Phase 4: data (same set as the Linux release, see build_linux.sh)
+# Phase 4: data
 # -------------------------------------------------------------------------
 echo "==> Copying data"
 cp data/tetra3rs_gaia.bin data/VERSION.json data/minor_planets.json "$APP/data/"

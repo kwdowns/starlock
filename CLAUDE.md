@@ -2,10 +2,13 @@
 
 ## Project Overview
 
-A cross-platform desktop app that plate-solves live camera frames to determine telescope pointing,
-enabling push-to navigation for manual telescopes.
+A plate-solving engine that reads live camera frames to determine telescope pointing,
+enabling push-to navigation for manual telescopes. It ships only as the headless
+Raspberry Pi package (`starlock-headless`); users control it from the React web UI
+in a browser and from the native phone apps. The engine stays platform-agnostic and
+runs on Windows, macOS and Linux PCs for development.
 
-Python (React UI in a pywebview window + tetra3rs Rust plate-solver) talks to a native camera subprocess over TCP.
+Python (engine + tetra3rs Rust plate-solver, serving the React UI over HTTP) talks to a native camera subprocess over TCP.
 Camera servers are platform-specific: Swift (macOS), C/V4L2 (Linux), C/DirectShow (Windows).
 
 External integrations run in-process on three TCP servers: a **Stellarium** binary-protocol
@@ -41,15 +44,19 @@ channel only for night vision; live component reference at `?gallery`):
 uv sync                          # install Python deps from lockfile
 (cd web && npm install)          # install Node deps
 
-# Production-style — launches engine + pywebview window with built React UI
+# Production-style — engine serves the built React UI (there is no window)
 (cd web && npm run build)
 uv run python -m evf.main
+# Open http://localhost:8780/ in your browser (or the configured webserver.port)
 
 # Dev mode (HMR) — Vite serves UI on :5173 with hot reload
-uv run python -m evf.main --dev --no-window     # terminal 1: engine only
+uv run python -m evf.main --dev                  # terminal 1: engine
 (cd web && npm run dev)                          # terminal 2: Vite dev server
 # Open http://localhost:5173 in your browser
 ```
+
+`--no-window` is still accepted but does nothing. The camera watchdog, status
+LED and CPU-cap helpers always start; off the Pi they do nothing.
 
 ### Platform-specific camera build
 
@@ -62,25 +69,21 @@ make -C camera/linux                # Linux — C/V4L2 camera server
 camera\windows\build.bat            :: Windows — C/DirectShow camera server (run from VS Developer Command Prompt)
 ```
 
-### Platform-specific app builds
+### Raspberry Pi package (the only release build)
 
 ```bash
-scripts/build_mac.sh                # macOS — Nuitka → .app → .dmg
-scripts/build_linux.sh              # Linux — Nuitka standalone
-scripts/build_windows.bat           # Windows — Nuitka → Inno Setup installer
 scripts/build_headless_deb.sh       # Raspberry Pi — starlock-headless .deb (arm64, bookworm container)
 scripts/smoke_test_headless_deb.sh  # install + run the .deb in clean bookworm / trixie containers
 ```
 
-The Raspberry Pi build is **always headless** and named `starlock-headless` to
-keep it distinct from the Linux PC/laptop build. It bundles a standalone
-Python under `/usr/lib/starlock-headless` without the `desktop` dependency
-group (no pywebview / PyQt6), runs as the `starlock-headless` systemd service
-(user `starlock`, state in `/var/lib/starlock-headless`), and the launcher sets
-`STARLOCK_ROOT` so `evf/paths.py` uses the Linux release layout. With
-`--no-window` the engine runs a camera watchdog that keeps retrying the
-camera in the background, and shows its status on the Pi's ACT/PWR LEDs
-(`evf/engine/status_led.py`), plus a brief green flash when a client
+The Raspberry Pi package is the only supported host for customers, named
+`starlock-headless`. It bundles a standalone Python under
+`/usr/lib/starlock-headless` (runtime deps only, `--no-dev`), runs as the
+`starlock-headless` systemd service (user `starlock`, state in
+`/var/lib/starlock-headless`), and the launcher sets `STARLOCK_ROOT` so
+`evf/paths.py` uses the release layout. The engine runs a camera watchdog
+that keeps retrying the camera in the background, and shows its status on
+the Pi's ACT/PWR LEDs (`evf/engine/status_led.py`), plus a brief green flash when a client
 connects or sends a target (the servers' `on_client_connected` callbacks
 and `GotoTarget` changes). The LEDs are only writable because the
 unit's `ExecStartPre=+`/`ExecStopPost=+` run `evf.engine.led_helper
@@ -106,8 +109,8 @@ uv run pytest tests/
 ```
 pyproject.toml                  # project config (hatchling build, uv sources)
 python/evf/                     # main Python package
-  main.py                       # entry point — engine + pywebview
-  paths.py                      # centralized path resolution (dev vs release bundles)
+  main.py                       # entry point — engine (no window; UI is served over HTTP)
+  paths.py                      # centralized path resolution (repo vs release via STARLOCK_ROOT)
   network.py                    # shared LAN-IP probe used by webserver + engine
   wifi_signal.py                # the Pi's Wi-Fi signal (/proc/net/wireless), smoothed, for the weak-signal warning (/ws `wifi`)
   discovery.py                  # Bonjour / mDNS advert of the web server (_starlock._tcp, zeroconf)
@@ -202,14 +205,10 @@ hardware/                       # 3D-printable mechanical designs (OpenSCAD)
     vendor/                     # threads.scad (CC0), YAPP_Box (MIT)
     stls/                       # pre-built STL files ready for printing
 marketing/                      # app branding assets (logo, in-app title)
-linux/                          # Linux desktop integration (starlock.desktop)
 packaging/headless/             # starlock-headless .deb: launcher, systemd unit, debian/ maintainer scripts,
                                 #   and user-data (first-boot config for the ready-made SD card, attached to releases)
 build/                          # build output (gitignored)
 scripts/                        # build and dev scripts
-  build_mac.sh                  # macOS Nuitka build → .app/.dmg
-  build_linux.sh                # Linux Nuitka build
-  build_windows.bat             # Windows Nuitka + Inno Setup build
   build_headless_deb.sh         # Raspberry Pi starlock-headless .deb build
   smoke_test_headless_deb.sh    # container install/run test for the .deb
   build_camera_mac.sh           # compile Swift camera server
@@ -217,7 +216,6 @@ scripts/                        # build and dev scripts
   run_dev_linux.sh              # dev launch (Linux)
   run_dev_windows.bat           # dev launch (Windows)
   run_mock_camera.sh            # launch mock camera for testing
-  starlock.iss                   # Inno Setup installer script (Windows)
   sync_catalog.py               # vendor objects.json from ~/Devel/Github/stargazing-buddy-site
   update_minor_planets.py       # refresh data/minor_planets.json from JPL's Small-Body Database
   build_object_sizes.py         # web/src/data/object_sizes.json from OpenNGC + a table of asterisms / big clusters
@@ -234,7 +232,6 @@ specs/start/                    # design specifications
 ## Key Dependencies
 
 - **tetra3rs** — Rust (pyo3) plate-solver, installed from a prebuilt wheel (`tetra3rs==0.7.1`); no vendoring or Rust toolchain needed
-- **pywebview** — wraps the OS webview (WebKit/WebView2/GTK) for the desktop window; lives in the `desktop` dependency group (default for `uv sync`, left out of the headless Pi package)
 - **React + Vite + TypeScript + Tailwind + shadcn/ui** — front-end stack (under `web/`)
 - **three** + **@react-three/fiber** + **@react-three/drei** — WebGL rendering for the always-visible Sky View 3D dome (`web/src/components/live-view/SkyDome/`). Labels use drei `<Html>` to stay offline; `<Text>` is intentionally avoided so troika-three-text's CDN font-resolver is never loaded
 - **numpy**, **Pillow** — image/array handling (solver wrapper) and the sync rotation maths
@@ -249,7 +246,7 @@ specs/start/                    # design specifications
   by `tests/test_headless_user_data.py` to check `packaging/headless/user-data`,
   and by `scripts/make_pi_label.py` to read its passwords and address
 
-Dev dependencies: **nuitka** (builds), **pytest** (tests), and **segno**,
+Dev dependencies: **pytest** (tests), and **segno**,
 **fonttools**, **uharfbuzz** and **freetype-py** for `scripts/make_pi_label.py`
 (QR code, outlined and kerned text, and the PNG). The Pi package is built
 with `--no-dev`, so none of these reach it.
@@ -288,7 +285,7 @@ resolution). The `.bin` is regenerated by `scripts/build_tetra3rs_catalog.py` fr
 - The camera_server binary should `exit(1)` on device disconnect / fatal
   capture error; the engine's `CameraSubprocessMgr` watches the TCP socket
   and runs a 5-attempt backoff recovery loop (1, 2, 4, 8, 15 s)
-- Path resolution goes through `evf/paths.py` (handles dev repo, macOS .app bundle, Linux/Windows release)
+- Path resolution goes through `evf/paths.py` (handles the dev repo on any OS and the Pi release under `STARLOCK_ROOT`)
 - The Innomaker U20CAM-9281M (0c45:636d, Sonix SN9C286) has a camera-server quirk in all three
   servers (`u20_*` in the C servers, `U20CamQuirk.swift` on macOS): real gain via the firmware's
   RAM gain variable and a frame length that follows exposure, through the Sonix extension unit

@@ -18,27 +18,9 @@ dependencies = [
 ]
 
 [dependency-groups]
-# Desktop window (pywebview). Installed by default — `uv sync` and the
-# macOS / Windows / Linux-laptop builds are unchanged — but left out of the
-# headless Raspberry Pi package (`starlock-headless`), which never opens a
-# window. main.py imports webview only on the windowed path.
-desktop = [
-    "pywebview>=5.0",
-    # Linux: pull QtPy + PyQt6 + PyQt6-WebEngine. pywebview's GTK backend
-    # would need PyGObject + WebKit2GTK from system packages (apt) and
-    # forces a --system-site-packages venv that fights the repo's
-    # .python-version pin. Qt is pip-installable, uses uv-managed Python,
-    # and QtWebEngine renders MJPEG natively (no polling fallback needed).
-    "pywebview[qt]>=5.0 ; sys_platform == 'linux'",
-]
 dev = [
-    "nuitka>=4.0.2",
     "pytest",
     "pytest-asyncio>=0.23",
-    # macOS DMG layout (writes .DS_Store directly via ds-store + mac-alias —
-    # avoids the Sequoia AppleScript / Finder Automation regression that
-    # breaks create-dmg's icon positioning). macOS-only at runtime.
-    "dmgbuild>=1.6.5; sys_platform == 'darwin'",
     # Tests parse packaging/headless/user-data; scripts/sync_catalog.py and
     # scripts/make_pi_label.py too.
     "pyyaml>=6.0",
@@ -61,7 +43,7 @@ build-backend = "hatchling.build"
 packages = ["python/evf"]
 
 [tool.uv]
-default-groups = ["dev", "desktop"]
+default-groups = ["dev"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

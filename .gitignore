@@ -18,8 +18,6 @@ camera/windows/*.obj
 # MkDocs build output
 site/
 
-# Nuitka crash report (only emitted on Nuitka build failure)
-nuitka-crash-report.xml
 
 # React front-end
 node_modules/

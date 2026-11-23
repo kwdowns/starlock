@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Starlock. If not, see <https://www.gnu.org/licenses/>.
 
-# Run the app in dev mode (no Nuitka, uses Python interpreter).
+# Run the engine from the repo on a Mac (development; the Pi is the product).
+# It opens no window: browse to http://localhost:8780/.
 # 1. Build Swift camera server if needed
 # 2. Rebuild the React bundle so source edits are reflected (skipped when
 #    Vite is already serving on :5173, which makes the bundle irrelevant).

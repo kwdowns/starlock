@@ -2,17 +2,17 @@
 
 > **Starlock is a fork of PushNav**, created by Arun Venkataswamy at [meridianfield/pushnav](https://github.com/meridianfield/pushnav). It has been maintained and modified under this name by Kyle Downs since November 2026. Please report problems with it [here](https://github.com/kwdowns/starlock/issues), not upstream.
 
-**A cross-platform plate-solving push-to system for manual telescopes.** Add push-to navigation to a manual scope for about **$50** in hardware you can order today.
+**A plate-solving push-to system for manual telescopes, running on a Raspberry Pi.** Add push-to navigation to a manual scope with a Pi and about **$50** of camera hardware you can order today.
 
 **Three things, that's all:**
 
-1. **Your laptop** — macOS, Linux, or Windows. Runs on hardware you already own.
+1. **A Raspberry Pi** — a Pi 3A+, 4 or 5 runs Starlock headless on the scope. You control it from your phone's browser or the Starlock phone apps.
 2. **USB camera + lens** — about **$41 total**. A [Waveshare OV9281](https://www.waveshare.com/ov9281-1mp-usb-camera-a.htm) (~$26) plus a [25mm F2.4 M12 lens](https://www.seeedstudio.com/5MP-25mm-lens-p-5579.html) (~$15). See [Camera & Lens](docs/hardware.md) for details.
 3. **Any manual telescope** — Dobsonian, manual EQ, or any push-around mount. No GOTO, no motors, no encoders.
 
 Starlock uses a live camera feed to continuously plate-solve and determine where your telescope is pointing, reporting coordinates to **Stellarium** on the desktop and to **SkySafari**, **Stellarium Mobile**, **INDI**, or **ASCOM** clients over Wi-Fi in real time. Audio cues for lock, lost, and target alerts let you stay at the eyepiece without watching the screen.
 
-Starlock is built around hardware you already own. The laptop you use every day handles the plate-solving and runs the desktop UI. The only new pieces are a USB camera and lens. That deliberate choice shortens the path to first light. You don't need to source, flash, configure, or troubleshoot a dedicated computer. The full desktop UI sits in one familiar window you can drag around on a table next to your scope. The live frame, Sky View dome, What to See catalog, and the planetarium-app servers are all on the same screen. For observers who want a small dedicated box, Starlock also runs [headless on a Raspberry Pi 3A+, 4 or 5](docs/rpi-headless.md) (beta), controlled from a phone. Install it with apt on a Pi you already use, or turn a fresh SD card into a dedicated Starlock box with its own Wi-Fi hotspot ([which way?](docs/rpi-headless.md#which-way-to-install)).
+Starlock runs [headless on a Raspberry Pi 3A+, 4 or 5](docs/rpi-headless.md) (beta) that rides on the scope with the camera. The Pi handles the plate-solving and serves the UI to any browser on the same Wi-Fi, so your phone or tablet becomes the screen. The live frame, Sky View dome, What to See catalog, and the planetarium-app servers are all on the same page. Install it with apt on a Pi you already use, or turn a fresh SD card into a dedicated Starlock box with its own Wi-Fi hotspot ([which way?](docs/rpi-headless.md#which-way-to-install)).
 
 Starlock can also run completely standalone, without a separate planetarium app. Pick targets from its built-in What to See catalog. It offers a curated short-list of 161 hand-picked objects, a search across more than 20,000 stars and deep-sky objects, or a manual RA/Dec panel. Follow the push direction and watch your scope's pointing on the on-screen Sky View dome. The curated short-list is sourced from [Stargazing Buddy](https://stargazingbuddy.com/), an observing guide by Arun Venkataswamy, the author of the original PushNav.
 
@@ -45,16 +45,16 @@ Above: **M42 (Orion Nebula)** is the active target on both **Stellarium** (deskt
 Starlock is probably a good fit if most of these describe you:
 
 - You own a **manual telescope** — Dobsonian, manual EQ, or any push-around mount with no GOTO motors or encoders.
-- You have a **laptop** (macOS, Linux, or Windows) and you don't mind leaving it on a table or chair while you observe.
+- You have (or don't mind getting) a **Raspberry Pi** 3A+, 4 or 5, and a phone or tablet to control it.
 - You'd like to add push-to navigation to that scope for around **$50**, not the **$300+** that comparable products typically cost.
 - You observe from **light-polluted skies** where star-hopping is hard, and want a faster way to land on faint targets.
 - You're OK with a **brief one-time calibration** at the start of each session (it takes under a minute after the first run).
 
-If you already have a GOTO mount, or you want a phone-only experience with no laptop on hand, Starlock isn't the right tool — there are better-fitted products for those cases.
+If you already have a GOTO mount, Starlock isn't the right tool — there are better-fitted products for that case.
 
-## Cross platform from the ground up
+## Platforms
 
-Supports **Windows**, **macOS**, and **Linux**, plus a headless package for the **Raspberry Pi**. The core app is written in Python with a React UI hosted in a pywebview window (OS-native WebKit/WebView2/GTK), while the camera server is a native binary for each platform (Swift on macOS, C/V4L2 on Linux, C/DirectShow on Windows) to achieve maximum performance and compatibility with UVC cameras.
+Starlock ships as a headless package for the **Raspberry Pi**, the only supported host. The engine is written in Python and serves a React web UI over HTTP; it stays platform-agnostic and runs on **Windows**, **macOS**, and **Linux** PCs for development. The camera server is a native binary for each platform (Swift on macOS, C/V4L2 on Linux, C/DirectShow on Windows) to achieve maximum performance and compatibility with UVC cameras.
 
 ## How It Works
 
@@ -76,7 +76,7 @@ Supports **Windows**, **macOS**, and **Linux**, plus a headless package for the 
 - GOTO navigation guidance for targets picked inside Starlock's **What to See** catalog or sent from your planetarium app (Stellarium, SkySafari, Stellarium Mobile, etc.)
 - Built-in **"What to See"** target picker with three modes: **Buddy** (161 hand-picked deep-sky objects filterable by equipment, light-pollution tolerance and visual reward), **Advanced** (fuzzy search across 12,522 NGC objects from OpenNGC and 8,825 bright stars from HYG), and **Manual coordinates** (HMS/DMS RA/Dec entry for anything not in the catalogs). Visibility (alt/az, rise/transit/set) is recomputed live for your location and time; one click promotes the selected object to the GOTO target. Below-horizon objects can't be set as a target.
 - Works with **SkySafari**, **Stellarium Mobile**, **INDI**, and **ASCOM** clients over Wi-Fi via the LX200 protocol, with `:D#` slew-status so SkySafari's "Stop / GoTo" button transitions correctly
-- **Mobile web interface**: scan a QR code in the Settings panel to open a live mobile view; no app install required, phone and laptop just need to be on the same Wi-Fi
+- **Web interface**: open Starlock in any browser on the same Wi-Fi, or scan the QR code in the Settings panel with a phone; no app install required
 - Live activity indicators in the app showing when Stellarium or LX200 clients are talking
 - IAU 2006 J2000 ↔ JNow precession via `pyerfa` at the LX200 boundary (SkySafari expects JNow, Starlock stores J2000)
 - Audio feedback for lock/lost/GOTO events
@@ -101,29 +101,17 @@ Supports **Windows**, **macOS**, and **Linux**, plus a headless package for the 
 ### Linux
 
 ```bash
-sudo apt install gcc libjpeg-dev gstreamer1.0-tools libfuse2
+sudo apt install gcc libjpeg-dev gstreamer1.0-tools
 ```
 
 | Package | Why |
 |---|---|
 | `gcc`, `libjpeg-dev` | Compile the V4L2 camera server (`make -C camera/linux`). MJPEG encoding uses libjpeg. |
 | `gstreamer1.0-tools` | Provides `gst-play-1.0`, which `playsound3` shells out to for the lock / lost / GOTO audio alerts. `aplay` (`alsa-utils`) or `ffplay` (`ffmpeg`) also work as fallbacks. |
-| `libfuse2` | Only needed if you'll run `scripts/build_linux.sh`'s AppImage stage. Plain dev runs and the `.tar.gz` build don't need it. |
-
-`pywebview` uses its **Qt** backend on Linux. `pywebview[qt]` (QtPy +
-PyQt6 + PyQt6-WebEngine) is pulled in automatically by `uv sync` as a
-normal pip dependency — there are **no** system PyGObject / GTK /
-WebKit2GTK packages to install. PyQt6 itself depends on the usual X11 /
-OpenGL / font / audio system libraries (`libxcb-*`, `libgl1`,
-`libfontconfig1`, `libxkbcommon-x11-0`, `libnss3`, ...) — every desktop
-Linux install ships these by default, so you only need to install them
-on minimal / server / container images that don't already have a desktop
-session.
 
 ### Windows
 
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (cl.exe)
-- (Optional) [Inno Setup 6](https://jrsoftware.org/isinfo.php) for building the installer
 
 ## Setup
 
@@ -155,29 +143,32 @@ camera\windows\build.bat
 
 ## Running
 
-Starlock has two run modes against the source tree (no Nuitka compile
-needed in either):
+Running from the source tree is for development on a PC (Windows, macOS
+or Linux). The engine opens no window: you use the UI in a browser.
+There are two run modes:
 
 ### A. One-terminal run with the built React UI (recommended)
 
-Build the React bundle once, then launch the Python app — it serves the
-built UI itself and opens it in a pywebview window:
+Build the React bundle once, then launch the Python engine — it serves
+the built UI itself:
 
 ```bash
 (cd web && npm run build)
 uv run python -m evf.main
 ```
 
-Re-run `npm run build` whenever you change `web/src/**`.
+Then open `http://localhost:8780/` in your browser (or the port set by
+`webserver.port` in the config). Re-run `npm run build` whenever you
+change `web/src/**`.
 
 ### B. Two-terminal run with HMR (for active UI work)
 
 Useful when you're iterating on React/Tailwind. The Python engine runs
-headless and Vite serves the UI on port `5173` with hot reload:
+as usual and Vite serves the UI on port `5173` with hot reload:
 
 ```bash
-# terminal 1 — engine + camera, no window
-uv run python -m evf.main --dev --no-window
+# terminal 1 — engine + camera
+uv run python -m evf.main --dev
 
 # terminal 2 — Vite dev server
 (cd web && npm run dev)
@@ -185,13 +176,13 @@ uv run python -m evf.main --dev --no-window
 
 Then open `http://localhost:5173/` in your browser. `--dev` also enables
 the in-app DebugPanel and the `/api/dev/*` endpoints (sample injection,
-frame capture).
+frame capture). `--no-window` is still accepted for old scripts but
+does nothing.
 
 ### Convenience scripts
 
-The helper scripts launch `evf.main`; the Python entry-point itself
-probes `localhost:5173` and uses Vite's HMR when it's running, falling
-back to the prebuilt bundle on `:8780` otherwise. So you can leave Vite
+The helper scripts prepare the tree and launch `evf.main`, which serves
+the prebuilt bundle on `http://localhost:8780/`. So you can leave Vite
 out and everything still works in one terminal:
 
 ```bash
@@ -203,60 +194,26 @@ scripts\run_dev_windows.bat  # Windows — assumes camera\windows\build.bat ran 
 ```
 
 If you want HMR, start `(cd web && npm run dev)` in another terminal
-*before* the script — `evf.main` will pick :5173 automatically.
+and open `http://localhost:5173/` instead (`run_dev.sh` then skips the
+bundle rebuild).
 
-Set `STARLOCK_DEBUG=1` (or pass `--dev`) for engine dev features, and
-`WEBVIEW_DEBUG=1` for the webview inspector — see the next section for
-details and a Linux caveat.
+### Dev mode
 
-### Dev-mode environment variables
+**`STARLOCK_DEBUG=1`** (equivalent to `--dev`) enables the engine's
+in-app dev features: the React DebugPanel, the `/api/dev/*` endpoints,
+sample-image injection, and frame capture. Works on macOS, Linux, and
+Windows. On the headless Raspberry Pi package, a jumper from GPIO21
+(pin 40) to GND (pin 39) does the same without environment variables;
+see [Debug mode](docs/rpi-headless.md#debug-mode).
 
-Two independent toggles:
+To debug the React UI, use your browser's own devtools.
 
-- **`STARLOCK_DEBUG=1`** (equivalent to `--dev`) — enables the engine's
-  in-app dev features: the React DebugPanel, the `/api/dev/*` endpoints,
-  sample-image injection, and frame capture. Works on macOS, Linux, and
-  Windows.
-  On the headless Raspberry Pi package, a jumper from GPIO21 (pin 40)
-  to GND (pin 39) does the same without environment variables; see
-  [Debug mode](docs/rpi-headless.md#debug-mode).
-- **`WEBVIEW_DEBUG=1`** — opens the webview inspector inside the
-  pywebview window (right-click → Inspect Element). Independent of
-  `STARLOCK_DEBUG`; set both when you want dev features *and* the
-  inspector.
+## Building the Release
 
-**Linux caveat:** `WEBVIEW_DEBUG=1` on Linux starts QtWebEngine's
-remote-debugging server, which on this platform truncates aiohttp's
-static-file responses to ~440 bytes — the React bundle never finishes
-parsing and the window stays blank (dark red `<body>` only). Until
-that's resolved upstream, debug the React UI on Linux via the
-two-terminal Vite workflow above: leave `WEBVIEW_DEBUG` unset, run
-`uv run python -m evf.main --dev --no-window` plus `(cd web && npm run
-dev)`, then open `http://localhost:5173/` in regular Firefox or Chrome
-and use its native devtools.
-
-## Building Release Binaries
-
-Release builds use [Nuitka](https://nuitka.net/) to compile Python to a standalone binary, then package platform-specific distributables.
-
-**macOS**: produces `Starlock.app` and `Starlock.dmg`:
-```bash
-scripts/build_mac.sh
-```
-
-**Linux**: produces a tar.gz and AppImage:
-```bash
-scripts/build_linux.sh
-```
-
-**Windows**: produces a zip and Inno Setup installer:
-```cmd
-scripts\build_windows.bat
-```
-
-**Raspberry Pi (headless)**: produces `starlock-headless_<version>_arm64.deb`
-(no Nuitka: it bundles a standalone Python, built in a Debian bookworm
-arm64 container; see [docs/rpi-headless.md](docs/rpi-headless.md)):
+The only release build is the Raspberry Pi package,
+`starlock-headless_<version>_arm64.deb`. It bundles a standalone Python
+and is built in a Debian bookworm arm64 container; see
+[docs/rpi-headless.md](docs/rpi-headless.md):
 ```bash
 scripts/build_headless_deb.sh
 scripts/smoke_test_headless_deb.sh   # install + run test on bookworm / trixie
@@ -277,26 +234,6 @@ uv run python scripts/make_pi_label.py 3F2A
 ```
 
 ![Example label for Starlock-3F2A](docs/assets/pi-label.png)
-
-### macOS Gatekeeper note
-
-The macOS `.dmg` is built with an ad-hoc code signature, **not** an Apple
-Developer ID. When you (or anyone you share the build with) downloads
-the `.dmg` from a browser, macOS Gatekeeper sees the quarantine flag and
-shows *"Starlock is damaged and can't be opened. You should move it to
-the Bin."* The app is fine — that dialog is just macOS refusing to
-launch an unsigned app it considers "downloaded from the internet".
-
-Strip the quarantine flag in Terminal once after copying to
-`/Applications`:
-
-```bash
-xattr -cr /Applications/Starlock.app
-```
-
-Then double-click as normal. (Locally-built `.app`s don't get the
-quarantine flag in the first place, so this only affects downloaded
-artifacts.)
 
 ## Running Tests
 
@@ -348,7 +285,7 @@ The [`hardware/3d_models/`](hardware/3d_models/) directory contains OpenSCAD sou
 
 | Part | Description |
 |------|-------------|
-| **Camera Housing** (recommended) | The camera in a threaded housing on a rotation mount for the finder shoe: camera housing, hood and optional cap (`housing_v3_base.stl`, `housing_v3_hood.stl`, `housing_v3_cap.stl`) on the low mount (`housing_v3_mount.stl`), with the camera plugged into a laptop. |
+| **Camera Housing** (recommended) | The camera in a threaded housing on a rotation mount for the finder shoe: camera housing, hood and optional cap (`housing_v3_base.stl`, `housing_v3_hood.stl`, `housing_v3_cap.stl`) on the low mount (`housing_v3_mount.stl`), with the camera on a USB cable to the Pi. |
 | **Pi 3A+ mount and box** (optional) | For running Starlock headless on a Raspberry Pi 3A+: a taller mount that carries the camera over a box for the Pi 3A+, in place of the low mount (`housing_v4_mount.stl`, `housing_v4_box_base.stl`, `housing_v4_box_lid.stl`). |
 | **Laser Pointer Holder** | Cradle for a 23 mm laser pointer on a finder-shoe saddle, with heat-set inserts for the clamp screws and a tripod mount (`laser_pointer_holder.stl`). |
 | **Spare Camera Base** | Replacement for the camera module's white base, fixed with hot glue (`camera_base.stl`). |

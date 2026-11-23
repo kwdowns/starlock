@@ -1,6 +1,6 @@
 ---
 title: Home
-description: Cross-platform plate-solving push-to system for manual telescopes
+description: Plate-solving push-to system for manual telescopes, running on a Raspberry Pi
 ---
 
 # Starlock
@@ -8,15 +8,15 @@ Plate-Solving Push-To System for Manual Telescopes
 
 ![Starlock Mounted](assets/mounted.jpeg)
 
-**A cross-platform plate-solving push-to system for manual telescopes.** Add push-to navigation to a manual scope for about **$50** in hardware you can order today.
+**A plate-solving push-to system for manual telescopes, running on a Raspberry Pi.** Add push-to navigation to a manual scope with a Pi and about **$50** of camera hardware you can order today.
 
-| Your laptop | USB camera + lens | Any manual telescope |
+| A Raspberry Pi | USB camera + lens | Any manual telescope |
 |:---|:---|:---|
-| macOS, Linux, or Windows. Runs on hardware you already own. | A specific **$41 combo**. A [Waveshare OV9281](https://www.waveshare.com/ov9281-1mp-usb-camera-a.htm) (~$26) plus a [25mm F2.4 M12 lens](https://www.seeedstudio.com/5MP-25mm-lens-p-5579.html) (~$15). [Full BOM →](hardware.md) | Dobsonian, manual EQ, or any push-around mount. No GOTO, no motors, no encoders. |
+| A Pi 3A+, 4 or 5 runs Starlock headless on the scope. You control it from your phone's browser or the Starlock phone apps. [Pi guide →](rpi-headless.md) | A specific **$41 combo**. A [Waveshare OV9281](https://www.waveshare.com/ov9281-1mp-usb-camera-a.htm) (~$26) plus a [25mm F2.4 M12 lens](https://www.seeedstudio.com/5MP-25mm-lens-p-5579.html) (~$15). [Full BOM →](hardware.md) | Dobsonian, manual EQ, or any push-around mount. No GOTO, no motors, no encoders. |
 
 Starlock uses a live camera feed to continuously plate-solve and determine where your telescope is pointing, reporting coordinates to Stellarium, SkySafari, and other planetarium apps in real time. Audio cues for lock, lost, and target alerts let you stay at the eyepiece without watching the screen.
 
-Starlock is built around hardware you already own. The laptop you use every day handles the plate-solving and runs the desktop UI. The only new pieces are a USB camera and lens. That deliberate choice shortens the path to first light. You don't need to source, flash, configure, or troubleshoot a dedicated computer. The full desktop UI sits in one familiar window you can drag around on a table next to your scope. The live frame, Sky View dome, What to See catalog, and the planetarium-app servers are all on the same screen. For observers who want a small dedicated box, Starlock also runs [headless on a Raspberry Pi 3A+, 4 or 5](rpi-headless.md) (beta), controlled from a phone. Install it with apt on a Pi you already use, or turn a fresh SD card into a dedicated Starlock box with its own Wi-Fi hotspot ([which way?](rpi-headless.md#which-way-to-install)).
+Starlock runs [headless on a Raspberry Pi 3A+, 4 or 5](rpi-headless.md) (beta) that rides on the scope with the camera. The Pi handles the plate-solving and serves the UI to any browser on the same Wi-Fi, so your phone or tablet becomes the screen. The live frame, Sky View dome, What to See catalog, and the planetarium-app servers are all on the same page. Install it with apt on a Pi you already use, or turn a fresh SD card into a dedicated Starlock box with its own Wi-Fi hotspot ([which way?](rpi-headless.md#which-way-to-install)).
 
 Starlock can also run completely standalone, without a separate planetarium app. Pick targets from its built-in What to See catalog. It offers a curated short-list of 161 hand-picked objects, a search across more than 20,000 stars and deep-sky objects, or a manual RA/Dec panel. Follow the push direction and watch your scope's pointing on the on-screen Sky View dome. The curated short-list is sourced from [Stargazing Buddy](https://stargazingbuddy.com/), an observing guide by Arun Venkataswamy, the author of the original PushNav.
 
@@ -42,7 +42,7 @@ Above: **M42 (Orion Nebula)** is the active target on both **Stellarium** (deskt
 Starlock is probably a good fit if most of these describe you:
 
 - You own a **manual telescope** — Dobsonian, manual EQ, or any push-around mount with no GOTO motors or encoders.
-- You have a **laptop** (macOS, Linux, or Windows) and you don't mind leaving it on a table or chair while you observe.
+- You have (or don't mind getting) a **Raspberry Pi** 3A+, 4 or 5, and a phone or tablet to control it.
 - You'd like to add push-to navigation to that scope for around **$50**, not the **$300+** that comparable products typically cost.
 - You observe from **light-polluted skies** where star-hopping is hard, and want a faster way to land on faint targets.
 - You're OK with a **brief one-time calibration** at the start of each session (it takes under a minute after the first run).
@@ -51,17 +51,17 @@ Starlock is probably a good fit if most of these describe you:
 
 *Above: M45 (Pleiades) captured in a single Starlock frame from **Bortle 8.5** Chennai, India. Invisible to the naked eye here, but clear on the sensor. Plate-solving works in heavy light pollution, not just dark skies.*
 
-If you already have a GOTO mount, or you want a phone-only experience with no laptop on hand, Starlock isn't the right tool — there are better-fitted products for those cases.
+If you already have a GOTO mount, Starlock isn't the right tool — there are better-fitted products for that case.
 
-## Cross platform from the ground up
+## Platforms
 
-Supports **Windows**, **macOS**, and **Linux**, plus a headless package for the **Raspberry Pi**. The core app is written in Python, while the camera server is a native binary for each platform (Swift on macOS, C/V4L2 on Linux, C/DirectShow on Windows) to achieve maximum performance and compatibility with UVC cameras.
+Starlock ships as a headless package for the **Raspberry Pi**, the only supported host. The engine is written in Python and serves a web UI; it also runs on **Windows**, **macOS**, and **Linux** PCs for development. The camera server is a native binary for each platform (Swift on macOS, C/V4L2 on Linux, C/DirectShow on Windows) to achieve maximum performance and compatibility with UVC cameras.
 
 
 ## How It Works
 
 1. Observer picks a target from Starlock's built-in **What to See** catalog, or from a planetarium app (Stellarium on the desktop, or SkySafari / Stellarium Mobile PLUS / INDI / ASCOM on a phone or tablet), and sends it to Starlock.
-2. Starlock shows how to push the telescope to reach the target in its UI. A built-in mobile web interface lets you view the same guidance on your phone: scan a QR code and you're connected.
+2. Starlock shows how to push the telescope to reach the target in its web UI, on your phone or tablet: scan the QR code and you're connected.
 3. Your telescope's pointing shows in real time on the on-screen **Sky View** dome. When a planetarium app is connected, it also appears as a live crosshair on the app's sky chart, staying in sync across all clients.
 
 ### Internal workflow
@@ -80,7 +80,7 @@ Supports **Windows**, **macOS**, and **Linux**, plus a headless package for the 
 - Built-in **"What to See"** target picker — pick a target without leaving Starlock. Three modes: a curated **Buddy** catalog (161 hand-picked deep-sky objects with filters), an **Advanced** fuzzy search across 12,522 NGC objects and 8,825 bright stars, and **Manual coordinates** for anything else. See [Using Starlock](using-starlock.md#picking-targets-inside-starlock).
 - Audio feedback for lock/lost/GOTO events
 - **Raspberry Pi (headless):** runs as a background service on a Pi 3A+, 4 or 5, controlled from your phone. The Pi's own LEDs show the status, so no screen is needed. Install it with apt on your own Pi, or use the [ready-made SD card](rpi-headless.md#b-ready-made-starlock-sd-card) for a dedicated box with its own Wi-Fi hotspot. See [Raspberry Pi (headless)](rpi-headless.md#status-light)
-- Mobile web interface: scan a QR code on the Starlock screen with your phone for at-the-eyepiece push direction, no app install needed
+- Web interface: open Starlock in any browser on the same Wi-Fi, or scan its QR code with your phone, for at-the-eyepiece push direction; no app install needed
 - Always-visible **Sky View** — an interactive 3D hemispheric dome showing current pointing, the active target, and a small telescope marker on the pointing axis; visible during every step of the workflow.
 - Saves calibration for quick re-sync
 - Works from urban light-polluted skies with the right camera/lens combo (see hardware guide)

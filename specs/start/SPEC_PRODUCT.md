@@ -2,13 +2,14 @@
 
 Version: 2.0
 Status: Reflects Current Implementation
-Target: macOS, Linux, Windows
+Target: Raspberry Pi (`starlock-headless`); macOS, Linux, Windows for development
 
 ---
 
 # 1. Product Overview
 
-Starlock is a cross-platform telescope pointing system that:
+Starlock is a telescope pointing system, shipped as a headless Raspberry Pi
+package and controlled from a browser or the native phone apps, that:
 
 - Streams live camera video for telescope alignment and focus.
 - Continuously plate-solves frames when tracking is enabled.
@@ -28,14 +29,14 @@ This system acts as a real-time electronic encoder replacement using plate solvi
 
 ## 2.1 Platform
 
-- macOS, Linux, and Windows
+- Raspberry Pi 3A+, 4 or 5 (the `starlock-headless` .deb) is the only
+  supported host for users. The engine also runs on macOS, Linux and
+  Windows PCs for development.
 - Single supported UVC camera model
 - No camera selection UI
 - No multiple camera support
-- Window size is **1060 × 820** (HiDPI-scaled by each platform's webview)
-  and **non-resizable** (`resizable=False` in `webview.create_window()`).
-  The React layout is designed around this single size; no fluid /
-  responsive scaling is expected on the desktop window.
+- No app window: the React UI is served over HTTP and used in a browser
+  (phone, tablet or PC). Its layout is responsive (see `web/DESIGN.md`).
 
 ## 2.2 Functional Capabilities
 
@@ -391,8 +392,7 @@ Notes:
 - `camera.exposure` / `camera.gain` are `null` on first run. The engine
   initializes them to the midpoint of the reported camera range on the
   first camera HELLO and persists the values from there on.
-- HiDPI scaling is handled by each platform's webview (WKWebView /
-  WebKit2GTK / WebView2) against the OS DPI settings; no app-side toggle.
+- HiDPI scaling is handled by the browser; no app-side toggle.
 - `webserver.port` is validated to 1024–65535 on write.
 - Config is versioned for future upgrades. Missing keys are merged from
   defaults on load.

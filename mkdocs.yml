@@ -1,5 +1,5 @@
 site_name: Starlock
-site_description: Cross-platform plate-solving push-to system for manual telescopes
+site_description: Plate-solving push-to system for manual telescopes, running on a Raspberry Pi
 site_url: https://kwdowns.github.io/starlock/
 repo_url: https://github.com/kwdowns/starlock
 repo_name: kwdowns/starlock

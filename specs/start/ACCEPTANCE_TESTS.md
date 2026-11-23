@@ -2,7 +2,7 @@
 
 Version: 2.1
 Status: Reflects Current Implementation
-Applies: macOS, Linux, Windows
+Applies: Raspberry Pi (`starlock-headless`); macOS, Linux, Windows for development
 
 Goal:
 A developer must be able to run these tests end-to-end without guessing.
@@ -40,7 +40,7 @@ Current coverage:
 
 ### A1. Launch
 - [ ] App launches without crash.
-- [ ] Live view window appears within 3 seconds (excluding one-time DB load).
+- [ ] Live view appears in the browser within 3 seconds (excluding one-time DB load).
 - [ ] App state shows `SETUP`.
 - [ ] Four-step wizard visible: Camera → Sync → Roll → Track.
 - [ ] Step 1 (Camera) is active by default.
@@ -48,7 +48,7 @@ Current coverage:
 ### A2. Database load
 - [ ] tetra3rs catalog loads once at startup (no reloads during runtime).
 - [ ] Load time is logged (INFO).
-- [ ] UI stays responsive while DB loads (no frozen window > 0.5s).
+- [ ] UI stays responsive while DB loads (no frozen UI > 0.5s).
 
 ---
 
@@ -324,7 +324,7 @@ Summary of verification points:
 - **L6** — Sending `:ED#` does not break the session; subsequent `:GR#` still works.
 - **L7** — SkySafari + KStars attached simultaneously; both see consistent position.
 - **L8** — Unit tests (`tests/test_epoch.py`, `tests/test_lx200_protocol.py`, `tests/test_lx200_server.py`) all pass.
-- **L9** — Nuitka bundle on all three platforms: packaged binary logs `LX200 server listening on 0.0.0.0:4030` (implicitly tests `import erfa` inside the bundle).
+- **L9** — Installed `starlock-headless` .deb (the smoke test or a real Pi): the service logs `LX200 server listening on 0.0.0.0:4030` (implicitly tests `import erfa` in the bundled Python).
 
 ## M. Sky View 3D Dome
 

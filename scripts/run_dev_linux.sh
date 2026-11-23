@@ -19,11 +19,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# pywebview on Linux uses its Qt backend (QtPy + PyQt6 + PyQt6-WebEngine,
-# pulled in by the `pywebview[qt]` extra in pyproject.toml). All Python
-# deps are pip-installable, so a vanilla `uv sync` against the repo's
-# pinned 3.12.13 standalone Python is enough — no system PyGObject, no
-# --system-site-packages venv juggling.
+# All Python deps are pip-installable, so a vanilla `uv sync` against the
+# repo's pinned standalone Python is enough. The engine opens no window:
+# browse to http://localhost:8780/ (or the configured webserver.port).
 uv sync
 
 if uv run python scripts/build_catalogs.py --needs-rebuild; then

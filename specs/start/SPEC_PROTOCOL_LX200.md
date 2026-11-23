@@ -182,7 +182,7 @@ Stellarium binary (existing) stays on J2000 — do not break SPEC_PROTOCOL_STELL
 Precession is implemented using [**pyerfa**](https://github.com/liberfa/pyerfa) (the Python binding to liberfa, the open-source fork of IAU SOFA). Specifically `erfa.pmat06()`, the IAU 2006 Capitaine precession matrix.
 
 Rationale over alternatives:
-- vs. astropy — pyerfa is ~5 MB with numpy as only runtime dep; astropy is ~100 MB with lazy loading, auto-downloaded IERS tables, and a fight to bundle cleanly with Nuitka. We'd use 0.1% of astropy's surface area.
+- vs. astropy — pyerfa is ~5 MB with numpy as only runtime dep; astropy is ~100 MB with lazy loading, auto-downloaded IERS tables, and far heavier to bundle into the Pi package. We'd use 0.1% of astropy's surface area.
 - vs. pure-Python Meeus ch. 21 — viable fallback, but owning the math for something this standardized is not worth the auditability cost.
 - vs. skyfield — designed for ephemeris work (loads JPL .bsp files), wrong shape for a pure frame rotation.
 
@@ -196,7 +196,7 @@ dependencies = [
 ]
 ```
 
-pyerfa ships manylinux/macOS/Windows wheels — no compilation needed on end-user machines, no IERS data files to manage, Nuitka-friendly (plain C extension).
+pyerfa ships manylinux (x86_64 and aarch64)/macOS/Windows wheels — no compilation needed when building the Pi package or on a development PC, and no IERS data files to manage (plain C extension).
 
 #### Caching
 
@@ -545,7 +545,7 @@ End-to-end, pointed at a known target (tests/samples/ + goto targets):
 6. **Silent ignore** — sending `:ED#` (or any other unsupported command) does not break the session; the next `:GR#` still returns the current position.
 7. **Multi-client** — SkySafari *and* KStars attached at once; both see consistent position; goto from either is logged and stored.
 8. **Unit tests** — round-trip `format_ra_hi(parse_ra_hms(x)) == x` across the full range; malformed `:Sr BAD#` replies `0`; epoch conversion round-trip (`jnow_to_j2000(j2000_to_jnow(x))`) is symmetric to <1 mas; cross-check `j2000_to_jnow` against an independent source (e.g. astropy in the test env only, not in the shipped bundle) for a handful of stars at a fixed epoch — agreement within 1″.
-9. **Nuitka bundling** — `pyerfa` is included in the standalone build on all three platforms; `import erfa` succeeds in the packaged `.app` / Linux binary / Windows exe.
+9. **Pi package** — `pyerfa` is included in the `starlock-headless` .deb's bundled Python; `import erfa` succeeds in the installed package, and the service logs `LX200 server listening on 0.0.0.0:4030`.
 
 ---
 

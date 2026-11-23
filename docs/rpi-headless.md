@@ -5,10 +5,9 @@ title: Raspberry Pi (headless)
 # Running Starlock headless on a Raspberry Pi
 
 Starlock runs headless on a Raspberry Pi 3A+, 4 or 5 as the `starlock-headless`
-package. There is no window: Starlock runs in the background as a system
-service, and you control it from a phone or laptop browser at
-`http://<pi-address>:8780`. The laptop builds (macOS `.dmg`, Windows
-installer, Linux AppImage) are separate and unchanged.
+package, the only supported way to run it. There is no window: Starlock runs
+in the background as a system service, and you control it from a phone or
+laptop browser at `http://<pi-address>:8780`, or from the Starlock phone apps.
 
 !!! info "Where to get it"
     The Pi package comes with the Starlock releases from `v0.3.0-beta7` on.
@@ -385,10 +384,10 @@ sudo apt install -y gcc libjpeg-dev nodejs npm   # Node 20.19+ for the web build
 # install uv: https://docs.astral.sh/uv/getting-started/installation/
 git clone git@github.com:kwdowns/starlock.git
 cd starlock
-uv sync --no-group desktop     # no pywebview / PyQt6 needed headless
+uv sync
 make -C camera/linux
 (cd web && npm install && npm run build)
-uv run --no-group desktop python -m evf.main --no-window
+uv run python -m evf.main
 ```
 
 Your user needs to be in the `video` group to open the camera

@@ -2,8 +2,9 @@
 
 Version: 2.0
 Status: Reflects Current Implementation
-Target: macOS, Linux, Windows, Raspberry Pi (headless)
-Headless mode: `--no-window`, shipped for the Pi as the `starlock-headless` .deb
+Target: Raspberry Pi (headless, the only shipped build: the `starlock-headless` .deb);
+macOS, Linux and Windows PCs for development
+Headless always: the engine opens no window; the UI is served over HTTP
 
 ---
 
@@ -23,9 +24,9 @@ Headless mode: `--no-window`, shipped for the Pi as the `starlock-headless` .deb
 ```
 ┌───────────────────────────────────────────────┐
 │                 UI Layer                      │
-│       (pywebview window — OS webview)         │
+│   (any browser, or the native phone apps)     │
 │                                               │
-│  - React UI loaded from http://localhost:8780 │
+│  - React UI loaded from http://<host>:8780    │
 │    (prod) or http://localhost:5173 (dev,      │
 │    Vite HMR)                                  │
 │  - Step wizard (Camera → Sync → Roll → Track) │
@@ -72,7 +73,7 @@ Headless mode: `--no-window`, shipped for the Pi as the `starlock-headless` .deb
 
 ```
 Main Python Process
-    ├── Main Thread (pywebview event loop — hosts the React UI)
+    ├── Main Thread (waits for SIGINT/SIGTERM, then shuts down)
     ├── Solver Thread
     ├── Stellarium Thread
     ├── LX200 Thread
@@ -87,10 +88,10 @@ Camera Subprocess (separate OS process)
 
 # 4. Thread Responsibilities
 
-## 4.1 UI Thread
+## 4.1 Main Thread and the UI
 
-Main thread runs the pywebview event loop. The OS webview renders the
-React UI which:
+The engine opens no window. The React UI runs in a browser (on the Pi's
+network, or `http://localhost:8780/` on a development PC) and:
 
 - Subscribes to `/ws` over WebSocket for state (~10 Hz)
 - Fetches `/frame.jpg` whenever the `/ws` payload's `camera.frame_id`
@@ -100,15 +101,15 @@ React UI which:
 - POSTs to `/api/*` for actions (wizard advance, sync select, control set,
   settings, dev injection)
 
-The Python main thread does no rendering of its own; once
-`webview.start()` is called it blocks until the window closes, at which
-point the engine shuts down.
+The Python main thread does no rendering of its own. After starting the
+engine and its servers it waits for SIGINT or SIGTERM (Ctrl-C, or systemd
+stopping the service), then calls `engine.shutdown()`.
 
 Rules:
 - The solver thread never calls into the UI; communication is one-way
   via PointingState + the WebServer's broadcast loop.
-- No JPEG decoding or NumPy work happens in the UI process — the browser
-  decodes MJPEG natively.
+- No JPEG decoding or NumPy work happens for the UI in Python — the
+  browser decodes the JPEG frames natively.
 
 ---
 
@@ -378,7 +379,7 @@ On app start:
 
 1. Resolve binary path via `evf/paths.py`:
    - Dev: `./camera/mac/camera_server` (or platform equivalent)
-   - Release: bundled in app resources directory (platform-specific)
+   - Release: `$STARLOCK_ROOT/camera_server` (the Pi package sets `STARLOCK_ROOT`)
 2. Spawn via subprocess.Popen.
 3. Wait briefly (up to 2s) for the camera server to bind its TCP port.
 4. Connect as TCP client to `127.0.0.1:8764`.
@@ -610,9 +611,9 @@ When the user closes the application, execute the following sequence in order:
 
 - Shutdown must complete within 10 seconds total.
 - Each step has independent timeouts — a hung thread must not block later steps.
-- The pywebview window's close event triggers the shutdown sequence
-  when running with the GUI; SIGTERM/SIGINT triggers it when running
-  with `--no-window`.
+- SIGINT or SIGTERM triggers the shutdown sequence: the main thread
+  waits on them, then calls `engine.shutdown()`. (`--no-window` is still
+  accepted but changes nothing; there is no window.)
 - If any step fails, log the error and continue with the next step.
 
 ---
@@ -652,9 +653,8 @@ Notes on specific fields:
 - `camera.exposure` / `camera.gain` default to `null`. On the first camera
   HELLO, the engine seeds them to the midpoint of the reported control range
   and persists the values from there on.
-- HiDPI scaling is handled natively by each platform's webview (WKWebView on
-  macOS, WebKit2GTK on Linux, WebView2 on Windows) against the OS DPI/scale
-  settings — no app-side multiplier or toggle.
+- HiDPI scaling is handled by the browser — no app-side multiplier or
+  toggle.
 - `webserver.port` is validated to the 1024–65535 range on write.
 
 ---
@@ -725,9 +725,9 @@ starlock-cloud `docs/pi-integration.md`.
 
 Architecture must allow:
 
-- Headless mode (engine without UI). Implemented: `--no-window`; the
-  Raspberry Pi `starlock-headless` package adds a background camera
-  retry and status on the Pi's LEDs (`evf/engine/status_led.py`)
+- Headless mode (engine without UI). Implemented: the engine always runs
+  without a window, with a background camera retry and status on the
+  Pi's LEDs (`evf/engine/status_led.py`; a no-op off the Pi)
 - Additional planetarium protocols
 - INDI driver
 - Equatorial mount support
