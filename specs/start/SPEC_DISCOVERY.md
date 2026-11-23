@@ -21,6 +21,7 @@ in config.json.
 | Key          | Example        | Meaning |
 |--------------|----------------|---------|
 | `api`        | `1`            | Version of this discovery + HTTP API contract. Bumped only on breaking changes; clients should refuse a higher major they don't know. |
+| `api_min`    | `1`            | Oldest API version this engine still serves. An app whose own range doesn't reach it says the app needs updating; an app whose minimum is above `api` says the Starlock needs a software update. Missing = same as `api`. |
 | `id`         | `3f2a…` (32 hex) | Stable per-install id (`device.id` in config.json, generated on first start). Use it to recognise a Starlock across IP changes and to pair with the cloud service. Also returned by `GET /api/version` as `device_id`. |
 | `version`    | `0.4.0`        | App version (`data/VERSION.json`). |
 | `protocol`   | `1`            | `protocol_version` from `data/VERSION.json`. |
@@ -30,6 +31,26 @@ in config.json.
 | `stellarium` | `10001`        | Stellarium binary-protocol port. |
 
 Clients must ignore keys they don't know.
+
+`GET /api/version` returns the same two numbers as `api` and `api_min`
+(integers), for apps given an address instead of a discovered service.
+Engines from before November 2026 return neither: treat that as `api` 1.
+
+## Compatibility
+
+An app supports a range of API versions (lowest to highest). It works with a
+Starlock when the two ranges overlap:
+
+- engine `api` < app minimum: the Starlock's software is too old. The app says
+  so and offers the Starlock's own web UI (served by the engine, so always the
+  right version) and, once updates exist, an update.
+- engine `api_min` > app maximum: the app is too old; it asks for an app
+  update and offers the web UI the same way.
+
+Raise `api` only for breaking changes, and keep `api_min` as low as the code
+can carry, so a Starlock that sat on a shelf for years still works with a
+current app. Additive changes (new fields, new endpoints) don't change either
+number: apps must treat a missing field or a 404 as "not supported here".
 
 ## Behaviour
 

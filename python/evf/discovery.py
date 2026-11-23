@@ -4,6 +4,7 @@ The web server is announced as ``_starlock._tcp`` on its real port, with a
 TXT record that tells a client what it found before it connects::
 
     api=1                 # discovery/API contract version (bump on breaking change)
+    api_min=1             # oldest app API version this engine still serves
     id=<hex>              # stable per-install id (config.json "device.id")
     version=0.4.0         # app version from data/VERSION.json
     protocol=<n>          # camera/app protocol version from VERSION.json
@@ -36,6 +37,9 @@ logger = logging.getLogger(__name__)
 
 SERVICE_TYPE = "_starlock._tcp.local."
 API_VERSION = "1"
+# Oldest API version an app may speak and still be served. Raise it only when
+# support for that version is removed; apps then say the app needs updating.
+API_MIN_VERSION = "1"
 
 # Interfaces whose addresses aren't reachable from a phone on the LAN.
 _SKIPPED_PREFIXES = (
@@ -78,6 +82,7 @@ def txt_properties(
 ) -> dict[str, str]:
     props = {
         "api": API_VERSION,
+        "api_min": API_MIN_VERSION,
         "id": device_id,
         "path": "/",
         "ws": "/ws",

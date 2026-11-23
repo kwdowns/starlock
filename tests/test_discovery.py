@@ -44,7 +44,7 @@ def make(addresses, log, **kw):
 def test_txt_record_contents():
     props = txt_properties("id1", "0.3.0", 2)
     assert props == {
-        "api": "1", "id": "id1", "path": "/", "ws": "/ws",
+        "api": "1", "api_min": "1", "id": "id1", "path": "/", "ws": "/ws",
         "version": "0.3.0", "protocol": "2",
         "lx200": "4030", "stellarium": "10001",
     }

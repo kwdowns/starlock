@@ -43,6 +43,7 @@ from evf.cloud.service import CloudService, PairingError
 # Catalog files served at /api/catalog/<name> (see catalog_data_dir()).
 CATALOG_NAMES = ("objects", "openngc", "hyg-bright", "object_sizes")
 from evf.config.manager import ConfigManager
+from evf.discovery import API_MIN_VERSION, API_VERSION
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
 from evf.engine.mount import MOUNT_MODES, compute_mount_guidance, mount_axes
@@ -511,6 +512,10 @@ class WebServer:
             "app": "starlock",
             "version": data.get("app_version"),
             "protocol_version": data.get("protocol_version"),
+            # API contract range, as in the mDNS TXT record (api, api_min),
+            # for apps that were given an address instead of discovering it.
+            "api": int(API_VERSION),
+            "api_min": int(API_MIN_VERSION),
             # Same id as the mDNS TXT record, so an app can match an
             # address it was given to a Starlock it discovered before.
             "device_id": self._config.device_id,

@@ -136,3 +136,13 @@ def test_allowed_hosts_config(tmp_path):
     assert cfg.web_allowed_hosts == []
     cfg._data["webserver"]["allowed_hosts"] = ["Starlock.Home.Example.NET.", " ", 5]
     assert cfg.web_allowed_hosts == ["starlock.home.example.net", "5"]
+
+
+@pytest.mark.asyncio
+async def test_version_reports_api_range(server):
+    ws, _ = server
+    async with ClientSession() as s:
+        async with s.get(f"http://127.0.0.1:{ws._port}/api/version") as resp:
+            body = await resp.json()
+    assert body["app"] == "starlock"
+    assert body["api"] >= body["api_min"] >= 1
