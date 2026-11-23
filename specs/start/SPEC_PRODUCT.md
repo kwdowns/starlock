@@ -185,14 +185,19 @@ WebSocket).
 
 ## 5.1 Stellarium (desktop, binary protocol)
 
-- TCP server on `127.0.0.1:10001` (loopback only — desktop Stellarium on the
-  same machine).
+- TCP server on port 10001. On a Raspberry Pi it binds `0.0.0.0`, so desktop
+  Stellarium on a laptop connects to the Pi's address over the LAN or the
+  Pi's hotspot. On a development PC it binds `127.0.0.1` (Stellarium on the
+  same machine only). `_default_host()` in `evf/stellarium/server.py` picks
+  the host from `/proc/device-tree/model`.
 - Implements the Stellarium telescope binary protocol.
 - Broadcasts the last valid solution every 1 second.
 - Processes incoming GOTO commands into navigation targets (advisory only;
   never mutates pointing or calibration).
 - Queries the Stellarium Remote Control API (port 8090) for observer
-  location and object info.
+  location and object info. It queries `localhost`, so this only works with
+  Stellarium on the same machine (a development PC), not with Stellarium on
+  a laptop talking to a Pi.
 - Plays an acknowledgment sound on client connect.
 
 See `SPEC_PROTOCOL_STELLARIUM.md`.
@@ -287,7 +292,8 @@ The header carries a two-tab segmented control:
 The Connectivity panel exposes all three server addresses:
 
 - `<LAN-IP>:<webserver.port>` — mobile web URL, with QR code
-- `localhost:10001` — Stellarium binary protocol (loopback only)
+- `<LAN-IP>:10001` — Stellarium binary protocol (LAN-reachable on a Pi;
+  `localhost:10001` on a development PC)
 - `<LAN-IP>:4030` — LX200 (LAN-reachable)
 
 The Stellarium and LX200 rows each have a small red-dot activity indicator
@@ -446,7 +452,7 @@ Verbose mode logs:
 - Advanced settings section (solver parameters)
 - Mobile-interface address + QR code, with "No LAN connection" fallback
 - Telescope-control address block showing LX200 (`<LAN-IP>:4030`) and
-  Stellarium (`localhost:10001`) addresses, each with a red-dot activity
+  Stellarium (`<LAN-IP>:10001` on a Pi) addresses, each with a red-dot activity
   indicator that lights while a client is talking to the server
 - Audio enable/disable toggle
 - "Use Previous Calibration" button (when saved calibration exists)

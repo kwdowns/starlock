@@ -147,7 +147,7 @@ Current coverage:
 
 ### F1. Connection
 - [ ] Open Stellarium.
-- [ ] Telescope Control plugin connects to `localhost:10001`.
+- [ ] Telescope Control plugin connects to the Pi's address, port 10001 (`localhost:10001` on a development PC).
 - [ ] App logs connection event.
 - [ ] Acknowledgment sound plays on connect.
 

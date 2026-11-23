@@ -3,9 +3,9 @@
 Version: 2.1
 Status: Reflects Current Implementation
 Date: 2026-04-20
-Transport: TCP on localhost
+Transport: TCP (LAN on a Raspberry Pi, loopback on a development PC)
 Default Port: 10001
-Bind Host: `127.0.0.1` (loopback only — desktop Stellarium on the same machine)
+Bind Host: `0.0.0.0` on a Raspberry Pi (desktop Stellarium on a laptop connects to the Pi's address); `127.0.0.1` on a development PC (Stellarium on the same machine only). Chosen by `_default_host()` in `evf/stellarium/server.py` from `/proc/device-tree/model`.
 Coordinate Epoch: **J2000** on the wire (contrast LX200, which uses JNow)
 Direction: App acts as TCP **server**; Stellarium connects as **client**
 
@@ -143,7 +143,8 @@ GOTO handling:
 
 ### 6.1 Server startup
 
-1. Bind TCP server to `127.0.0.1:10001`.
+1. Bind TCP server to port 10001: `0.0.0.0` on a Raspberry Pi, `127.0.0.1`
+   on a development PC.
 2. Listen for connections (allow multiple clients).
 3. Server starts at app launch regardless of tracking state.
 
@@ -198,12 +199,13 @@ To connect Stellarium to Starlock:
 1. Open Stellarium → Configuration → Plugins → Telescope Control.
 2. Enable plugin, restart Stellarium if needed.
 3. Add telescope: type "External software or a remote computer".
-4. Host: `localhost`, Port: `10001`.
+4. Host: the Pi's address (`starlock.local`, its IP, or `192.168.77.1` on
+   the Pi's hotspot); `localhost` on a development PC. Port: `10001`.
 5. Connect.
 
 The telescope crosshair should appear and update at ~1 Hz while the app is TRACKING.
 
-For navigation guidance, also enable the Stellarium Remote Control plugin (port 8090).
+For object names and the observer location, also enable the Stellarium Remote Control plugin (port 8090). The server queries it on `localhost`, so this only works when Stellarium runs on the same machine (a development PC); with Starlock on a Pi, targets arrive as coordinates without a name.
 
 ---
 

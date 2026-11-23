@@ -16,24 +16,24 @@ Starlock appears as an **LX200-compatible telescope** on your local Wi-Fi networ
 
 ## Find Starlock's telescope address
 
-Open Starlock and look at the **Settings** section in the side panel. You'll see a **Telescope Control** block with two addresses:
+Starlock runs on your [Raspberry Pi](rpi-headless.md), so the telescope address is the **Pi's address, port `4030`**:
 
-- **LX200**: this is the one you want. Format: `192.168.x.y:4030` (your laptop's Wi-Fi IP followed by port 4030).
-- *Stellarium (desktop, same machine only)*: for desktop Stellarium on the same computer, covered in [Stellarium Setup](stellarium-setup.md) instead.
+- On the Pi's own Wi-Fi hotspot (`Starlock-XXXX`, the [ready-made SD card](rpi-headless.md#b-ready-made-starlock-sd-card)): `192.168.77.1`, port `4030`.
+- On your home network: the Pi's IP address, port `4030`. `starlock.local` also works in apps that accept a host name.
 
-Next to each address there's a small dot that lights up when a client is actively talking to Starlock, a quick visual confirmation once you're connected.
+To check the IP address, open Starlock in your browser, tap the gear for **Settings**, and look at **Connectivity**. The link under **Open on your phone** starts with the Pi's IP address (for example `http://192.168.1.52:8780`); use that IP with port `4030`.
 
-!!! tip "Make sure your phone and laptop are on the same Wi-Fi network"
-    Starlock doesn't need the internet, but it does need your phone and laptop to be on the same local network. If they can't see each other, the apps below won't connect.
+Connectivity also lists the clients: **LX200 (SkySafari, Stellarium Mobile)** and **Stellarium (desktop)**, the latter covered in [Stellarium Setup](stellarium-setup.md). Each row has a small dot that lights up when a client is actively talking to Starlock and shows the client's address, a quick visual confirmation once you're connected.
 
-    **No Wi-Fi at your observing site?** Turn on your phone's personal hotspot and connect your laptop to it. The phone and laptop are still on the same local network, so everything works identically. The phone just plays the role of both Wi-Fi router and telescope client.
+!!! tip "Make sure your phone and the Pi are on the same Wi-Fi network"
+    Starlock doesn't need the internet, but your phone must be on the same local network as the Pi. If they can't see each other, the apps below won't connect.
 
-    **Important:** connect the laptop to the hotspot **before** launching Starlock. Starlock reads the LAN IP at startup and shows it in the Telescope Control panel; if you start Starlock first and then switch networks, the displayed address will be stale and SkySafari won't reach it. If this happens, just quit Starlock and relaunch.
+    **No Wi-Fi at your observing site?** With a ready-made SD card, the Pi brings its own hotspot: join `Starlock-XXXX` on your phone and use `192.168.77.1`, port `4030`. Your phone may warn that the network has no internet: stay connected anyway.
 
 !!! tip "Moving between networks: update the app's preset each time"
-    Starlock's IP address is assigned by whichever network you're on, so it changes between your home Wi-Fi, an observing-site Wi-Fi, and a phone hotspot. A SkySafari / Stellarium Mobile / INDI / ASCOM preset saved on one network won't connect on another. The IP in the preset points to an address that doesn't exist on the new network.
+    The Pi's IP address is assigned by whichever network it's on, so it can differ between your home Wi-Fi, an observing-site Wi-Fi, and the Pi's hotspot. A SkySafari / Stellarium Mobile / INDI / ASCOM preset saved on one network won't connect on another. The IP in the preset points to an address that doesn't exist on the new network.
 
-    Each time you switch networks, check Starlock's current IP in the **Telescope Control** panel and **update your app's preset IP to match** (or keep a separate preset per network you observe from).
+    Each time you switch networks, check the Pi's current IP in Starlock's **Connectivity** settings and **update your app's preset IP to match** (or keep a separate preset per network you observe from, for example one for `192.168.77.1`).
 
 ---
 
@@ -50,7 +50,7 @@ Next to each address there's a small dot that lights up when a client is activel
     |---|---|
     | Mount Type | **AltAz GoTo** (the **GoTo** part matters; Push-To modes in SkySafari don't drive the Stop/GoTo button transitions correctly) |
     | Scope Type | **Meade LX200 Classic** |
-    | IP Address | Starlock's LAN IP (from Starlock's Settings panel) |
+    | IP Address | The Pi's IP address (`192.168.77.1` on the Pi's hotspot) |
     | Port | `4030` (default) |
 
 3. Tap **Check Connection Now**. You should see **Connection verified**.
@@ -68,7 +68,7 @@ Tap the **FOV display** at the top right of the star chart and pick the FOV / ri
 
 1. Tap any object in SkySafari's star chart.
 2. Tap the **GoTo** button (in the Scope Control panel).
-3. The button changes to **Stop** while you push. Starlock's on-screen arrows and the mobile companion view guide you.
+3. The button changes to **Stop** while you push. Starlock's on-screen arrows (in the browser or the Starlock app) guide you.
 4. When your plate-solve lands within ~0.5° of the target, the button automatically flips back to **GoTo**. Center the target in the eyepiece by eye.
 
 ### Troubleshooting
@@ -116,7 +116,7 @@ Starlock isn't in the Track state yet. Go through the Sync and Roll steps (or hi
 ## What's next
 
 - [Using Starlock](using-starlock.md): calibration and push-to workflow (the same whether you use Stellarium, SkySafari, or anything else)
-- [Stellarium Setup](stellarium-setup.md): if you prefer the desktop Stellarium planetarium on the same machine
+- [Stellarium Setup](stellarium-setup.md): if you prefer the desktop Stellarium planetarium on a laptop or desktop computer
 
 ## Open source: please report issues
 

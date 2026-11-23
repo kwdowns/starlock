@@ -18,13 +18,13 @@ Everyone prints the [camera housing and hood](#camera-parts-every-setup). Then p
 
 <div class="grid cards" markdown>
 
--   **With a laptop**
+-   **Camera on a USB cable**
 
     ---
 
     ![The camera on the low mount](assets/3d_model_v3.png)
 
-    The usual setup: the camera's USB cable goes straight to the computer running Starlock. Print the **low mount**.
+    The usual setup: the camera's USB cable runs to the Raspberry Pi running Starlock, with the Pi elsewhere on the tube or nearby. Print the **low mount**.
 
     [:material-download: Low mount](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_mount.stl){ .md-button .md-button--primary }
 
@@ -34,7 +34,7 @@ Everyone prints the [camera housing and hood](#camera-parts-every-setup). Then p
 
     ![The camera on the Pi mount, above the Raspberry Pi 3A+ box](assets/3d_model_v4.png)
 
-    Only if you run [Starlock headless on a Raspberry Pi](rpi-headless.md). A taller mount lifts the camera over a slim box that holds a Pi 3A+, making a self-contained unit. The box fits the **Pi 3A+ only**. [Details below](#pi-3a-mount-and-box-optional).
+    Only if you want the [Raspberry Pi](rpi-headless.md) and camera as one unit on the telescope. A taller mount lifts the camera over a slim box that holds a Pi 3A+, making a self-contained unit. The box fits the **Pi 3A+ only**. [Details below](#pi-3a-mount-and-box-optional).
 
     [:material-download: Pi mount](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_mount.stl){ .md-button }
     [:material-download: Box base](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_base.stl){ .md-button }
@@ -63,7 +63,7 @@ No star knob? Print [`star_knob.stl`](https://github.com/kwdowns/starlock/raw/ma
 
 ### Pi 3A+ mount and box (optional)
 
-For running [Starlock headless](rpi-headless.md) on a **Raspberry Pi 3A+**, with the Pi carried on the telescope. With a laptop you don't need any of this — use the low mount above.
+For running [Starlock headless](rpi-headless.md) on a **Raspberry Pi 3A+**, with the Pi carried on the telescope under the camera. With any other Pi, or a Pi 3A+ kept off the camera, you don't need any of this — use the low mount above.
 
 ![Exploded view: Pi mount, box base and lid, and the camera housing with its hood](assets/3d_model_v4_parts.png)
 
@@ -196,7 +196,7 @@ Lock ring that secures the M12 lens at the correct focus position. Features a ta
 | [`housing_v3_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_base.stl) | Camera housing |
 | [`housing_v3_hood.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_hood.stl) | Hood |
 | [`housing_v3_cap.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_cap.stl) | Dust cap (optional) |
-| [`housing_v3_mount.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_mount.stl) | Low mount (with a laptop) |
+| [`housing_v3_mount.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v3_mount.stl) | Low mount (camera on a USB cable to the Pi) |
 | [`housing_v4_mount.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_mount.stl) | Pi mount (optional, Pi 3A+) |
 | [`housing_v4_box_base.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_base.stl) | Pi 3A+ box base (optional) |
 | [`housing_v4_box_lid.stl`](https://github.com/kwdowns/starlock/raw/main/hardware/3d_models/stls/housing_v4_box_lid.stl) | Pi 3A+ box lid (optional) |

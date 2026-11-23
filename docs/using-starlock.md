@@ -24,7 +24,7 @@ The first time you use Starlock, you'll go through all four steps:
 4. Starlock highlights the star it thinks you synced on. If it picked the right one, press **Confirm Sync**. If it picked the wrong star (rare, but possible in dense star fields), tap the correct star on the preview, then confirm.
 
 !!! tip "Center in the eyepiece, not the camera"
-    A common first-time mistake: centering the star in the *camera preview* on your laptop screen. That's the wrong reference. The camera is offset from the main optics. What matters is that the star is centered in your **eyepiece view** (what you see looking through the telescope). Starlock figures out the offset between the camera and your eyepiece during sync.
+    A common first-time mistake: centering the star in the *camera preview* on your phone or tablet. That's the wrong reference. The camera is offset from the main optics. What matters is that the star is centered in your **eyepiece view** (what you see looking through the telescope). Starlock figures out the offset between the camera and your eyepiece during sync.
 
 **Step 3. Roll.** Starlock needs to know how the camera is rotated relative to your telescope's axes. It will ask you to **push the telescope up** (increase altitude) for a moment. By watching which direction the stars actually move when you push, Starlock learns the angle between the camera's reference frame and your telescope's axes. That's what keeps the push arrows accurate even if the camera is mounted at an angle. This happens automatically; you'll see a progress indicator, and it completes in a few seconds.
 
@@ -57,7 +57,7 @@ For target picking, Starlock doesn't make you choose between simplicity and reac
 For every match, the right side of the tab shows a detail card with the object's current altitude / azimuth, rise / transit / set times, and a **Set as target** button. Click it and Starlock jumps back to the Navigation tab with the chosen target loaded. The button is disabled when an object is below the horizon (no point pushing through the ground).
 
 !!! tip "Set your location first"
-    Visibility math needs to know where you're observing from. Open the **Location** panel in the right column and enter your latitude and longitude (or let Stellarium provide it automatically when connected). Without a location, the catalog still works as a directory, but the alt/az and rise/set columns stay blank and the below-horizon guard can't run.
+    Visibility math needs to know where you're observing from. Open the **Location** panel in the right column and enter your latitude and longitude. Without a location, the catalog still works as a directory, but the alt/az and rise/set columns stay blank and the below-horizon guard can't run.
 
 ## Reading the push direction
 
@@ -85,16 +85,15 @@ A couple of edge cases the dome handles:
 - **Target below horizon** — the target marker and line are hidden, and a small "Target below horizon" badge appears at the top of the dome. Same situation that disables the catalog's Set as target button.
 - **Location not set** — both markers and lines are hidden, and a "Location info required" overlay sits over the otherwise interactive dome.
 
-## Using the mobile companion
+## Using Starlock on your phone
 
-When you're pushing a Dobsonian or a manual EQ, the laptop typically sits on a chair or table a few feet from the eyepiece. Walking back and forth to check the push direction gets old fast. Starlock's mobile companion solves that. Open the **Settings** panel, scan the **QR code** with your phone, and a live view opens in your phone's browser showing the same push direction, target name, and separation as the desktop UI.
+Starlock runs on the Raspberry Pi, and your phone or tablet *is* the screen. You can hold it at the eyepiece while you push a Dobsonian or a manual EQ, so there's no walking back and forth to check the push direction. Open `http://<pi-address>:8780` in the browser (`http://192.168.77.1:8780` on the hotspot of a [ready-made SD card](rpi-headless.md#b-ready-made-starlock-sd-card), or `http://starlock.local:8780` on phones that support `.local` names), or use the Starlock phone app, which finds the Pi on its own.
 
-![Starlock mobile companion view](assets/starlock.0.2.0-mobile.png){ width="50%" }
+![Starlock on a phone](assets/starlock.0.2.0-mobile.png){ width="50%" }
 
-No app to install, no Bluetooth pairing, no configuration. Your phone and laptop only need to be on the same Wi-Fi network. Multiple devices can connect at the same time too, so for outreach sessions or sharing the view with someone, just hand them their own phone and they'll see exactly what you see.
+No Bluetooth pairing, no configuration. Your phone only needs to be on the same Wi-Fi network as the Pi, or joined to the Pi's hotspot. Multiple devices can connect at the same time too, so for outreach sessions or sharing the view with someone, open **Settings** (the gear), show them the **QR code** under **Connectivity**, and they'll see exactly what you see on their own phone.
 
-!!! tip "On a Raspberry Pi"
-    With the headless Raspberry Pi package, the phone *is* the screen: open `http://<pi-address>:8780` (`http://192.168.77.1:8780` on the hotspot of a [ready-made SD card](rpi-headless.md#b-ready-made-starlock-sd-card)). When the phone isn't open, the Pi's own LEDs show the status at a glance. See [Status light](rpi-headless.md#status-light).
+When no phone is open, the Pi's own LEDs show the status at a glance. See [Status light](rpi-headless.md#status-light).
 
 ### Install on your phone or tablet
 
@@ -145,8 +144,8 @@ A few common scenarios and what to do.
 **Plate-solving fails repeatedly (clouds drifting in, dew on the lens, heavy haze).**
 Starlock holds your last good position and shows a rising failure count in the side panel. Once stars are visible again, solves resume on their own. There's nothing to restart.
 
-**The camera disconnects (USB cable wiggle, computer sleep).**
-Starlock notices within a couple of seconds and tries to reconnect automatically with exponential backoff (1, 2, 4, 8, 15 seconds, up to 5 attempts). Plug the cable back in firmly and tracking picks up where it left off. If the retries exhaust, the app shows an error state: plug the camera back in and press **Retry camera**. On the Raspberry Pi package, Starlock keeps retrying by itself, and the Pi's LED shows a slow red blink until the camera is back.
+**The camera disconnects (USB cable wiggle).**
+Starlock notices within a couple of seconds and tries to reconnect automatically. Plug the cable back in firmly and tracking picks up where it left off. Starlock keeps retrying by itself, and the Pi's LED shows a slow red blink until the camera is back.
 
 **You send a below-horizon target from Stellarium (or another planetarium app).**
 External apps don't enforce the horizon check, so the push arrows will try to point you through the ground. Clear the target and pick something currently above the horizon. Starlock's own **What to See** tab disables the **Set as target** button for below-horizon objects when a location is set.
@@ -155,4 +154,4 @@ External apps don't enforce the horizon check, so the push arrows will try to po
 You probably need to redo Step 3 (Roll). Most likely you've remounted the camera since the last session, or the scope is on a different site or different mount. Press **Stop tracking and restart setup** and run through the wizard again. It takes under a minute.
 
 **The Sky View dome shows "Location info required" and the catalog dates look blank.**
-Starlock doesn't have an observer location yet. Open the **Location** panel in the right column of the **What to See** tab and enter your latitude and longitude, or let Stellarium provide it automatically when connected.
+Starlock doesn't have an observer location yet. Open the **Location** panel in the right column of the **What to See** tab and enter your latitude and longitude.

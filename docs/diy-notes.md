@@ -29,7 +29,7 @@ The camera ships with a wide-angle lens that needs to be replaced with the 25mm 
 ## DIY Assembly
 
 - Finish the camera modifications as described above to get the camera ready for use with Starlock. This involves replacing the stock lens with the 25mm M12 lens and ensuring it is securely mounted and focused.
-- 3D print the [Camera Housing](3d-models.md#camera-housing-recommended): the camera housing, the hood and the low mount (the dust cap is optional). To run Starlock on a Raspberry Pi 3A+ instead of a laptop, print the [Pi 3A+ mount and box](3d-models.md#pi-3a-mount-and-box-optional) in place of the low mount.
+- 3D print the [Camera Housing](3d-models.md#camera-housing-recommended): the camera housing, the hood and the low mount (the dust cap is optional). The low mount suits a camera on a USB cable to the Pi, with the Pi elsewhere on the tube or nearby. To carry a Raspberry Pi 3A+ under the camera as one unit, print the [Pi 3A+ mount and box](3d-models.md#pi-3a-mount-and-box-optional) in place of the low mount.
 - Secure the camera inside the housing base. Choice of adhesive depends on whether you want to remove the camera later:
     - **Hot glue gun.** Use if you may want to remove the camera to refit or reuse later. It's reversible (peels off with gentle prying), but the thick bead can introduce small alignment errors, so press the camera flat while the glue sets.
     - **Super glue (or other thin adhesives).** Use once you're satisfied with alignment and focus and don't plan to remove the camera. Thin adhesives give a much more precise, rigid bond with no alignment drift.

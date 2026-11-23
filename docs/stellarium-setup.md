@@ -12,12 +12,13 @@ This is a one-time setup. Once it's done, Stellarium and Starlock reconnect auto
 
 - A **live crosshair** on Stellarium's sky chart showing exactly where your telescope is pointing, updating in real time as you push
 - **One-click target selection**: click any object in Stellarium and press a keyboard shortcut to send it to Starlock
-- **Push direction** in Starlock's side panel ("left 2°, down 1°") until the target is centered in your eyepiece
+- **Push direction** in Starlock on your phone or tablet ("left 2°, down 1°") until the target is centered in your eyepiece
 
 ## What you'll need
 
-- [Stellarium](https://stellarium.org/) installed on the same computer as Starlock
-- Starlock installed and running
+- [Stellarium](https://stellarium.org/) on a laptop or desktop computer
+- Starlock running on your [Raspberry Pi](rpi-headless.md)
+- The computer on the same network as the Pi: your home Wi-Fi, or the Pi's own hotspot (`Starlock-XXXX`) if you use a [ready-made SD card](rpi-headless.md#b-ready-made-starlock-sd-card)
 
 ## Step 1: Enable the Telescope Control plugin
 
@@ -54,8 +55,10 @@ Scroll down and set:
 
 | Setting | What to enter |
 |---|---|
-| Host | `localhost` |
+| Host | The Pi's address: `starlock.local`, or its IP address (`192.168.77.1` on the Pi's hotspot) |
 | TCP Port | `10001` |
+
+The Pi's IP address is in the link under **Open on your phone**, in the **Connectivity** section of Starlock's Settings (the gear). If `starlock.local` doesn't connect, use the IP address instead.
 
 !!! warning "Leave the coordinate system on J2000"
     Starlock only speaks J2000 coordinates. If you switch this to JNow, the crosshair in Stellarium will be slightly off from where your telescope is actually pointing. If things seem "close but not quite right," this is almost always the reason.
@@ -68,7 +71,7 @@ Starlock now appears in the list as **Disconnected**.
 
 ![Starlock listed as Disconnected](assets/stellarium-telescope-4.jpeg)
 
-Make sure Starlock is **running**, then click **Connect**.
+Make sure the Pi is on and Starlock is **running**, then click **Connect**.
 
 ## Step 5: Verify
 
@@ -96,7 +99,7 @@ Now press **Cmd+1** (Mac) or **Ctrl+1** (Windows / Linux). This sends the target
 
 ## Step 8: Push to it
 
-Switch to Starlock. The side panel shows the target name and how far you need to push:
+Look at Starlock on your phone or tablet. It shows the target and how far you need to push:
 
 ![Starlock tracking the Great Orion Nebula](assets/starlock.0.2.0-tracking.png)
 
@@ -110,7 +113,10 @@ To pick a different target, just click another object in Stellarium and press **
 
 **Can't connect: status stays "Disconnected".**
 
-- Make sure Starlock is running *before* you click Connect in Stellarium. Starlock is the server; Stellarium connects to it.
+- Make sure Starlock is running on the Pi *before* you click Connect in Stellarium. Starlock is the server; Stellarium connects to it.
+- Make sure the computer and the Pi are on the same network (or the computer is joined to the Pi's hotspot).
+- If the Host is `starlock.local`, try the Pi's IP address instead (`192.168.77.1` on the hotspot). Some computers can't resolve `.local` names.
+- When you move between networks, the Pi's IP address can change. Update the Host to match.
 
 **The crosshair is in the wrong part of the sky.**
 
@@ -126,7 +132,7 @@ To pick a different target, just click another object in Stellarium and press **
 
 **Starlock shows the target coordinates but not the name.**
 
-- Starlock gets object names from Stellarium's **Remote Control** plugin. If that plugin isn't enabled, coordinates still work but the name will be blank. To fix: go back to **Configuration → Plugins**, find **Remote Control**, tick **Load at startup**, and restart Stellarium.
+- Stellarium's telescope connection only sends coordinates. Starlock looks up the name through Stellarium's **Remote Control** plugin, but only when Stellarium runs on the same machine as Starlock. With Starlock on a Pi and Stellarium on another computer, targets sent from Stellarium show coordinates without a name. Pushing to them works the same.
 
 ## What's next
 
