@@ -81,7 +81,7 @@ function Entry({ e }: { e: ObservationEntry }) {
               src={frameUrl(e)}
               alt=""
               loading="lazy"
-              className="night-frame h-10 w-16 rounded-sm object-cover"
+              className="h-10 w-16 rounded-sm object-cover"
             />
           ) : undefined
         }
@@ -93,7 +93,7 @@ function Entry({ e }: { e: ObservationEntry }) {
           <img
             src={frameUrl(e)}
             alt={`Camera frame: ${label}`}
-            className="night-frame w-full rounded-sm"
+            className="w-full rounded-sm"
           />
         </li>
       )}

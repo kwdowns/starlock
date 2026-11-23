@@ -13,11 +13,13 @@ from that.
 
 1. **Red channel only.** Every colour is `rgb(N 0 0)`. No white, no yellow,
    no pink, no grey. Rod cells barely respond to deep red, so a red-only
-   screen does not reset dark adaptation. This includes the camera frame
-   (`night-frame`), SVG overlays, the 3D dome, QR codes and icons.
-   The one exception is opt-in: a button on the camera frame switches it to
-   the camera's own white-light image, for when faint detail matters more
-   than dark adaptation. Red is the default.
+   screen does not reset dark adaptation. This includes SVG overlays, the 3D
+   dome, QR codes and icons.
+   The one exception is the live camera frame: it is always shown in its
+   natural colour (greyscale for the mono cameras), so faint detail is not
+   lost to the red filter. The overlays drawn on it stay red, with a dark halo
+   so they read over the grey image. Stored observation-log frames still use
+   `night-frame`.
 2. **Spend light on information, not on area.** Light output is roughly
    brightness × area. Text, icons and thin strokes are bright; large fills
    are near-black. A primary button is a *dark* fill with a bright border

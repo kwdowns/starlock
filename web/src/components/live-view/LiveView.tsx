@@ -1,5 +1,5 @@
-import { useState, type CSSProperties } from "react";
-import { CameraOff, Moon, OctagonAlert, Pencil, Sun } from "lucide-react";
+import type { CSSProperties } from "react";
+import { CameraOff, OctagonAlert, Pencil } from "lucide-react";
 import { Button } from "@/components/ui";
 import type { EnginePayload } from "@/lib/types";
 import { useLatestFrame } from "@/hooks/useLatestFrame";
@@ -22,38 +22,13 @@ interface Props {
 }
 
 /**
- * Camera frame + overlays. The box is sized to the frame's aspect ratio and
+ * Camera frame (natural colour) + overlays. The box is sized to the frame's aspect ratio and
  * capped in height (`--frame-max-h`, default 40svh) by narrowing it, so the
  * image always fills it exactly: no letterbox strips.
  */
-const TINT_KEY = "starlock.frame_tint";
-
-function loadNatural(): boolean {
-  try {
-    return window.localStorage.getItem(TINT_KEY) === "natural";
-  } catch {
-    return false;
-  }
-}
-
-// Display-only stretch of the camera frame (see the <filter> below).
-const FRAME_GAIN = 6;
-const FRAME_BLACK = 0.05; // ~13/255, a typical dark-sky background
-
 export function LiveView({ state, showStars, className, editOpen = false, onToggleEdit, editId }: Props) {
   const { image_w, image_h } = state;
   const noStars = hasNoStars(state);
-  // Red (night vision, the default) or the camera's own white-light image.
-  const [natural, setNatural] = useState(loadNatural);
-  const toggleNatural = () => {
-    const next = !natural;
-    setNatural(next);
-    try {
-      window.localStorage.setItem(TINT_KEY, next ? "natural" : "red");
-    } catch {
-      // Storage unavailable: the choice just lasts for this visit.
-    }
-  };
   const frameUrl = useLatestFrame(state.camera?.frame_id);
   const style = {
     aspectRatio: `${image_w} / ${image_h}`,
@@ -70,29 +45,12 @@ export function LiveView({ state, showStars, className, editOpen = false, onTogg
       style={style}
     >
       {frameUrl ? (
-        // Greyscale frame multiplied onto red: only the red channel is lit.
-        // Red carries about a fifth of white's brightness, and a real night
-        // frame is a ~14/255 sky with a few faint points, so the frame is
-        // stretched first: sky level to black, 6x gain, points fattened.
-        <div className={cn("absolute inset-0", !natural && "night-frame")}>
-          <svg aria-hidden width="0" height="0" className="absolute">
-            <filter id="starlock-frame-stretch" colorInterpolationFilters="sRGB">
-              <feComponentTransfer>
-                <feFuncR type="linear" slope={FRAME_GAIN} intercept={-FRAME_GAIN * FRAME_BLACK} />
-                <feFuncG type="linear" slope={FRAME_GAIN} intercept={-FRAME_GAIN * FRAME_BLACK} />
-                <feFuncB type="linear" slope={FRAME_GAIN} intercept={-FRAME_GAIN * FRAME_BLACK} />
-              </feComponentTransfer>
-              {/* Stars are 1-2 px points; fatten them so they survive a phone screen. */}
-              <feMorphology operator="dilate" radius="1" />
-            </filter>
-          </svg>
-          <img
-            src={frameUrl}
-            alt="Live camera frame"
-            className="h-full w-full object-cover"
-            style={natural ? undefined : { filter: "url(#starlock-frame-stretch)" }}
-          />
-        </div>
+        // The camera's own image (greyscale for the mono cameras), shown as is.
+        <img
+          src={frameUrl}
+          alt="Live camera frame"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <CameraOff className="size-8" aria-hidden />
@@ -102,7 +60,8 @@ export function LiveView({ state, showStars, className, editOpen = false, onTogg
         </div>
       )}
       <svg
-        className="absolute inset-0 h-full w-full"
+        // Dark halo so the red overlays stay readable over a grey frame.
+        className="absolute inset-0 h-full w-full drop-shadow-[0_0_2px_rgb(0_0_0/0.9)]"
         viewBox={`0 0 ${image_w} ${image_h}`}
         preserveAspectRatio="xMidYMid slice"
       >
@@ -122,18 +81,6 @@ export function LiveView({ state, showStars, className, editOpen = false, onTogg
           onClick={onToggleEdit}
         >
           <Pencil />
-        </Button>
-      )}
-      {frameUrl && (
-        <Button
-          variant="secondary"
-          size="icon-sm"
-          className="absolute right-2 bottom-2 bg-card/80"
-          aria-label={natural ? "Show camera in red" : "Show camera in natural colour"}
-          aria-pressed={natural}
-          onClick={toggleNatural}
-        >
-          {natural ? <Moon /> : <Sun />}
         </Button>
       )}
       {noStars && (

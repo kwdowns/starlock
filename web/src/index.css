@@ -201,19 +201,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Camera frames arrive greyscale (white light). Put `night-frame` on the
-   wrapper: the <img> inside is multiplied onto pure red, keeping only its
-   red channel. */
-@utility night-frame {
-  background-color: #ff0000;
-  isolation: isolate;
-  & > img,
-  & > video,
-  & > canvas {
-    mix-blend-mode: multiply;
-  }
-}
-
 @layer base {
   * {
     @apply border-border;

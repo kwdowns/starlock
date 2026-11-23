@@ -69,7 +69,6 @@ import {
   Steps,
   Switch,
 } from "@/components/ui"
-import { StarField } from "./StarField"
 import {
   RAMP,
   SEMANTIC_BORDERS,
@@ -94,7 +93,6 @@ const SECTIONS = [
   ["steps", "Steps"],
   ["feedback", "Progress · Spinner · EmptyState · Separator"],
   ["overlays", "Sheet · Dialog · Popover"],
-  ["frame", "night-frame"],
 ] as const
 
 const WIZARD_STEPS = [
@@ -768,21 +766,6 @@ function OverlaySection() {
   )
 }
 
-function FrameSection() {
-  return (
-    <Section id="frame" title="night-frame">
-      <p className="text-body">
-        The camera sends greyscale (white) frames. Wrapping them in{" "}
-        <span className="readout">night-frame</span> keeps only the red
-        channel.
-      </p>
-      <div className="night-frame overflow-hidden rounded-xl border border-border">
-        <StarField />
-      </div>
-    </Section>
-  )
-}
-
 export default function Gallery() {
   return (
     <div className="flex min-h-dvh flex-col">
@@ -820,7 +803,6 @@ export default function Gallery() {
         <StepsSection />
         <FeedbackSection />
         <OverlaySection />
-        <FrameSection />
       </main>
 
       <ActionBar>
