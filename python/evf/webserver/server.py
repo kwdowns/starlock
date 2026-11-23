@@ -42,7 +42,7 @@ from evf.cloud.service import CloudService, PairingError
 
 # Catalog files served at /api/catalog/<name> (see catalog_data_dir()).
 CATALOG_NAMES = ("objects", "openngc", "hyg-bright", "object_sizes")
-from evf.config.manager import ConfigManager
+from evf.config.manager import ConfigManager, normalize_host
 from evf.discovery import API_MIN_VERSION, API_VERSION
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
@@ -981,6 +981,16 @@ class WebServer:
                 request,
                 lambda: self._actions.set_observation_log_enabled(
                     bool(body["observation_log_enabled"])),
+            )
+            if resp.status >= 400:
+                return resp
+        if "stellarium_rc_host" in body:
+            try:
+                host = normalize_host(body["stellarium_rc_host"])
+            except ValueError as exc:
+                return web.Response(status=400, text=f"stellarium_rc_host: {exc}")
+            resp = await self._handle_api(
+                request, lambda: self._actions.set_stellarium_rc_host(host),
             )
             if resp.status >= 400:
                 return resp

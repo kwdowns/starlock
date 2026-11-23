@@ -314,6 +314,14 @@ class Engine:
         if self._lx200 is not None:
             self._lx200.set_report_j2000(epoch == "j2000")
 
+    def set_stellarium_rc_host(self, host: str | None) -> None:
+        """Set the address of the computer running Stellarium ("" = use the
+        computer connected to the telescope server). Persists to config and
+        asks Stellarium's Remote Control again right away."""
+        self._config.stellarium_rc_host = host  # validates; raises ValueError
+        if self._stellarium is not None:
+            self._stellarium.refresh_remote_control()
+
     @property
     def location(self) -> dict:
         """Resolve the active observer location.
@@ -510,6 +518,7 @@ class Engine:
                 self._pointing_state,
                 goto_target=self._goto_target,
                 on_client_connected=self._flash_status_led,
+                rc_host=lambda: self._config.stellarium_rc_host,
             )
             self._stellarium.start()
         except Exception as exc:
@@ -604,6 +613,7 @@ class Engine:
                         "address": self.stellarium_address,
                         "status": self.stellarium_status,
                         "object": self.stellarium_object,
+                        "remote_control_host": self._config.stellarium_rc_host,
                     },
                     "lx200": {
                         "active": self.lx200_active,

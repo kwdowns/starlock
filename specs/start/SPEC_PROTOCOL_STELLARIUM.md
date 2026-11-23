@@ -131,8 +131,9 @@ GOTO handling:
   `_play_ack()` from the GOTO path (it only plays ack directly on client
   *connect*; see §6.2). In effect the ack sound does fire on every GOTO,
   just via the `GotoTarget` side effect rather than from inside the server.
-- Object info fetched from Stellarium Remote Control API (port 8090) in a
-  background thread so the main server loop isn't blocked; malformed GOTO
+- Object info fetched from Stellarium Remote Control API (port 8090, see
+  §7.1 for which host) in a background thread so the main server loop isn't
+  blocked; malformed GOTO
   messages are silently skipped (struct-unpack errors logged at DEBUG).
 - Never attempt mount control.
 - Never change PointingState from a GOTO.
@@ -152,7 +153,8 @@ GOTO handling:
 
 1. Accept connection, log at INFO.
 2. Play acknowledgment sound.
-3. Fetch observer status from Stellarium Remote Control API (best-effort).
+3. Fetch observer status from Stellarium Remote Control API (best-effort,
+   in a background thread; host chosen as in §7.1).
 4. Begin sending position updates at ~1 Hz interval.
 5. If PointingState is not yet valid, do NOT send messages (wait for first solve).
 
@@ -205,7 +207,32 @@ To connect Stellarium to Starlock:
 
 The telescope crosshair should appear and update at ~1 Hz while the app is TRACKING.
 
-For object names and the observer location, also enable the Stellarium Remote Control plugin (port 8090). The server queries it on `localhost`, so this only works when Stellarium runs on the same machine (a development PC); with Starlock on a Pi, targets arrive as coordinates without a name.
+For object names and the observer location, also enable the Stellarium Remote Control plugin (port 8090, see §7.1).
+
+### 7.1 Remote Control host
+
+Stellarium's Remote Control plugin is an HTTP server on port 8090 of the
+computer that runs Stellarium. The telescope server asks it for
+`/api/main/status` (observer location, time, view) when a client connects and
+after each GOTO, and for `/api/objects/info?format=json` (the selected object)
+after each GOTO. All requests are best-effort, run in background threads, use
+a 2 s timeout, and failures are logged at DEBUG only.
+
+The host is chosen per request (`resolve_rc_host()` in
+`evf/stellarium/server.py`):
+
+1. The `stellarium.remote_control_host` setting (`stellarium_rc_host` in
+   `POST /api/settings`, shown in Settings as "Stellarium computer address"),
+   when not empty. A host name, IPv4 or IPv6 literal, no scheme or port.
+2. Otherwise the TCP peer address of the telescope connection that triggered
+   the request (the computer running Stellarium in the usual case).
+3. Otherwise, or when that peer is a loopback address (Stellarium on the same
+   machine, as on a development PC), `localhost`.
+
+IPv6 literals are put in brackets in the URL. The plugin must be enabled, its
+server running, reachable from the network, and not password protected
+(Starlock does not send credentials). Changing the setting queries again at
+once.
 
 ---
 

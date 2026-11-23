@@ -1,4 +1,5 @@
 # Copyright (C) 2026 Arun Venkataswamy
+# Copyright (C) 2026 Kyle Downs
 #
 # This file is part of Starlock.
 #
@@ -17,6 +18,7 @@
 
 """Stellarium TCP server — broadcasts pointing position at ~1 Hz."""
 
+import ipaddress
 import json
 import logging
 import select
@@ -60,6 +62,40 @@ except ImportError:
     pass
 _DEFAULT_PORT = 10001
 _BROADCAST_INTERVAL = 1.0  # seconds
+_RC_PORT = 8090  # Stellarium's Remote Control plugin
+_RC_TIMEOUT = 2.0  # seconds, per request
+
+
+def _is_loopback(ip: str | None) -> bool:
+    if not ip:
+        return False
+    try:
+        return ipaddress.ip_address(ip.split("%", 1)[0]).is_loopback
+    except ValueError:
+        return False
+
+
+def resolve_rc_host(configured: str | None, peer_ip: str | None) -> str:
+    """Host to reach Stellarium's Remote Control plugin on.
+
+    Stellarium usually runs on another computer than Starlock, and that
+    computer is the one connected to the telescope server. So: the address
+    set in Settings if there is one, else the connected client's address,
+    else localhost (no client, or the client is on this machine).
+    """
+    configured = (configured or "").strip()
+    if configured:
+        return configured
+    if peer_ip and not _is_loopback(peer_ip):
+        return peer_ip
+    return "localhost"
+
+
+def rc_base_url(host: str, port: int = _RC_PORT) -> str:
+    """http://host:port with an IPv6 literal in brackets (and a zone id as %25)."""
+    if ":" in host and not host.startswith("["):
+        host = "[" + host.replace("%", "%25") + "]"
+    return f"http://{host}:{port}"
 
 
 def _play_ack() -> None:
@@ -87,13 +123,17 @@ class StellariumServer:
         port: int = _DEFAULT_PORT,
         goto_target: GotoTarget | None = None,
         on_client_connected: Callable[[], None] | None = None,
+        rc_host: Callable[[], str] | None = None,
     ) -> None:
         self._pointing = pointing
         self._host = host
         self._port = port
         self._goto_target = goto_target
         self._on_client_connected = on_client_connected
-        self._rc_port: int = 8090
+        self._rc_port: int = _RC_PORT
+        # Returns the Remote Control host set in Settings ("" = not set).
+        self._rc_host = rc_host
+        self._peers: dict[socket.socket, str] = {}  # client -> its IP address
         self._stellarium_status: dict | None = None
         self._stellarium_object: dict | None = None
         self._clients: list[socket.socket] = []
@@ -157,7 +197,35 @@ class StellariumServer:
         activity indicator next to the Stellarium address."""
         return len(self._clients)
 
+    def refresh_remote_control(self) -> None:
+        """Query Stellarium's Remote Control again, e.g. after the address in
+        Settings changed. Runs in a thread; does nothing if there is neither
+        a connected client nor an address to ask."""
+        clients = self._clients[:]
+        peer = self._peers.get(clients[-1]) if clients else None
+        if peer is None and not self._configured_rc_host():
+            return
+        threading.Thread(
+            target=self._fetch_stellarium_status,
+            args=(peer,),
+            name="stellarium-rc-status",
+            daemon=True,
+        ).start()
+
     # -- internal -------------------------------------------------------------
+
+    def _configured_rc_host(self) -> str:
+        if self._rc_host is None:
+            return ""
+        try:
+            return self._rc_host() or ""
+        except Exception as exc:
+            logger.debug("Could not read the Remote Control host setting: %s", exc)
+            return ""
+
+    def _rc_url(self, peer_ip: str | None) -> str:
+        host = resolve_rc_host(self._configured_rc_host(), peer_ip)
+        return rc_base_url(host, self._rc_port)
 
     def _run(self) -> None:
         while not self._stop_event.is_set():
@@ -176,7 +244,8 @@ class StellariumServer:
                 client, addr = self._server_sock.accept()
                 client.setblocking(False)
                 self._clients.append(client)
-                logger.info("Stellarium client connected from %s:%d", *addr)
+                self._peers[client] = addr[0]
+                logger.info("Stellarium client connected from %s:%d", *addr[:2])
                 _play_ack()
                 if self._on_client_connected is not None:
                     try:
@@ -185,6 +254,7 @@ class StellariumServer:
                         logger.debug("on_client_connected failed: %s", exc)
                 threading.Thread(
                     target=self._fetch_stellarium_status,
+                    args=(addr[0],),
                     name="stellarium-rc-status",
                     daemon=True,
                 ).start()
@@ -216,7 +286,7 @@ class StellariumServer:
                         )
                         threading.Thread(
                             target=self._fetch_goto_details,
-                            args=(ra_h * 15.0, dec_d),
+                            args=(ra_h * 15.0, dec_d, self._peers.get(client)),
                             name="stellarium-rc-goto",
                             daemon=True,
                         ).start()
@@ -252,12 +322,13 @@ class StellariumServer:
             pass
         if client in self._clients:
             self._clients.remove(client)
+        self._peers.pop(client, None)
 
-    def _fetch_stellarium_status(self) -> None:
+    def _fetch_stellarium_status(self, peer_ip: str | None = None) -> None:
         """Query Stellarium Remote Control for observer status. Best-effort."""
-        url = f"http://localhost:{self._rc_port}/api/main/status"
+        url = f"{self._rc_url(peer_ip)}/api/main/status"
         try:
-            with urlopen(Request(url), timeout=2.0) as resp:
+            with urlopen(Request(url), timeout=_RC_TIMEOUT) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             self._stellarium_status = data
             logger.debug("Stellarium status (raw): %s", json.dumps(data, indent=2))
@@ -278,12 +349,16 @@ class StellariumServer:
         except (URLError, OSError, ValueError) as exc:
             logger.debug("Stellarium Remote Control unavailable: %s", exc)
 
-    def _fetch_goto_details(self, ra_deg: float, dec_deg: float) -> None:
+    def _fetch_goto_details(
+        self, ra_deg: float, dec_deg: float, peer_ip: str | None = None
+    ) -> None:
         """Query object details and refresh status after GOTO. Best-effort."""
-        base = f"http://localhost:{self._rc_port}"
+        base = self._rc_url(peer_ip)
         # 1. Object info
         try:
-            with urlopen(Request(f"{base}/api/objects/info?format=json"), timeout=2.0) as resp:
+            with urlopen(
+                Request(f"{base}/api/objects/info?format=json"), timeout=_RC_TIMEOUT
+            ) as resp:
                 obj = json.loads(resp.read().decode("utf-8"))
             self._stellarium_object = obj
             logger.debug("Stellarium object (raw): %s", json.dumps(obj, indent=2))
@@ -302,7 +377,7 @@ class StellariumServer:
             logger.debug("Could not fetch object info: %s", exc)
 
         # 2. Refresh status
-        self._fetch_stellarium_status()
+        self._fetch_stellarium_status(peer_ip)
 
     def _cleanup(self) -> None:
         for client in self._clients[:]:
@@ -311,6 +386,7 @@ class StellariumServer:
             except OSError:
                 pass
         self._clients.clear()
+        self._peers.clear()
         if self._server_sock is not None:
             try:
                 self._server_sock.close()

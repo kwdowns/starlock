@@ -109,6 +109,21 @@ As you push, the numbers shrink in real time. When they get close to zero, the t
 
 To pick a different target, just click another object in Stellarium and press **Cmd+1** again. To stop tracking, click **Clear Target** in Starlock.
 
+## Optional: show target names and use Stellarium's location
+
+Stellarium's telescope connection only sends coordinates. For the **name** of a target sent from Stellarium, and for Stellarium's observer location (used when you haven't entered one in Starlock's Settings), Starlock asks Stellarium's **Remote Control** plugin on the computer. Without it everything still works; targets just show as coordinates.
+
+1. In Stellarium press **F2**, open the **Plugins** tab, select **Remote Control**, tick **Load at startup**, and **restart Stellarium**.
+2. Go back to **Configuration → Plugins → Remote Control → configure**. Tick **Server enabled**, and **Enable automatically on startup** so you don't have to do it each time. Leave the **port** at `8090`.
+3. Leave **Access requires authentication** (the password) **off**. Starlock doesn't send a password, so with it on the name and location won't arrive.
+4. Allow incoming connections on **TCP port 8090** in the computer's firewall (Windows Defender Firewall, macOS firewall, `ufw`), for your home or hotspot network.
+5. Pick a target in Stellarium and press **Ctrl+1**. The name now shows in Starlock.
+
+Starlock finds Stellarium on its own: it asks the computer that is connected to it for the telescope. If that doesn't work (for example Stellarium runs on a different machine than the one that shows as connected, or the computer is reached through a different address), enter the computer's name or IP address under **Stellarium computer address** in Starlock's Settings (the gear, **Connectivity**). Leave it empty to use the connected computer. To check from another device, open `http://<computer address>:8090` in a browser: you should see Stellarium's remote control page.
+
+!!! note "Stellarium's own settings"
+    According to Stellarium's source code, the plugin's web server listens on all of the computer's network interfaces, not just `localhost`. The plugin's dialog shows no setting for this. We have not tested every Stellarium version, so if the browser check above fails with the firewall open, check that **Server enabled** is ticked.
+
 ## Troubleshooting
 
 **Can't connect: status stays "Disconnected".**
@@ -132,7 +147,10 @@ To pick a different target, just click another object in Stellarium and press **
 
 **Starlock shows the target coordinates but not the name.**
 
-- Stellarium's telescope connection only sends coordinates. Starlock looks up the name through Stellarium's **Remote Control** plugin, but only when Stellarium runs on the same machine as Starlock. With Starlock on a Pi and Stellarium on another computer, targets sent from Stellarium show coordinates without a name. Pushing to them works the same.
+- Set up Stellarium's **Remote Control** plugin as described in [Optional: show target names](#optional-show-target-names-and-use-stellariums-location). Pushing to the target works without it.
+- Check that **Server enabled** is ticked in the plugin's configuration, that the password option is off, and that port `8090` is open in the computer's firewall.
+- Open `http://<computer address>:8090` in a browser on another device. If that page doesn't load, Starlock can't reach it either.
+- If it loads but Starlock still shows no name, enter the computer's address under **Stellarium computer address** in Starlock's Settings.
 
 ## What's next
 

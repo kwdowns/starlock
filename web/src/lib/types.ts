@@ -113,6 +113,8 @@ export interface ActivityLine {
   location?: ObserverLocation | null;
   /** LX200 only: reported coordinate epoch ("jnow" default, "j2000" for Stellarium Mobile PLUS). */
   epoch?: "jnow" | "j2000";
+  /** Stellarium only: address set for its Remote Control plugin ("" = use the connected computer). */
+  remote_control_host?: string;
 }
 
 export interface CameraBlock {

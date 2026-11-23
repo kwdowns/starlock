@@ -116,6 +116,8 @@ export const api = {
     mount_mode?: MountMode;
     location?: { latitude: number; longitude: number } | null;
     lx200_epoch?: "jnow" | "j2000";
+    /** Address of the computer running Stellarium; "" = the connected one. */
+    stellarium_rc_host?: string;
     observation_log_enabled?: boolean;
   }) => post("/api/settings", s),
   setAdvanced: (s: { min_matches?: number; max_prob?: number }) =>

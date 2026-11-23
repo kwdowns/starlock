@@ -20,6 +20,8 @@
 import socket
 import struct
 import time
+from unittest.mock import patch
+from urllib.error import URLError
 
 import pytest
 
@@ -31,7 +33,7 @@ from evf.stellarium.protocol import (
     decode_goto,
     encode_position,
 )
-from evf.stellarium.server import StellariumServer
+from evf.stellarium.server import StellariumServer, rc_base_url, resolve_rc_host
 
 
 # ---------------------------------------------------------------------------
@@ -278,3 +280,113 @@ class TestStellariumServer:
             client2.close()
         finally:
             srv.stop()
+
+
+# ---------------------------------------------------------------------------
+# Remote Control host resolution
+# ---------------------------------------------------------------------------
+
+class TestRemoteControlHost:
+    def test_setting_wins_over_peer(self):
+        assert resolve_rc_host("stellarium-pc.local", "192.168.1.20") == "stellarium-pc.local"
+
+    def test_setting_wins_even_without_client(self):
+        assert resolve_rc_host("10.0.0.7", None) == "10.0.0.7"
+
+    def test_peer_ip_is_the_default(self):
+        assert resolve_rc_host("", "192.168.1.20") == "192.168.1.20"
+        assert resolve_rc_host(None, "192.168.1.20") == "192.168.1.20"
+
+    def test_loopback_peer_means_localhost(self):
+        assert resolve_rc_host("", "127.0.0.1") == "localhost"
+        assert resolve_rc_host("", "::1") == "localhost"
+
+    def test_no_client_means_localhost(self):
+        assert resolve_rc_host("", None) == "localhost"
+        assert resolve_rc_host("   ", None) == "localhost"
+
+    def test_ipv4_url(self):
+        assert rc_base_url("192.168.1.20") == "http://192.168.1.20:8090"
+        assert rc_base_url("pc.local", 8091) == "http://pc.local:8091"
+
+    def test_ipv6_is_bracketed(self):
+        assert rc_base_url("2001:db8::5") == "http://[2001:db8::5]:8090"
+        assert rc_base_url("fe80::1%eth0") == "http://[fe80::1%25eth0]:8090"
+
+    def test_server_url_uses_setting_then_peer(self):
+        host = {"v": ""}
+        srv = StellariumServer(PointingState(), port=0, rc_host=lambda: host["v"])
+        assert srv._rc_url("192.168.1.20") == "http://192.168.1.20:8090"
+        assert srv._rc_url(None) == "http://localhost:8090"
+        host["v"] = "2001:db8::5"
+        assert srv._rc_url("192.168.1.20") == "http://[2001:db8::5]:8090"
+
+    def test_failing_setting_reader_falls_back(self):
+        def boom():
+            raise RuntimeError("config gone")
+        srv = StellariumServer(PointingState(), port=0, rc_host=boom)
+        assert srv._rc_url("192.168.1.20") == "http://192.168.1.20:8090"
+
+    def test_requests_go_to_the_configured_host(self):
+        urls = []
+
+        def fake_urlopen(req, timeout=None):
+            urls.append((req.full_url, timeout))
+            raise URLError("no Stellarium here")
+
+        with patch("evf.stellarium.server.urlopen", fake_urlopen):
+            srv = StellariumServer(PointingState(), port=0, rc_host=lambda: "2001:db8::5")
+            srv.start()
+            try:
+                client = _connect(srv.port)
+                ra_raw = int(6.0 * (2**32 / 24.0)) & 0xFFFFFFFF
+                dec_raw = int(-10.0 * (2**31 / 180.0))
+                client.sendall(struct.pack(
+                    _GOTO_FMT, _GOTO_LEN, 0, int(time.time() * 1_000_000), ra_raw, dec_raw))
+                deadline = time.monotonic() + 4.0
+                while len(urls) < 3 and time.monotonic() < deadline:
+                    time.sleep(0.05)
+                client.close()
+            finally:
+                srv.stop()
+
+        # Threads left over from earlier tests may also hit the patched
+        # urlopen (with localhost); only look at this server's requests.
+        ours = [(u, t) for u, t in urls if "2001:db8::5" in u]
+        assert ours, "no Remote Control request was made"
+        assert all(u.startswith("http://[2001:db8::5]:8090/api/") for u, _ in ours)
+        assert any(u.endswith("/api/main/status") for u, _ in ours)
+        assert any(u.endswith("/api/objects/info?format=json") for u, _ in ours)
+        assert all(t == 2.0 for _, t in ours)
+
+    def test_loopback_client_without_setting_uses_localhost(self):
+        urls = []
+
+        def fake_urlopen(req, timeout=None):
+            urls.append(req.full_url)
+            raise URLError("no Stellarium here")
+
+        with patch("evf.stellarium.server.urlopen", fake_urlopen):
+            srv = StellariumServer(PointingState(), port=0)
+            srv.start()
+            try:
+                client = _connect(srv.port)
+                deadline = time.monotonic() + 3.0
+                while not urls and time.monotonic() < deadline:
+                    time.sleep(0.05)
+                client.close()
+            finally:
+                srv.stop()
+
+        assert urls
+        assert all(u.startswith("http://localhost:8090/api/") for u in urls)
+
+    def test_refresh_without_client_or_setting_does_nothing(self):
+        urls = []
+        with patch("evf.stellarium.server.urlopen",
+                   lambda req, timeout=None: urls.append(req.full_url)):
+            srv = StellariumServer(PointingState(), port=0)
+            srv.refresh_remote_control()
+            time.sleep(0.2)
+        assert not any("8090" in u and "localhost" not in u for u in urls)
+        assert srv._peers == {}

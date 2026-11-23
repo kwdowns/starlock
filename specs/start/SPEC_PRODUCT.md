@@ -195,9 +195,12 @@ WebSocket).
 - Processes incoming GOTO commands into navigation targets (advisory only;
   never mutates pointing or calibration).
 - Queries the Stellarium Remote Control API (port 8090) for observer
-  location and object info. It queries `localhost`, so this only works with
-  Stellarium on the same machine (a development PC), not with Stellarium on
-  a laptop talking to a Pi.
+  location and object info. It asks the computer connected to the telescope
+  server (the one running Stellarium), or the address entered in Settings
+  ("Stellarium computer address", `stellarium.remote_control_host`), and
+  `localhost` when Stellarium is on the same machine. Needs the plugin
+  enabled and reachable from the network, without a password. See
+  `SPEC_PROTOCOL_STELLARIUM.md` §7.1.
 - Plays an acknowledgment sound on client connect.
 
 See `SPEC_PROTOCOL_STELLARIUM.md`.

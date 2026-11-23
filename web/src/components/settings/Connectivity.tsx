@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { Button, SegmentedControl, StatusDot } from "@/components/ui";
+import { Button, Field, Input, SegmentedControl, StatusDot } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { ActivityLine, EnginePayload } from "@/lib/types";
 import { wifiSummary } from "@/components/app/WifiWarning";
@@ -24,6 +24,47 @@ function ClientRow({ name, line }: { name: string; line: ActivityLine }) {
         {line.address ?? "Not connected"}
       </span>
     </div>
+  );
+}
+
+/** Where Starlock asks Stellarium for the name of a target sent from it. */
+function StellariumAddress({ saved }: { saved: string }) {
+  const [error, setError] = useState<string | null>(null);
+
+  function save(value: string) {
+    const next = value.trim();
+    if (next === saved) {
+      setError(null);
+      return;
+    }
+    api
+      .setSettings({ stellarium_rc_host: next })
+      .then(() => setError(null))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Could not save."));
+  }
+
+  return (
+    <Field
+      label="Stellarium computer address"
+      hint="Leave empty to use the computer that's connected. Used to get the name of targets you send from Stellarium."
+      error={error ?? undefined}
+    >
+      <Input
+        type="text"
+        inputMode="url"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        maxLength={253}
+        placeholder="192.168.1.20"
+        defaultValue={saved}
+        key={saved}
+        onBlur={(e) => save(e.currentTarget.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+      />
+    </Field>
   );
 }
 
@@ -74,6 +115,8 @@ export function Connectivity({ state }: { state: EnginePayload }) {
         <ClientRow name="Stellarium (desktop)" line={state.stellarium} />
         <ClientRow name="LX200 (SkySafari, Stellarium Mobile)" line={state.lx200} />
       </div>
+
+      <StellariumAddress saved={state.stellarium.remote_control_host ?? ""} />
 
       <div className="flex flex-col gap-2">
         <span className="text-label text-foreground">LX200 coordinate epoch</span>

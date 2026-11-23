@@ -18,10 +18,12 @@
 
 """Configuration manager — JSON persistence with defaults and versioning."""
 
+import ipaddress
 import json
 import logging
 import os
 import platform
+import re
 import uuid
 from pathlib import Path
 
@@ -52,6 +54,10 @@ DEFAULT_CONFIG = {
     # Dwell log of what the scope pointed at (see evf/engine/observation_log.py).
     "observation_log": {"enabled": True, "dwell_s": 30, "radius_deg": 1.0},
     "lx200": {"epoch": "jnow"},
+    # Address of the computer running Stellarium, for its Remote Control
+    # plugin (HTTP, port 8090). Empty = use the computer that is connected
+    # to the telescope server (see evf/stellarium/server.py).
+    "stellarium": {"remote_control_host": ""},
     "webserver": {"port": 8780},
     # Bonjour / mDNS advertising of the web server (see evf/discovery.py).
     "discovery": {"enabled": True},
@@ -76,6 +82,40 @@ def _default_config_dir() -> Path:
 
 
 _DEFAULT_DIR = _default_config_dir()
+
+_HOST_LABEL = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
+_MAX_HOST_LEN = 253
+
+
+def normalize_host(value: object) -> str:
+    """Check a host name or IPv4 / IPv6 literal and return it cleaned up.
+
+    Surrounding spaces, ``[ ]`` around an IPv6 literal and a trailing dot are
+    dropped. An empty value (or None) returns "". Raises ValueError for
+    anything else: URLs, ``host:port``, spaces, over-long names.
+    """
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise ValueError("address must be text")
+    host = value.strip()
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    if not host:
+        return ""
+    if len(host) > _MAX_HOST_LEN:
+        raise ValueError("address is too long")
+    try:
+        return str(ipaddress.ip_address(host))
+    except ValueError:
+        pass
+    name = host.rstrip(".")
+    if name and all(_HOST_LABEL.match(label) for label in name.split(".")):
+        return name
+    raise ValueError(
+        "enter a computer name or IP address, such as 192.168.1.20 "
+        "(no http:// and no port)"
+    )
 
 
 class ConfigManager:
@@ -294,6 +334,19 @@ class ConfigManager:
     @lx200_epoch.setter
     def lx200_epoch(self, value: str) -> None:
         self.set("lx200", "epoch", value)
+
+    @property
+    def stellarium_rc_host(self) -> str:
+        """Address of the computer running Stellarium ("" = use the connected
+        client's address). Hand-edited garbage in config.json reads as ""."""
+        try:
+            return normalize_host(self.get("stellarium", "remote_control_host"))
+        except ValueError:
+            return ""
+
+    @stellarium_rc_host.setter
+    def stellarium_rc_host(self, value: str | None) -> None:
+        self.set("stellarium", "remote_control_host", normalize_host(value))
 
     @property
     def web_port(self) -> int:
