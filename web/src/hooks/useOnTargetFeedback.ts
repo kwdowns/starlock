@@ -4,8 +4,9 @@ import type { EnginePayload } from "@/lib/types";
 
 // The engine plays its own sounds on the machine it runs on, which a
 // headless Pi can't (no speaker). This plays the on-target cue in the
-// browser instead: a short chime (Web Audio) and, where the browser can,
-// a vibration (Android; iOS Safari has no vibrate API).
+// browser instead: a short chime (Web Audio; muted by an iPhone's silent
+// switch) and, where the browser can, a vibration (Android; iOS Safari has
+// no vibrate API).
 
 const KEY = "starlock.sound.onTarget";
 const listeners = new Set<() => void>();
@@ -33,7 +34,13 @@ let ctx: AudioContext | null = null;
 
 function audio(): AudioContext | null {
   if (typeof window === "undefined" || !("AudioContext" in window)) return null;
-  ctx ??= new AudioContext();
+  if (!ctx) {
+    // Safari (iOS 16.4+): "ambient" lets the iPhone's silent switch mute the
+    // chime, like a native app's ambient sound. Other browsers ignore this.
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session) session.type = "ambient";
+    ctx = new AudioContext();
+  }
   return ctx;
 }
 
