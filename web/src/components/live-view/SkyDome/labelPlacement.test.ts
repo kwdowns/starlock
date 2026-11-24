@@ -43,6 +43,15 @@ describe("placeLabels", () => {
     expect(r.target.dy).toBe(0);
   });
 
+  it("keeps a marker label off its own shaft", () => {
+    // Scope dot at the top of a shaft running straight down; the target's
+    // label already takes the spot above, so below would sit on the shaft.
+    const shaft = { x1: 200, y1: 175, x2: 200, y2: 290 };
+    const r = placeLabels([target, { ...scope, y: 175 }], [], B, [shaft]);
+    expect(r.scope.visible).toBe(true);
+    expect(r.scope.dx).not.toBe(0);
+  });
+
   it("never hides a marker label, even when nothing fits", () => {
     const r = placeLabels([{ ...target, w: 500 }], [], { w: 100, h: 20 });
     expect(r.target.visible).toBe(true);

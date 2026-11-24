@@ -9,8 +9,10 @@
  *  - Marker labels (target first, then scope) are never hidden. Candidate
  *    centres, in order: above, below, right, left of the dot, at a distance of
  *    radius + 2*gap + half the label's height (above/below) or width
- *    (right/left). The first with zero cost wins; otherwise the lowest cost.
- *    cost = label area outside the canvas + overlap area with placed boxes.
+ *    (right/left), then the four diagonals. The first with zero cost wins;
+ *    otherwise the lowest cost. cost = label area outside the canvas + overlap
+ *    area with placed boxes + the label's area for each line segment through
+ *    it (so a label never sits on the scope shaft if any other spot is free).
  *  - Exception: a marker whose dot is closer than 1.6 * max(radius) to an
  *    earlier marker's dot (scope on target) gets no label.
  *  - Compass / zenith labels (droppable) have one spot, centred on their
@@ -156,11 +158,17 @@ export function placeLabels(
       [0, dy],
       [dx, 0],
       [-dx, 0],
+      [dx, -dy],
+      [-dx, -dy],
+      [dx, dy],
+      [-dx, dy],
     ];
     let best = candidates[0];
     let bestCost = Infinity;
     for (const c of candidates) {
-      const k = cost(centred(m.x + c[0], m.y + c[1], m.w, m.h));
+      const rect = centred(m.x + c[0], m.y + c[1], m.w, m.h);
+      const lines = segments.filter((s) => segmentHitsRect(s, grow(rect, pad))).length;
+      const k = cost(rect) + lines * area(rect);
       if (k < bestCost) {
         best = c;
         bestCost = k;
