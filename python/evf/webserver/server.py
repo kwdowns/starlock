@@ -54,6 +54,9 @@ from evf.engine.navigation import (
     off_target_radius_deg,
     on_target_radius_deg,
 )
+from evf.config.manager import validate_horizon
+from evf.engine.clock import Clock
+from evf.engine.mount_model import MountModel
 from evf.engine.observation_log import ObservationLogger, entries_to_csv
 from evf.wifi_signal import WifiSignal
 from evf.engine.pointing import PointingState
@@ -105,6 +108,7 @@ class EngineActions(Protocol):
     def set_location(
         self, latitude: float | None, longitude: float | None,
     ) -> None: ...
+    def set_horizon(self, obscured: list[int] | None) -> None: ...
 
 
 def _compute_origin(
@@ -303,8 +307,14 @@ class WebServer:
         on_client_connected: Callable[[], None] | None = None,
         observations: ObservationLogger | None = None,
         cloud: Callable[[], "CloudService | None"] | None = None,
+        clock: Clock | None = None,
+        mount_model: MountModel | None = None,
     ) -> None:
         self._observations = observations
+        # Wall clock for astronomy (client-corrected), and the mount model.
+        self._clock = clock if clock is not None else (
+            observations.clock if observations is not None else Clock())
+        self._mount_model = mount_model
         self._cloud_fn = cloud
         self._catalog_cache: dict[str, tuple[bytes, str]] = {}
         self._pointing = pointing
@@ -427,6 +437,7 @@ class WebServer:
         app.router.add_post("/api/goto/clear", self._api_goto_clear)
         app.router.add_post("/api/goto/set", self._api_goto_set)
         app.router.add_post("/api/clock", self._api_clock)
+        app.router.add_post("/api/mount/model/reset", self._api_mount_model_reset)
         app.router.add_get("/api/observations", self._api_observations)
         app.router.add_get("/api/observations.csv", self._api_observations_csv)
         app.router.add_delete("/api/observations", self._api_observations_delete)
@@ -752,16 +763,27 @@ class WebServer:
         return start, end
 
     async def _api_clock(self, request: web.Request) -> web.Response:
-        """A web client reports its clock; used when the host clock is wrong."""
-        if (resp := self._obs_unavailable()) is not None:
-            return resp
+        """A client reports its clock; used when the host clock is wrong."""
         try:
             body = await request.json()
             client_s = float(body["unix_ms"]) / 1000.0
-        except (ValueError, KeyError, TypeError):
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
             return web.Response(status=400, text="unix_ms required")
-        used = self._observations.clock.report_client_time(client_s)
-        return web.json_response({"client_clock_used": used})
+        # Before 2025 can only be a broken client clock.
+        if not math.isfinite(client_s) or client_s < 1_735_689_600:
+            return web.Response(status=400, text="unix_ms required (a real current time)")
+        used = self._clock.report_client_time(client_s)
+        if used:
+            logger.info("Clock: using a client's time (host off by %+.1f s)",
+                        self._clock.offset_s)
+        return web.json_response(
+            {"client_clock_used": used, "offset_s": round(self._clock.offset_s, 1)})
+
+    async def _api_mount_model_reset(self, request: web.Request) -> web.Response:
+        if self._mount_model is None:
+            return web.Response(status=503, text="Mount model unavailable")
+        self._mount_model.reset()
+        return web.Response(status=204)
 
     async def _api_observations(self, request: web.Request) -> web.Response:
         if (resp := self._obs_unavailable()) is not None:
@@ -834,8 +856,7 @@ class WebServer:
             if when.tzinfo is None:
                 when = when.replace(tzinfo=timezone.utc)
         else:
-            now = self._observations.clock.now() if self._observations is not None else time.time()
-            when = datetime.fromtimestamp(now, timezone.utc)
+            when = datetime.fromtimestamp(self._clock.now(), timezone.utc)
         loc = (self._location_fn() if self._location_fn else None) or {}
         bodies = await asyncio.to_thread(
             positions, when, loc.get("latitude"), loc.get("longitude"), self._minor_planets())
@@ -994,6 +1015,17 @@ class WebServer:
             )
             if resp.status >= 400:
                 return resp
+        if "horizon" in body:
+            try:
+                horizon = None if body["horizon"] is None else validate_horizon(
+                    body["horizon"].get("obscured") if isinstance(body["horizon"], dict) else None)
+            except ValueError as exc:
+                return web.Response(status=400, text=f"horizon: {exc}")
+            resp = await self._handle_api(
+                request, lambda: self._actions.set_horizon(horizon),
+            )
+            if resp.status >= 400:
+                return resp
         if "lx200_epoch" in body:
             resp = await self._handle_api(
                 request,
@@ -1092,12 +1124,16 @@ class WebServer:
             else None
         )
         mount_mode = self._config.mount_mode
-        now = time.time()
+        now = self._clock.now()
+        correction = (
+            self._mount_model.correction() if self._mount_model is not None else None
+        )
 
         axes = None
         if snap.valid:
             axes = mount_axes(
                 mount_mode, snap.ra_j2000, snap.dec_j2000, snap.roll, location, now,
+                correction,
             )
         mount_blk = {
             "mode": mount_mode,
@@ -1109,10 +1145,12 @@ class WebServer:
                 if axes is not None else None
             ),
         }
+        if self._mount_model is not None:
+            mount_blk["model"] = self._mount_model.status(mount_mode, location)
 
         nav_data = self._build_nav(
             snap, target, origin_x, origin_y, dx_off, dy_off, img_w, img_h,
-            mount_mode, location, now,
+            mount_mode, location, now, correction,
         )
 
         controls = self._camera_controls() if self._camera_controls else []
@@ -1169,6 +1207,8 @@ class WebServer:
             ),
             "camera": camera_blk,
             "location": location_blk,
+            "clock": self._clock.snapshot(),
+            "horizon": {"obscured": self._config.horizon},
             "dev_mode": self._dev_mode,
             "min_matches": self._config.min_matches,
             "max_prob": self._config.max_prob,
@@ -1179,7 +1219,7 @@ class WebServer:
 
     def _build_nav(
         self, snap, target, origin_x, origin_y, dx_off, dy_off, img_w, img_h,
-        mount_mode="altaz", location=None, now=None,
+        mount_mode="altaz", location=None, now=None, correction=None,
     ) -> dict | None:
         if not target.active:
             return None
@@ -1258,7 +1298,7 @@ class WebServer:
 
         guidance = compute_mount_guidance(
             mount_mode, snap.ra_j2000, snap.dec_j2000, snap.roll,
-            target.ra_j2000, target.dec_j2000, location, now,
+            target.ra_j2000, target.dec_j2000, location, now, correction,
         )
         mount_nav = None
         if guidance is not None:

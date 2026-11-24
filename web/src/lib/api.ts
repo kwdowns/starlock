@@ -88,7 +88,7 @@ export const api = {
       ...(name ? { name } : {}),
       ...(size_deg ? { size_deg } : {}),
     }),
-  /** Tell the engine this device's clock (for a Pi whose own clock is wrong). */
+  /** Tell the engine this device's clock (for a Pi whose own clock is wrong). Sent on every (re)connect. */
   reportClock: () => post("/api/clock", { unix_ms: Date.now() }),
   observations: async (startIso: string, endIso: string): Promise<ObservationList> => {
     const resp = await fetch(`/api/observations?${rangeQuery(startIso, endIso)}&limit=200`);
@@ -119,7 +119,11 @@ export const api = {
     /** Address of the computer running Stellarium; "" = the connected one. */
     stellarium_rc_host?: string;
     observation_log_enabled?: boolean;
+    /** 16 per-sector bitmasks of hidden 10° bands; null = back to the default (below 20° hidden). */
+    horizon?: { obscured: number[] } | null;
   }) => post("/api/settings", s),
+  /** Forget the mount model's samples and start learning again. */
+  resetMountModel: () => post("/api/mount/model/reset"),
   setAdvanced: (s: { min_matches?: number; max_prob?: number }) =>
     post("/api/settings", s),
   dev: {

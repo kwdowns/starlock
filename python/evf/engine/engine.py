@@ -38,9 +38,11 @@ from evf.discovery import DiscoveryAdvertiser, txt_properties
 from evf.engine.audio import AudioAlert
 from evf.engine.frame_buffer import LatestFrame
 from evf.engine.goto_target import GotoTarget
+from evf.engine.clock import Clock
+from evf.engine.mount_model import MountModel
+from evf.engine.navigation import angular_separation
 from evf.engine.observation_log import (
     DB_NAME as _OBSERVATION_DB,
-    Clock,
     DwellTracker,
     ObservationLogger,
     ObservationStore,
@@ -141,6 +143,12 @@ class Engine:
         self._goto_target = GotoTarget()
         self._app_version = _read_app_version()
         self._dev_mode = dev_mode
+        # Wall clock for astronomy, corrected by a connected client's clock
+        # when the host's is wrong (a Pi without network has no RTC).
+        self._clock = Clock()
+        # Learns the mount's tilt / polar-axis error from steady solves.
+        self._mount_model = MountModel()
+        self._mount_model_thread: threading.Thread | None = None
 
         # Sample injector (continuous JPEG injection for dev/debug)
         self._sample_injector = SampleInjector(self._frame_buffer)
@@ -261,6 +269,70 @@ class Engine:
     def set_mount_mode(self, mode: str) -> None:
         """Switch push-to guidance between "altaz" and "eq" axes."""
         self._config.mount_mode = mode
+
+    @property
+    def clock(self) -> Clock:
+        return self._clock
+
+    @property
+    def mount_model(self) -> MountModel:
+        return self._mount_model
+
+    def reset_mount_model(self) -> None:
+        self._mount_model.reset()
+
+    def set_horizon(self, obscured: list[int] | None) -> None:
+        """Save the horizon mask (None = the default, below 20° hidden)."""
+        self._config.horizon = obscured
+
+    def _location_tuple(self) -> tuple[float, float] | None:
+        loc = self.location
+        if loc.get("latitude") is None or loc.get("longitude") is None:
+            return None
+        return (loc["latitude"], loc["longitude"])
+
+    def start_mount_model(self, interval_s: float = 0.5) -> None:
+        """Feed steady raw solves to the mount model in the background."""
+        if self._mount_model_thread is not None:
+            return
+        self._mount_model_thread = threading.Thread(
+            target=self._mount_model_loop, args=(interval_s,),
+            name="mount-model", daemon=True,
+        )
+        self._mount_model_thread.start()
+
+    def _mount_model_loop(self, interval_s: float) -> None:
+        last_ts: float | None = None
+        prev: tuple[float, float, float] | None = None
+        last_added = 0.0
+        while not self._shutting_down.wait(interval_s):
+            try:
+                st = self._solver_thread
+                raw = st.last_raw_solve() if st is not None else None
+                if raw is None or raw[3] == last_ts:
+                    continue
+                ra, dec, roll, ts = raw
+                last_ts = ts
+                mono = time.monotonic()
+                if mono - ts > 2.0:
+                    prev = None
+                    continue
+                # Steady: the scope was at rest between two solves in a row.
+                steady = (
+                    prev is not None
+                    and angular_separation(prev[0], prev[1], ra, dec) < 0.05
+                    and abs((prev[2] - roll + 180.0) % 360.0 - 180.0) < 0.2
+                )
+                prev = (ra, dec, roll)
+                if not steady or mono - last_added < 1.0:
+                    continue
+                last_added = mono
+                self._mount_model.add_solve(
+                    ra, dec, roll, self._config.mount_mode,
+                    self._location_tuple(), self._clock.now(),
+                )
+            except Exception:  # noqa: BLE001 — never kill the thread
+                logger.exception("Mount model update failed")
 
     def _mount_axes_known(self) -> bool:
         """True when the mount axes come from each solve, so the push-up
@@ -568,7 +640,7 @@ class Engine:
             self._observations = ObservationLogger(
                 store,
                 self._pointing_state,
-                Clock(),
+                self._clock,
                 location=lambda: self.location,
                 target=self._observation_target,
                 tracker=DwellTracker(
@@ -633,6 +705,8 @@ class Engine:
                 sample_active=lambda: self._sample_injector.active_name,
                 actions=self,
                 observations=self._observations,
+                clock=self._clock,
+                mount_model=self._mount_model,
                 cloud=lambda: self._cloud,
             )
             self._webserver.start()

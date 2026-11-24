@@ -131,6 +131,7 @@ def main() -> None:
     engine.start_camera_watchdog()
     engine.start_status_led()
     engine.start_cpu_cap()
+    engine.start_mount_model()
     logger.info(
         "Starlock is running: http://localhost:%d/ (Ctrl-C to stop)",
         engine.config.web_port,

@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import erfa
 
 from evf.engine.epoch import j2000_to_jnow, jnow_to_j2000
+from evf.engine.mount_model import MountCorrection, axis_j2000, to_mount_frame
 from evf.engine.navigation import sky_pa_to_camera_angle, sky_position_angle
 
 MOUNT_MODES = ("altaz", "eq")
@@ -113,11 +114,24 @@ def mount_axes(
     roll_deg: float,
     location: tuple[float, float] | None,
     unix_seconds: float | None = None,
+    correction: MountCorrection | None = None,
 ) -> MountAxes | None:
     """Image directions of the mount axes at the given J2000 pointing.
 
     Returns None for alt-az without a location (the zenith is unknown).
+    With a fitted mount model (`correction`, same mode) the axes are taken
+    about the fitted axis instead of the zenith or the pole.
     """
+    now = time.time() if unix_seconds is None else unix_seconds
+    if correction is not None and correction.mode == mode:
+        pole_ra, pole_dec = axis_j2000(correction, now)
+        towards = sky_pa_to_camera_angle(
+            sky_position_angle(ra_deg, dec_deg, pole_ra, pole_dec), roll_deg,
+        )
+        if mode == "eq":
+            return MountAxes("eq", (towards - 90.0) % 360.0, towards)
+        return MountAxes("altaz", (towards + 90.0) % 360.0, towards)
+
     if mode == "eq":
         pole_ra, pole_dec = jnow_to_j2000(0.0, 90.0)
         north = sky_pa_to_camera_angle(
@@ -129,7 +143,6 @@ def mount_axes(
     if location is None:
         return None
     lat, lon = location
-    now = time.time() if unix_seconds is None else unix_seconds
     zen_ra, zen_dec = jnow_to_j2000(local_sidereal_deg(lon, now), lat)
     up = sky_pa_to_camera_angle(
         sky_position_angle(ra_deg, dec_deg, zen_ra, zen_dec), roll_deg,
@@ -147,15 +160,47 @@ def compute_mount_guidance(
     target_dec_deg: float,
     location: tuple[float, float] | None,
     unix_seconds: float | None = None,
+    correction: MountCorrection | None = None,
 ) -> MountGuidance | None:
     """Per-axis moves from the J2000 pointing to the J2000 target.
 
-    Returns None for alt-az without a location.
+    Returns None for alt-az without a location. With a fitted mount model
+    (`correction`, same mode) the moves are in the mount's own frame.
     """
     now = time.time() if unix_seconds is None else unix_seconds
-    axes = mount_axes(mode, ra_deg, dec_deg, roll_deg, location, now)
+    if correction is not None and correction.mode != mode:
+        correction = None
+    axes = mount_axes(mode, ra_deg, dec_deg, roll_deg, location, now, correction)
     if axes is None:
         return None
+
+    if correction is not None:
+        (c1, c2), (t1, t2) = to_mount_frame(
+            correction, now, [(ra_deg, dec_deg), (target_ra_deg, target_dec_deg)],
+        )
+        if mode == "eq":  # (ra, dec) of date about the fitted polar axis
+            return MountGuidance(
+                axes=axes,
+                axis1_deg=_wrap180(t1 - c1),
+                axis2_deg=t2 - c2,
+                near_pole=bool(max(abs(c2), abs(t2)) > NEAR_POLE_DEC_DEG),
+                pointing_alt_deg=None,
+                target_alt_deg=None,
+            )
+        # (alt, az) about the fitted base axis; the reported altitudes stay
+        # the true ones.
+        lat, lon = correction.location
+        lst = local_sidereal_deg(lon, now)
+        true_c = radec_to_altaz(*j2000_to_jnow(ra_deg, dec_deg), lat, lst)[0]
+        true_t = radec_to_altaz(*j2000_to_jnow(target_ra_deg, target_dec_deg), lat, lst)[0]
+        return MountGuidance(
+            axes=axes,
+            axis1_deg=_wrap180(t2 - c2),
+            axis2_deg=t1 - c1,
+            near_pole=bool(max(c1, t1) > NEAR_ZENITH_ALT_DEG),
+            pointing_alt_deg=true_c,
+            target_alt_deg=true_t,
+        )
 
     ra_c, dec_c = j2000_to_jnow(ra_deg, dec_deg)
     ra_t, dec_t = j2000_to_jnow(target_ra_deg, target_dec_deg)

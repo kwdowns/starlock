@@ -5,9 +5,17 @@ import type { EnginePayload } from "@/lib/types";
 // even if the browser still reports it open (common after a phone wakes up).
 const STALE_MS = 2000;
 
-export function useEngineState(): EnginePayload | null {
+/**
+ * Live engine payload over /ws, reconnecting on its own. `onConnect` runs
+ * each time a socket opens: the first connect and every reconnect.
+ */
+export function useEngineState(onConnect?: () => void): EnginePayload | null {
   const [state, setState] = useState<EnginePayload | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const onConnectRef = useRef(onConnect);
+  useEffect(() => {
+    onConnectRef.current = onConnect;
+  }, [onConnect]);
 
   useEffect(() => {
     let cancelled = false;
@@ -20,6 +28,10 @@ export function useEngineState(): EnginePayload | null {
       const ws = new WebSocket(`${proto}://${window.location.host}/ws`);
       wsRef.current = ws;
       lastMessage = Date.now();
+
+      ws.onopen = () => {
+        if (!cancelled && wsRef.current === ws) onConnectRef.current?.();
+      };
 
       ws.onmessage = (ev) => {
         lastMessage = Date.now();

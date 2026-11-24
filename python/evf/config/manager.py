@@ -68,7 +68,27 @@ DEFAULT_CONFIG = {
     # (https) address along with a pairing code, e.g. the dev service.
     "cloud": {"base_url": "https://api.starlock.app"},
     "location": {"latitude": None, "longitude": None},
+    # Horizon mask: 16 direction sectors (N, NNE, ...), each a 9-bit mask of
+    # 10° altitude bands (bit 0 = 0-10°) hidden by trees or buildings. The
+    # default hides everything below 20°. See specs/start/SPEC_HORIZON_MOUNT_MODEL.md.
+    "horizon": {"obscured": [3] * 16},
 }
+
+HORIZON_SECTORS = 16
+HORIZON_BANDS = 9
+DEFAULT_HORIZON = [3] * HORIZON_SECTORS
+
+
+def validate_horizon(value: object) -> list[int]:
+    """Check a horizon mask (16 ints, each 0-511); raises ValueError."""
+    if not isinstance(value, list) or len(value) != HORIZON_SECTORS:
+        raise ValueError(f"horizon must be a list of {HORIZON_SECTORS} integers")
+    out = []
+    for v in value:
+        if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v < (1 << HORIZON_BANDS):
+            raise ValueError(f"each horizon sector must be an integer 0-{(1 << HORIZON_BANDS) - 1}")
+        out.append(v)
+    return out
 
 
 def _default_config_dir() -> Path:
@@ -391,6 +411,19 @@ class ConfigManager:
             raise ValueError(f"longitude must be in [-180, 180], got {lon}")
         self.set("location", "latitude", float(lat))
         self.set("location", "longitude", float(lon))
+
+    @property
+    def horizon(self) -> list[int]:
+        """The horizon mask; the default for a missing or broken value."""
+        try:
+            return validate_horizon(self.get("horizon", "obscured"))
+        except ValueError:
+            return list(DEFAULT_HORIZON)
+
+    @horizon.setter
+    def horizon(self, value: list[int] | None) -> None:
+        self.set("horizon", "obscured",
+                 list(DEFAULT_HORIZON) if value is None else validate_horizon(value))
 
     @property
     def observation_log_enabled(self) -> bool:

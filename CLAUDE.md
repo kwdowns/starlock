@@ -33,8 +33,9 @@ channel only for night vision; live component reference at `?gallery`):
   vendored from the Stargazing-Buddy site, with client-side visibility math),
   Search (NGC + bright stars) and Manual RA/Dec. Every row has a "Go to"
   button; tapping a row opens a detail sheet.
-- **Settings sheet** (gear in the app bar) — settings, connectivity QR and
-  the manual Location panel; observer location feeds visibility math and
+- **Settings sheet** (gear in the app bar) — settings, connectivity QR,
+  the manual Location panel and the Horizon editor (16 directions × 10°
+  bands hidden by trees or buildings; Tonight skips what's behind them); observer location feeds visibility math and
   falls back to Stellarium's reported location when a Stellarium client is
   connected.
 
@@ -130,6 +131,8 @@ python/evf/                     # main Python package
     pointing.py                 # telescope pointing state
     navigation.py               # goto-target navigation logic
     mount.py                    # push-to guidance along alt-az / equatorial mount axes (Settings → Mount)
+    mount_model.py              # learns the alt-az base tilt / polar-axis error from steady solves; corrects the guidance (experimental)
+    clock.py                    # engine-wide wall clock, corrected by a client's /api/clock when the Pi's is wrong
     goto_target.py              # thread-safe goto target container
     sample_injector.py          # dev-mode sample-image injector
     audio.py                    # audio feedback (lock/lost sounds)
@@ -322,6 +325,7 @@ Detailed design docs live in `specs/start/`:
 - `SPEC_FIRST_RUN.md` — out-of-box setup: Pi image, hotspot/QR provisioning, owner tokens, factory reset, cloud ownership (design)
 - `SPEC_OBSERVING_LOG.md` — certifiable logbook: sessions, sightings, observations, equipment, sync, exports (design)
 - `SPEC_UPDATES.md` — Pi updates: signed apt repo, daily check, owner-installed only (never automatic), rollback (design)
+- `SPEC_HORIZON_MOUNT_MODEL.md` — horizon mask (Settings → Horizon, filters Tonight), clock sync, mount model (experimental)
 - `SPEC_PROTOCOL_LX200.md` — LX200 Classic ASCII protocol for SkySafari / Stellarium Mobile / INDI / ASCOM (JNow, port 4030)
 - `SPEC_BUILD_RELEASE.md` — build and release process
 - `ACCEPTANCE_TESTS.md` — acceptance criteria

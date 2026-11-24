@@ -65,8 +65,14 @@ function useCameraSettingsOpen(setup: boolean) {
   return [setup || open, setup ? undefined : toggle] as const;
 }
 
+// A Pi in hotspot mode may have a wrong clock; tell it ours on every
+// (re)connect so everything it computes uses the right time. Best effort.
+function reportClock() {
+  api.reportClock().catch(() => {});
+}
+
 export default function App() {
-  const state = useEngineState();
+  const state = useEngineState(reportClock);
   useOnTargetFeedback(state);
   const [showStars, setShowStars] = useLocalStorageBool("starlock.show_stars", DEFAULT_SHOW_STARS);
   const leftCol = useHeightVar<HTMLDivElement>(state !== null);
@@ -77,13 +83,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setSpinKey((k) => k + 1);
   }, []);
-
-  // A Pi in hotspot mode may have a wrong clock; tell it ours once we're connected
-  // so observation-log times are right. Best effort.
-  const connected = state !== null;
-  useEffect(() => {
-    if (connected) api.reportClock().catch(() => {});
-  }, [connected]);
 
   return (
     <>

@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Button, SegmentedControl, Spinner } from "@/components/ui";
+import { horizonFrom } from "@/lib/horizon";
 import type { EnginePayload } from "@/lib/types";
 import { isActiveTarget, type Location, type TargetItem } from "./items";
 import { ManualPanel } from "./ManualPanel";
@@ -62,6 +63,11 @@ export function Targets({ state, onTargetSet }: TargetsProps) {
     [scopeRa, scopeDec],
   );
 
+  // The payload is a new object 10 times a second: key the mask by its
+  // values so Tonight only recomputes when the horizon really changes.
+  const horizonKey = horizonFrom(state.horizon?.obscured).join(",");
+  const horizon = useMemo(() => horizonKey.split(",").map(Number), [horizonKey]);
+
   const { go, pendingKey, error, clearError } = useGoto(onTargetSet);
   const nav = state.nav;
 
@@ -120,6 +126,7 @@ export function Targets({ state, onTargetSet }: TargetsProps) {
           location={location}
           now={now}
           scope={scope}
+          horizon={horizon}
           actions={actions}
           onOpen={openDetail}
         />

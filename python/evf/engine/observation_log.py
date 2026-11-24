@@ -33,6 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+from evf.engine.clock import CLOCK_TOLERANCE_S, Clock  # noqa: F401 (re-exported)
 from evf.engine.epoch import j2000_to_jnow
 from evf.engine.mount import local_sidereal_deg, radec_to_altaz
 from evf.engine.navigation import angular_separation
@@ -48,8 +49,6 @@ HEARTBEAT_S = 30.0
 POLL_S = 1.0
 # A solve older than this no longer counts as the scope's current pointing.
 STALE_SOLVE_S = 5.0
-# A client clock differing from the host's by more than this wins.
-CLOCK_TOLERANCE_S = 60.0
 # Stored frames: long side in pixels, JPEG quality.
 FRAME_MAX_SIDE = 1024
 FRAME_QUALITY = 80
@@ -67,45 +66,6 @@ def shrink_jpeg(jpeg: bytes, max_side: int = FRAME_MAX_SIDE,
         out = io.BytesIO()
         img.save(out, "JPEG", quality=quality, optimize=True)
         return out.getvalue()
-
-
-# ---------------------------------------------------------------------------
-# Clock
-# ---------------------------------------------------------------------------
-
-class Clock:
-    """Wall-clock seconds, optionally corrected by a client-reported time."""
-
-    def __init__(self, time_fn: Callable[[], float] = time.time) -> None:
-        self._time = time_fn
-        self._lock = threading.Lock()
-        self._offset = 0.0
-        self._corrected = False
-
-    def report_client_time(self, client_unix_s: float) -> bool:
-        """Take a connecting client's clock. Returns True if it is now used.
-
-        Within CLOCK_TOLERANCE_S of the host clock the host is trusted and any
-        earlier correction is dropped; otherwise the client wins.
-        """
-        diff = float(client_unix_s) - self._time()
-        with self._lock:
-            if abs(diff) > CLOCK_TOLERANCE_S:
-                self._offset = diff
-                self._corrected = True
-            else:
-                self._offset = 0.0
-                self._corrected = False
-            return self._corrected
-
-    def now(self) -> float:
-        with self._lock:
-            return self._time() + self._offset
-
-    @property
-    def source(self) -> str:
-        with self._lock:
-            return "client" if self._corrected else "system"
 
 
 # ---------------------------------------------------------------------------

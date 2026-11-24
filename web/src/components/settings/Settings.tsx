@@ -1,7 +1,8 @@
 import { RotateCcw } from "lucide-react";
 import { Button, Field, Input, SegmentedControl, Separator, SettingRow, Switch } from "@/components/ui";
 import { api } from "@/lib/api";
-import type { EnginePayload, MountMode } from "@/lib/types";
+import { mountModelLines } from "@/lib/mountModel";
+import type { EnginePayload, MountMode, MountModel } from "@/lib/types";
 import { useOnTargetSound } from "@/hooks/useOnTargetFeedback";
 
 export const DEFAULT_SHOW_STARS = false;
@@ -49,6 +50,7 @@ export function Settings({ state, showStars, setShowStars }: Props) {
             ? "Directions are given as RA east/west and Dec north/south."
             : "Directions are given as turning the base and raising or lowering the tube. Needs your location (below)."}
         </p>
+        {state.mount.model && <MountModelBlock model={state.mount.model} mode={state.mount.mode} />}
       </div>
 
       <Separator className="my-4" />
@@ -118,6 +120,37 @@ export function Settings({ state, showStars, setShowStars }: Props) {
   );
 }
 
+
+/**
+ * What the engine has learnt about how the mount sits (base tilt or polar
+ * alignment) from solves at different heights and directions.
+ */
+function MountModelBlock({ model, mode }: { model: MountModel; mode: MountMode }) {
+  const [first, ...rest] = mountModelLines(model, mode);
+  return (
+    <div className="mt-2 flex flex-col gap-1">
+      <h3 className="text-label font-semibold text-foreground">Mount model (experimental)</h3>
+      <p className="text-label text-foreground">{first}</p>
+      {rest.map((line) => (
+        <p key={line} className="text-label text-muted-foreground">
+          {line}
+        </p>
+      ))}
+      {model.samples > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3 self-start"
+          aria-label="Reset mount model"
+          onClick={() => api.resetMountModel().catch(console.error)}
+        >
+          <RotateCcw aria-hidden />
+          Reset
+        </Button>
+      )}
+    </div>
+  );
+}
 
 /** This browser's on-target chime (and vibration where the browser supports it). */
 function OnTargetSoundRow() {

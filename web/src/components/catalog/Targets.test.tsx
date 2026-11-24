@@ -17,9 +17,15 @@ const CHENNAI = { latitude: 13.0878, longitude: 80.2785 };
 const NIGHT = new Date("2026-10-10T16:00:00Z");
 
 function payload(
-  over: { nav?: NavData | null; location?: boolean; pointing?: { ra_deg: number; dec_deg: number } } = {},
+  over: {
+    nav?: NavData | null;
+    location?: boolean;
+    pointing?: { ra_deg: number; dec_deg: number };
+    horizon?: number[];
+  } = {},
 ): EnginePayload {
   return {
+    ...(over.horizon ? { horizon: { obscured: over.horizon } } : {}),
     nav: over.nav ?? null,
     pointing: over.pointing
       ? { valid: true, ...over.pointing }
@@ -116,6 +122,22 @@ describe("Targets / Tonight", () => {
     fireEvent.click(firstGoButton());
     expect(await screen.findByText(/boom/)).toBeInTheDocument();
     expect(onTargetSet).not.toHaveBeenCalled();
+  });
+
+  it("counts what is above the horizon mask, and fewer with more of the sky hidden", () => {
+    render(<Targets state={payload()} />);
+    const byDefault = screen.getAllByRole("button", { name: /^Go to / }).length;
+    expect(screen.getByText(/objects above your horizon/)).toBeInTheDocument();
+    cleanup();
+    // Nothing below 40° anywhere.
+    render(<Targets state={payload({ horizon: Array(16).fill(15) })} />);
+    expect(screen.getAllByRole("button", { name: /^Go to / }).length).toBeLessThan(byDefault);
+  });
+
+  it("says so when the horizon hides everything", () => {
+    render(<Targets state={payload({ horizon: Array(16).fill(511) })} />);
+    expect(screen.getByText("Nothing to show")).toBeInTheDocument();
+    expect(screen.getByText(/No objects above your horizon with these filters/)).toBeInTheDocument();
   });
 
   it("asks for a location when none is known", () => {

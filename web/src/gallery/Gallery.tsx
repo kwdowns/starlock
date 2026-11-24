@@ -69,6 +69,8 @@ import {
   Steps,
   Switch,
 } from "@/components/ui"
+import { HorizonChart } from "@/components/settings/HorizonEditor"
+import { DEFAULT_HORIZON, type HorizonMask } from "@/lib/horizon"
 import {
   RAMP,
   SEMANTIC_BORDERS,
@@ -93,6 +95,7 @@ const SECTIONS = [
   ["steps", "Steps"],
   ["feedback", "Progress · Spinner · EmptyState · Separator"],
   ["overlays", "Sheet · Dialog · Popover"],
+  ["horizon", "Horizon chart"],
 ] as const
 
 const WIZARD_STEPS = [
@@ -766,6 +769,31 @@ function OverlaySection() {
   )
 }
 
+/* ----------------------------------------------------------- drawings */
+
+function HorizonSection() {
+  const [mask, setMask] = useState<HorizonMask>(DEFAULT_HORIZON)
+  return (
+    <Section id="horizon" title="Horizon chart">
+      <Card>
+        <Demo label="Tap or drag to paint" className="flex flex-col gap-3">
+          <HorizonChart value={mask} onCommit={setMask} />
+          <p className="text-label text-muted-foreground">
+            Outer ring: the horizon. Centre: straight up. Each ring is 10°.
+          </p>
+          <Button
+            variant="secondary"
+            className="self-start"
+            onClick={() => setMask(DEFAULT_HORIZON)}
+          >
+            <RotateCcwIcon /> Reset
+          </Button>
+        </Demo>
+      </Card>
+    </Section>
+  )
+}
+
 export default function Gallery() {
   return (
     <div className="flex min-h-dvh flex-col">
@@ -803,6 +831,7 @@ export default function Gallery() {
         <StepsSection />
         <FeedbackSection />
         <OverlaySection />
+        <HorizonSection />
       </main>
 
       <ActionBar>

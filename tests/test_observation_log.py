@@ -251,7 +251,7 @@ def test_delete_keeps_open_entry(store):
 def test_clock_uses_client_when_host_is_wrong():
     host = [T0]
     c = Clock(lambda: host[0])
-    assert c.report_client_time(T0 + 10) is False  # within tolerance
+    assert c.report_client_time(T0 + 1) is False  # within tolerance
     assert c.now() == T0 and c.source == "system"
     assert c.report_client_time(T0 + 86400 * 400) is True
     assert c.source == "client"

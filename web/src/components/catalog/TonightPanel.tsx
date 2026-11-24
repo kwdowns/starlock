@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Alert, Card, Disclosure, EmptyState, SegmentedControl } from "@/components/ui";
 import objectsData from "@/data/objects.json";
 import type { CatalogObject } from "@/lib/catalogTypes";
+import { isVisible, type HorizonMask } from "@/lib/horizon";
 import { angularSepDeg } from "@/lib/nearest";
 import { useSolarSystem } from "@/lib/solarSystem";
 import { CatalogFilters } from "./CatalogFilters";
@@ -11,11 +12,9 @@ import { altAzOf, solarItem, type Location, type TargetItem } from "./items";
 import { readStored, writeStored } from "./storage";
 import { TargetList, type TargetActions } from "./TargetList";
 import { TimeControl } from "./TimeControl";
-import { ALT_THRESHOLD_DEG, tonightRows, type SkyPoint, type SortKey } from "./tonight";
+import { tonightRows, type SkyPoint, type SortKey } from "./tonight";
 
 const objects = objectsData as CatalogObject[];
-/** Planets are worth showing lower than the curated list's threshold. */
-export const SOLAR_MIN_ALT_DEG = 5;
 const SORT_KEY = "starlock.catalog.sort";
 
 const SORT_OPTIONS = [
@@ -43,12 +42,14 @@ interface Props {
   now: number;
   /** Where the scope points, or null without a solve. */
   scope: SkyPoint | null;
+  /** The engine's horizon mask: what trees and buildings hide. */
+  horizon: HorizonMask;
   actions: TargetActions;
   onOpen: (item: TargetItem, evalAt: Date) => void;
 }
 
 /** Curated list of what is above the horizon, with filters and an observation time. */
-export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
+export function TonightPanel({ location, now, scope, horizon, actions, onOpen }: Props) {
   const [filters, setFilters] = useCatalogFilters();
   const [sort, setSortRaw] = useState<SortKey>(loadSort);
   const [offsetMin, setOffsetMin] = useState(0);
@@ -56,8 +57,8 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
   const evalAt = useMemo(() => new Date(now + offsetMin * 60_000), [now, offsetMin]);
 
   const rows = useMemo(
-    () => (location ? tonightRows(objects, filters, location, evalAt, sort, scope) : []),
-    [location, filters, evalAt, sort, scope],
+    () => (location ? tonightRows(objects, filters, location, evalAt, sort, scope, horizon) : []),
+    [location, filters, evalAt, sort, scope, horizon],
   );
 
   const bodies = useSolarSystem(location ? evalAt : null);
@@ -75,9 +76,9 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
           : null;
         return { item, altDeg: aa?.altDeg ?? null, azDeg: aa?.azDeg ?? null, mag: b.magnitude, sepDeg };
       })
-      .filter((r) => r.altDeg !== null && r.altDeg >= SOLAR_MIN_ALT_DEG)
+      .filter((r) => r.altDeg !== null && r.azDeg !== null && isVisible(r.altDeg, r.azDeg, horizon))
       .sort((a, b) => (a.sepDeg !== null && b.sepDeg !== null ? a.sepDeg - b.sepDeg : a.mag - b.mag));
-  }, [bodies, location, evalAt, near]);
+  }, [bodies, location, evalAt, near, horizon]);
 
   if (!location) {
     return (
@@ -126,7 +127,7 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
       {solarRows.length > 0 && (
         <section aria-label="Solar system" className="flex flex-col gap-2">
           <p className="text-label text-muted-foreground">
-            Moon, planets and bright asteroids above {SOLAR_MIN_ALT_DEG}°
+            Moon, planets and bright asteroids above your horizon
           </p>
           <TargetList rows={solarRows} actions={{ ...actions, onOpen: openRow }} />
         </section>
@@ -135,12 +136,12 @@ export function TonightPanel({ location, now, scope, actions, onOpen }: Props) {
       {rows.length === 0 ? (
         <EmptyState
           title="Nothing to show"
-          description={`No objects above ${ALT_THRESHOLD_DEG}° with these filters at this time. Widen the filters or move the time forward.`}
+          description="No objects above your horizon with these filters at this time. Widen the filters or move the time forward."
         />
       ) : (
         <>
           <p className="text-label text-muted-foreground">
-            {rows.length} {rows.length === 1 ? "object" : "objects"} above {ALT_THRESHOLD_DEG}°
+            {rows.length} {rows.length === 1 ? "object" : "objects"} above your horizon
             {sort === "near" && !scope && " · highest first until the scope has a solve"}
           </p>
           <TargetList

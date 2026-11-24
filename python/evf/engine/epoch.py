@@ -83,6 +83,12 @@ def _vec_to_radec(v: np.ndarray) -> tuple[float, float]:
     return ra, dec
 
 
+def precession_matrix() -> np.ndarray:
+    """J2000 -> mean equinox of date rotation (v_now = P @ v_j2000); copy."""
+    P, _ = _refresh_matrix()
+    return P.copy()
+
+
 def j2000_to_jnow(ra_deg: float, dec_deg: float) -> tuple[float, float]:
     """J2000 (ICRS) -> mean equinox of date. Returns (ra_deg, dec_deg)."""
     P, _ = _refresh_matrix()

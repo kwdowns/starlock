@@ -135,6 +135,29 @@ export interface WifiInfo {
   warn: boolean;
 }
 
+/**
+ * What the engine has learnt about how the mount sits (experimental; spec
+ * SPEC_HORIZON_MOUNT_MODEL §3.5). Numbers are null unless `state` is "ready".
+ */
+export interface MountModel {
+  /** off: no location. collecting: not enough spread yet. ready: guidance corrects for it. */
+  state: "off" | "collecting" | "ready";
+  samples: number;
+  needed: number;
+  /** The missing spread, once there are 3 samples ("turn" first). */
+  hint: "turn" | "tilt" | null;
+  /** Alt-az: angle between the base axis and the zenith. */
+  tilt_deg: number | null;
+  /** Alt-az: azimuth the base axis leans towards (that side is low). */
+  low_side_az_deg: number | null;
+  /** Equatorial: polar axis altitude minus the pole's (+ = too high). */
+  polar_alt_error_deg: number | null;
+  /** Equatorial: + = east of the pole, in both hemispheres. */
+  polar_az_error_deg: number | null;
+  rms_deg: number | null;
+  applied: boolean;
+}
+
 export interface EnginePayload {
   state: EngineState;
   failures: number;
@@ -152,6 +175,8 @@ export interface EnginePayload {
     /** Alt-az mode with no observer location: falls back to the calibrated arrow. */
     needs_location: boolean;
     axes: { axis1_angle_deg: number; axis2_angle_deg: number } | null;
+    /** Missing from older engines. */
+    model?: MountModel;
   };
   image_size: [number, number] | null;
   controls: ControlDescriptor[];
@@ -178,4 +203,8 @@ export interface EnginePayload {
   sample_active: string | null;
   /** Null on Ethernet, in hotspot mode, or off the Pi; missing from older engines. */
   wifi?: WifiInfo | null;
+  /** Hidden sky cells: 16 sectors (index 0 = N), bit b = 10b to 10b + 10° altitude. Missing from older engines. */
+  horizon?: { obscured: number[] };
+  /** "client": the Pi's clock is corrected from a phone or browser; offset_s = client − Pi. Missing from older engines. */
+  clock?: { source: "client" | "system"; offset_s: number };
 }

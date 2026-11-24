@@ -1,10 +1,9 @@
 import { altAzFromRaDec } from "@/lib/astronomy";
 import type { CatalogObject } from "@/lib/catalogTypes";
+import { DEFAULT_HORIZON, isVisible, type HorizonMask } from "@/lib/horizon";
 import { angularSepDeg } from "@/lib/nearest";
 import type { CatalogFilterState } from "./filterState";
 import { buddyItem, typeLabel, type Location, type TargetItem } from "./items";
-
-export const ALT_THRESHOLD_DEG = 20;
 
 export type SortKey = "type" | "mag" | "alt" | "near";
 
@@ -24,7 +23,8 @@ export interface TonightRow {
 }
 
 /**
- * Objects passing the filters and above the altitude threshold, sorted.
+ * Objects passing the filters and above the observer's horizon (`horizon`,
+ * the engine's mask of hidden sky; the default hides everything below 20°), sorted.
  * "near" sorts by distance from `scope`; without a pointing it falls back
  * to highest first.
  */
@@ -35,6 +35,7 @@ export function tonightRows(
   evalAt: Date,
   sortKey: SortKey,
   scope: SkyPoint | null = null,
+  horizon: HorizonMask = DEFAULT_HORIZON,
 ): TonightRow[] {
   const near = sortKey === "near" && scope !== null;
   const rows: TonightRow[] = [];
@@ -51,7 +52,7 @@ export function tonightRows(
       lonDeg: location.longitude,
       date: evalAt,
     });
-    if (altDeg < ALT_THRESHOLD_DEG) continue;
+    if (!isVisible(altDeg, azDeg, horizon)) continue;
     const sepDeg = near
       ? angularSepDeg(scope.ra_deg, scope.dec_deg, item.ra_deg, item.dec_deg)
       : null;

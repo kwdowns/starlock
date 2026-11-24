@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Button, Field, Input } from "@/components/ui";
 import { api } from "@/lib/api";
+import { clockLine } from "@/lib/mountModel";
 import type { EnginePayload } from "@/lib/types";
 
 interface Props {
@@ -43,6 +44,7 @@ export function LocationPanel({ state }: Props) {
   const lonOk = Number.isFinite(lon) && lon >= -180 && lon <= 180;
   const dirty = latInput !== activeLatStr || lonInput !== activeLonStr;
   const hasManual = source === "manual";
+  const clock = clockLine(state.clock);
 
   async function run(settings: Parameters<typeof api.setSettings>[0]) {
     setSaving(true);
@@ -97,6 +99,7 @@ export function LocationPanel({ state }: Props) {
       <p className="text-label text-muted-foreground">
         For example New York 40.71, -74.01 or Sydney -33.87, 151.21.
       </p>
+      {clock && <p className="text-label text-muted-foreground">{clock}</p>}
       {saveError && (
         <Alert variant="error" title="Couldn't save the location">
           {saveError}

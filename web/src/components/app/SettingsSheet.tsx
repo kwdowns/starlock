@@ -10,6 +10,7 @@ import {
 import { LocationPanel } from "@/components/catalog/LocationPanel";
 import { DebugPanel } from "@/components/debug/DebugPanel";
 import { CloudLink } from "@/components/settings/CloudLink";
+import { HorizonEditor } from "@/components/settings/HorizonEditor";
 import { ObservationLog } from "@/components/settings/ObservationLog";
 import { Connectivity } from "@/components/settings/Connectivity";
 import { Settings } from "@/components/settings/Settings";
@@ -39,7 +40,7 @@ export function SettingsSheet({ open, onOpenChange, state, showStars, setShowSta
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Settings</SheetTitle>
-          <SheetDescription>Display, connections and location.</SheetDescription>
+          <SheetDescription>Display, connections, location and horizon.</SheetDescription>
         </SheetHeader>
         <SheetBody className="gap-5 pb-[max(1rem,var(--safe-bottom))]">
           <Settings state={state} showStars={showStars} setShowStars={setShowStars} />
@@ -50,6 +51,8 @@ export function SettingsSheet({ open, onOpenChange, state, showStars, setShowSta
           <Separator />
           {/* LocationPanel brings its own "Location" heading. */}
           <LocationPanel state={state} />
+          <Separator />
+          <HorizonEditor state={state} />
           <Separator />
           <ObservationLog />
           <Separator />
