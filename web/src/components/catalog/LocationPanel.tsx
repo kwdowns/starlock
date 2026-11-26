@@ -16,7 +16,7 @@ function parseCoord(s: string): number {
 
 const SOURCE_LABELS = { stellarium: "From Stellarium", manual: "Set by you" } as const;
 
-/** Observer latitude / longitude, used for visibility maths. Lives in Settings. */
+/** Observer latitude / longitude, used for visibility maths. Lives in the Equipment sheet (Settings with an older engine). */
 export function LocationPanel({ state }: Props) {
   const activeLat = state.location?.latitude ?? null;
   const activeLon = state.location?.longitude ?? null;

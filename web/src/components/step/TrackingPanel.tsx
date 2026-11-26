@@ -91,7 +91,7 @@ function TargetReadout({ state }: Props) {
       )}
       {state.mount.needs_location && (
         <p className="text-label text-muted-foreground">
-          Set your location in Settings to get turn and raise directions.
+          Set your site in Equipment to get turn and raise directions.
         </p>
       )}
       {glare && <p className="text-label">{moonGlareText(glare, nav.target_name ?? "The target")}</p>}

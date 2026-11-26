@@ -83,7 +83,7 @@ export function TonightPanel({ location, now, scope, horizon, actions, onOpen }:
   if (!location) {
     return (
       <Alert variant="info" title="Set your location">
-        Open Settings and enter where you are to see which objects are above the horizon.
+        Open Equipment (the telescope button at the top) and set your site to see which objects are above the horizon.
       </Alert>
     );
   }
