@@ -18,10 +18,10 @@
 
 """Generate the PWA / home-screen icons in web/public/.
 
-The branding (marketing/logo.png) is a white glyph on a red gradient. The
-UI is strictly red-on-black for night vision, so this takes the glyph's
-brightness (its green channel, which the red background doesn't have) as a
-mask and paints it pure red (#ff0000) on #0a0000.
+The branding (marketing/logo.png) is already drawn for the strictly
+red-on-black UI: a red reticle and star on #0a0000, full bleed. So the icons
+are just the logo scaled onto that same background. The maskable icon shrinks
+it so the reticle's tick marks stay inside the central 80% safe circle.
 
 Usage (from the repo root):  uv run python scripts/make_pwa_icons.py
 """
@@ -34,42 +34,31 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "marketing" / "logo.png"
 OUT = ROOT / "web" / "public"
 
-BACKGROUND = (10, 0, 0)  # #0a0000
-FOREGROUND = (255, 0, 0)  # #ff0000
+BACKGROUND = (10, 0, 0)  # #0a0000, the logo's own background
 
 
-def glyph_mask() -> Image.Image:
-    """Alpha mask of the logo glyph, cropped to its bounding box."""
-    src = Image.open(SOURCE).convert("RGB")
-    mask = src.getchannel("G").point(lambda v: 0 if v < 8 else v)
-    return mask.crop(mask.getbbox())
-
-
-def render(size: int, glyph_fraction: float, mask: Image.Image) -> Image.Image:
-    """Square icon with the glyph `glyph_fraction` of the canvas wide."""
-    # Draw at 4x and downsample for clean edges.
-    big = size * 4
-    gw = round(big * glyph_fraction)
-    gh = round(gw * mask.height / mask.width)
-    m = mask.resize((gw, gh), Image.LANCZOS)
-    canvas = Image.new("RGB", (big, big), BACKGROUND)
-    solid = Image.new("RGB", (gw, gh), FOREGROUND)
-    canvas.paste(solid, ((big - gw) // 2, (big - gh) // 2), m)
-    return canvas.resize((size, size), Image.LANCZOS)
+def render(size: int, scale: float, logo: Image.Image) -> Image.Image:
+    """Square icon with the logo drawn `scale` of the canvas wide, centred."""
+    inner = round(size * scale)
+    canvas = Image.new("RGB", (size, size), BACKGROUND)
+    off = (size - inner) // 2
+    canvas.paste(logo.resize((inner, inner), Image.LANCZOS), (off, off))
+    return canvas
 
 
 def main() -> None:
-    mask = glyph_mask()
-    # Maskable: all content must sit inside the central 80% circle; a glyph
-    # 52% of the width has its corners at ~31% radius, well inside 40%.
+    logo = Image.open(SOURCE).convert("RGB")
+    # Maskable: content must sit inside the central 80% circle. The tick
+    # marks reach 40% of the width from centre at full size, so 0.8 brings
+    # them in to 32%.
     icons = {
-        "icon-192.png": (192, 0.66),
-        "icon-512.png": (512, 0.66),
-        "icon-maskable-512.png": (512, 0.52),
-        "apple-touch-icon.png": (180, 0.66),
+        "icon-192.png": (192, 1.0),
+        "icon-512.png": (512, 1.0),
+        "icon-maskable-512.png": (512, 0.8),
+        "apple-touch-icon.png": (180, 1.0),
     }
-    for name, (size, frac) in icons.items():
-        render(size, frac, mask).save(OUT / name, optimize=True)
+    for name, (size, scale) in icons.items():
+        render(size, scale, logo).save(OUT / name, optimize=True)
         print("wrote", OUT / name)
 
 
