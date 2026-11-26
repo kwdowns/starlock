@@ -163,6 +163,7 @@ python/evf/                     # main Python package
     server.py                   # serves React build, MJPEG, /ws, /api/*
   config/                       # configuration
     manager.py                  # JSON config read/write
+    observing.py                # saved sites + telescopes/eyepieces/finders (config `observing`): validation, migration, optics; keeps the site in use and location/horizon in step
     logging_setup.py            # logging configuration
 web/                            # React + Vite + TS + Tailwind + shadcn/ui front-end
   package.json
@@ -325,6 +326,7 @@ Detailed design docs live in `specs/start/`:
 - `SPEC_FIRST_RUN.md` — out-of-box setup: Pi image, hotspot/QR provisioning, owner tokens, factory reset, cloud ownership (design)
 - `SPEC_OBSERVING_LOG.md` — certifiable logbook: sessions, sightings, observations, equipment, sync, exports (design)
 - `SPEC_UPDATES.md` — Pi updates: signed apt repo, daily check, owner-installed only (never automatic), rollback (design)
+- `SPEC_EQUIPMENT_SITES.md` — saved sites (location + horizon) and equipment, `/api/observing/*`, `/ws` `observing` + optics, eyepiece-based on-target radius, Logbook page
 - `SPEC_HORIZON_MOUNT_MODEL.md` — horizon mask (Settings → Horizon, filters Tonight), clock sync, mount model (experimental)
 - `SPEC_EQUIPMENT_SITES.md` — saved observing sites (location + horizon), telescopes, eyepieces, finders; optics, eyepiece/finder circles, Logbook page
 - `SPEC_PROTOCOL_LX200.md` — LX200 Classic ASCII protocol for SkySafari / Stellarium Mobile / INDI / ASCOM (JNow, port 4030)

@@ -182,9 +182,21 @@ _CLOUD_COLUMNS = (
     ("frame_bytes", "INTEGER"),
 )
 
+# The site and equipment in use when the entry opened (names, as they were
+# then) and the magnification; NULL when unset. See SPEC_EQUIPMENT_SITES.md §4.
+EQUIPMENT_FIELDS = ("site_name", "telescope", "eyepiece", "finder", "magnification")
+_EQUIPMENT_COLUMNS = (
+    ("site_name", "TEXT"),
+    ("telescope", "TEXT"),
+    ("eyepiece", "TEXT"),
+    ("finder", "TEXT"),
+    ("magnification", "REAL"),
+)
+
 _COLUMNS = (
     "id, start_utc, end_utc, is_open, ra_j2000, dec_j2000, alt, az, "
-    "target_name, latitude, longitude, clock, frame_bytes"
+    "target_name, latitude, longitude, clock, frame_bytes, "
+    "site_name, telescope, eyepiece, finder, magnification"
 )
 
 
@@ -193,7 +205,8 @@ def iso_utc(unix_s: float) -> str:
 
 
 def _row_dict(row: tuple) -> dict:
-    (id_, start, end, is_open, ra, dec, alt, az, name, lat, lon, clock, frame_bytes) = row
+    (id_, start, end, is_open, ra, dec, alt, az, name, lat, lon, clock, frame_bytes,
+     site_name, telescope, eyepiece, finder, magnification) = row
     return {
         "id": id_,
         "start_utc": iso_utc(start),
@@ -211,6 +224,11 @@ def _row_dict(row: tuple) -> dict:
         "longitude": lon,
         "clock": clock,
         "has_frame": frame_bytes is not None,
+        "site_name": site_name,
+        "telescope": telescope,
+        "eyepiece": eyepiece,
+        "finder": finder,
+        "magnification": magnification,
     }
 
 
@@ -228,7 +246,7 @@ class ObservationStore:
             self._db.execute("PRAGMA synchronous=FULL")
             self._db.executescript(_SCHEMA)
             have = {r[1] for r in self._db.execute("PRAGMA table_info(observations)")}
-            for name, kind in _CLOUD_COLUMNS:
+            for name, kind in _CLOUD_COLUMNS + _EQUIPMENT_COLUMNS:
                 if name not in have:
                     self._db.execute(f"ALTER TABLE observations ADD COLUMN {name} {kind}")
             row = self._db.execute("SELECT value FROM meta WHERE key='db_uuid'").fetchone()
@@ -305,14 +323,19 @@ class ObservationStore:
         self, start: float, ra: float, dec: float, *, alt: float | None = None,
         az: float | None = None, target_name: str | None = None,
         latitude: float | None = None, longitude: float | None = None,
-        clock: str = "system",
+        clock: str = "system", equipment: dict | None = None,
     ) -> int:
+        """``equipment``: any of EQUIPMENT_FIELDS (site and gear names in use,
+        magnification); missing ones are stored as NULL."""
+        eq = equipment or {}
         with self._lock:
             cur = self._db.execute(
                 "INSERT INTO observations (start_utc, end_utc, is_open, ra_j2000, "
-                "dec_j2000, alt, az, target_name, latitude, longitude, clock) "
-                "VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (start, start, ra, dec, alt, az, target_name, latitude, longitude, clock),
+                "dec_j2000, alt, az, target_name, latitude, longitude, clock, "
+                "site_name, telescope, eyepiece, finder, magnification) "
+                "VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (start, start, ra, dec, alt, az, target_name, latitude, longitude, clock,
+                 *(eq.get(f) for f in EQUIPMENT_FIELDS)),
             )
             self._db.commit()
             return int(cur.lastrowid)
@@ -449,7 +472,8 @@ class ObservationStore:
 
 CSV_HEADER = [
     "start_utc", "end_utc", "duration_s", "target", "ra_j2000_deg",
-    "dec_j2000_deg", "alt_deg", "az_deg", "latitude", "longitude", "clock",
+    "dec_j2000_deg", "alt_deg", "az_deg", "latitude", "longitude",
+    "site_name", "telescope", "eyepiece", "finder", "magnification", "clock",
 ]
 
 
@@ -474,7 +498,10 @@ def entries_to_csv(entries: list[dict]) -> str:
             e["start_utc"], e["end_utc"], e["duration_s"], _csv_text(e["target_name"]),
             _num(e["ra_j2000_deg"], 4), _num(e["dec_j2000_deg"], 4),
             _num(e["alt_deg"], 2), _num(e["az_deg"], 2),
-            _num(e["latitude"], 4), _num(e["longitude"], 4), e["clock"],
+            _num(e["latitude"], 4), _num(e["longitude"], 4),
+            _csv_text(e.get("site_name")), _csv_text(e.get("telescope")),
+            _csv_text(e.get("eyepiece")), _csv_text(e.get("finder")),
+            _num(e.get("magnification"), 2), e["clock"],
         ])
     return out.getvalue()
 
@@ -488,6 +515,9 @@ class ObservationLogger:
 
     pointing:  PointingState (read-only use)
     location:  () -> {"latitude", "longitude", ...}; either may be None
+    equipment: () -> {"site_name", "telescope", "eyepiece", "finder",
+               "magnification"} in use (each may be None), stored with each
+               new entry
     target:    () -> (ra_j2000, dec_j2000, name_or_None) of the active GOTO
                target, or None
     enabled:   () -> bool, checked every step (config flag)
@@ -504,6 +534,7 @@ class ObservationLogger:
         clock: Clock,
         *,
         location: Callable[[], dict] | None = None,
+        equipment: Callable[[], dict] | None = None,
         target: Callable[[], tuple[float, float, str | None] | None] | None = None,
         tracker: DwellTracker | None = None,
         enabled: Callable[[], bool] = lambda: True,
@@ -516,6 +547,7 @@ class ObservationLogger:
         self._pointing = pointing
         self._clock = clock
         self._location = location
+        self._equipment = equipment
         self._target = target
         self._tracker = tracker or DwellTracker()
         self._enabled = enabled
@@ -614,10 +646,17 @@ class ObservationLogger:
             ra_now, dec_now = j2000_to_jnow(ev.ra, ev.dec)
             alt, az = radec_to_altaz(
                 ra_now, dec_now, lat, local_sidereal_deg(lon, ev.wall))
+        equipment = None
+        if self._equipment is not None:
+            try:
+                equipment = self._equipment()
+            except Exception as exc:  # noqa: BLE001 — log the entry without it
+                logger.warning("Observation log: equipment unavailable: %s", exc)
         self._entry_id = self._store.open_entry(
             ev.wall, ev.ra, ev.dec, alt=alt, az=az,
             target_name=self._matching_target_name(ev.ra, ev.dec),
             latitude=lat, longitude=lon, clock=self._clock.source,
+            equipment=equipment,
         )
         self._last_heartbeat = mono
         logger.info("Observation log: opened entry %d at RA %.2f Dec %.2f",

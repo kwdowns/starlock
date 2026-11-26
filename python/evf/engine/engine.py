@@ -33,6 +33,7 @@ from pathlib import Path
 from evf.camera.subprocess_mgr import SubprocessManager
 from evf.config.logging_setup import setup_logging
 from evf.config.manager import ConfigManager
+from evf.config.observing import ObservingLibrary
 from evf.cloud.service import CloudService
 from evf.discovery import DiscoveryAdvertiser, txt_properties
 from evf.engine.audio import AudioAlert
@@ -149,6 +150,9 @@ class Engine:
         # Learns the mount's tilt / polar-axis error from steady solves.
         self._mount_model = MountModel()
         self._mount_model_thread: threading.Thread | None = None
+        # Saved sites and equipment; also owns location / horizon changes so
+        # the site in use stays in step with them.
+        self._observing = ObservingLibrary(self._config)
 
         # Sample injector (continuous JPEG injection for dev/debug)
         self._sample_injector = SampleInjector(self._frame_buffer)
@@ -282,8 +286,29 @@ class Engine:
         self._mount_model.reset()
 
     def set_horizon(self, obscured: list[int] | None) -> None:
-        """Save the horizon mask (None = the default, below 20° hidden)."""
-        self._config.horizon = obscured
+        """Save the horizon mask (None = the default, below 20° hidden).
+        With a site in use, the site's horizon changes too."""
+        self._observing.set_horizon(obscured)
+
+    # -- saved sites and equipment (specs/start/SPEC_EQUIPMENT_SITES.md) -------
+
+    @property
+    def observing(self) -> ObservingLibrary:
+        return self._observing
+
+    def create_observing_item(self, kind: str, body: dict) -> str:
+        """Save a new site / telescope / eyepiece / finder; returns its id.
+        Raises ValueError (bad item) or observing.NotFound (unknown kind)."""
+        return self._observing.create(kind, body)
+
+    def update_observing_item(self, kind: str, item_id: str, body: dict) -> None:
+        self._observing.update(kind, item_id, body)
+
+    def delete_observing_item(self, kind: str, item_id: str) -> None:
+        self._observing.delete(kind, item_id)
+
+    def set_observing_current(self, body: dict) -> None:
+        self._observing.set_current(body)
 
     def _location_tuple(self) -> tuple[float, float] | None:
         loc = self.location
@@ -424,11 +449,9 @@ class Engine:
         return {"latitude": None, "longitude": None, "source": None}
 
     def set_location(self, latitude: float | None, longitude: float | None) -> None:
-        """Persist a manual location. Pass (None, None) to clear."""
-        if latitude is None or longitude is None:
-            self._config.location = None
-        else:
-            self._config.location = (float(latitude), float(longitude))
+        """Persist a manual location. Pass (None, None) to clear (which
+        also clears the site in use). With a site in use, the site moves too."""
+        self._observing.set_location(latitude, longitude)
 
     def inject_sample(self, name: str | None) -> None:
         """Start/stop continuous injection of a sample image (dev only).
@@ -642,6 +665,7 @@ class Engine:
                 self._pointing_state,
                 self._clock,
                 location=lambda: self.location,
+                equipment=self._observing.log_fields,
                 target=self._observation_target,
                 tracker=DwellTracker(
                     dwell_s=self._config.observation_dwell_s,
@@ -701,6 +725,7 @@ class Engine:
                     if self.stellarium_status else None
                 ),
                 location=lambda: self.location,
+                observing=self._observing.snapshot,
                 dev_mode=self._dev_mode,
                 sample_active=lambda: self._sample_injector.active_name,
                 actions=self,

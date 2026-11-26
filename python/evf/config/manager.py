@@ -24,7 +24,9 @@ import logging
 import os
 import platform
 import re
+import threading
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -72,6 +74,13 @@ DEFAULT_CONFIG = {
     # 10° altitude bands (bit 0 = 0-10°) hidden by trees or buildings. The
     # default hides everything below 20°. See specs/start/SPEC_HORIZON_MOUNT_MODEL.md.
     "horizon": {"obscured": [3] * 16},
+    # Saved observing sites and equipment, and which are in use (see
+    # evf/config/observing.py and specs/start/SPEC_EQUIPMENT_SITES.md).
+    "observing": {
+        "sites": [], "telescopes": [], "eyepieces": [], "finders": [],
+        "current": {"site_id": None, "telescope_id": None,
+                    "eyepiece_id": None, "finder_id": None},
+    },
 }
 
 HORIZON_SECTORS = 16
@@ -149,6 +158,10 @@ class ConfigManager:
         self._path = self._dir / "config.json"
         self._data: dict = {}
         self._dirty = False
+        # Guards _data and the file: web requests run on their own threads.
+        self._lock = threading.RLock()
+        # > 0 inside batch(): changes are saved once, when it ends.
+        self._batch_depth = 0
         self._load()
 
     # -- persistence ----------------------------------------------------------
@@ -179,6 +192,28 @@ class ConfigManager:
         cal["finder_rotation_v2"] = True
         self._dirty = True
 
+    def _migrate_observing(self) -> None:
+        """Check the saved sites and equipment, or make them the first time.
+
+        Runs before defaults are merged in, so a missing ``observing`` key
+        still means a config from before sites existed.
+        """
+        from evf.config import observing
+
+        if "observing" not in self._data:
+            loc = self._data.get("location")
+            lat = loc.get("latitude") if isinstance(loc, dict) else None
+            lon = loc.get("longitude") if isinstance(loc, dict) else None
+            hz = self._data.get("horizon")
+            mask = hz.get("obscured") if isinstance(hz, dict) else None
+            self._data["observing"] = observing.migrate(lat, lon, mask)
+            self._dirty = True
+            return
+        clean, changed = observing.sanitize(self._data["observing"])
+        self._data["observing"] = clean
+        if changed:
+            self._dirty = True
+
     def _load(self) -> None:
         if self._path.exists():
             try:
@@ -194,6 +229,7 @@ class ConfigManager:
                     self._dirty = True
                 else:
                     self._migrate_finder_rotation()
+                    self._migrate_observing()
                     # Merge in any missing keys from defaults
                     self._data = _merge_defaults(DEFAULT_CONFIG, self._data)
                     self._migrate_old_default_port()
@@ -210,25 +246,45 @@ class ConfigManager:
             self.save()
 
     def save(self) -> None:
-        self._dir.mkdir(parents=True, exist_ok=True)
-        with open(self._path, "w") as f:
-            json.dump(self._data, f, indent=2)
-            f.write("\n")
-        self._dirty = False
+        with self._lock:
+            self._dir.mkdir(parents=True, exist_ok=True)
+            with open(self._path, "w") as f:
+                json.dump(self._data, f, indent=2)
+                f.write("\n")
+            self._dirty = False
         logger.debug("Config saved to %s", self._path)
+
+    @contextmanager
+    def batch(self):
+        """Hold the config lock and save once at the end, so several
+        changes (a site's location and horizon) land in one write."""
+        with self._lock:
+            self._batch_depth += 1
+            try:
+                yield self
+            finally:
+                self._batch_depth -= 1
+                if self._batch_depth == 0 and self._dirty:
+                    self.save()
+
+    def _changed(self) -> None:
+        self._dirty = True
+        if self._batch_depth == 0:
+            self.save()
 
     # -- getters / setters ----------------------------------------------------
 
     def get(self, section: str, key: str):
-        return self._data.get(section, {}).get(key)
+        with self._lock:
+            return self._data.get(section, {}).get(key)
 
     def set(self, section: str, key: str, value) -> None:
-        if section not in self._data:
-            self._data[section] = {}
-        if self._data[section].get(key) != value:
-            self._data[section][key] = value
-            self._dirty = True
-            self.save()
+        with self._lock:
+            if section not in self._data:
+                self._data[section] = {}
+            if self._data[section].get(key) != value:
+                self._data[section][key] = value
+                self._changed()
 
     # -- convenience properties -----------------------------------------------
 
@@ -401,16 +457,18 @@ class ConfigManager:
     @location.setter
     def location(self, value: tuple[float, float] | None) -> None:
         if value is None:
-            self.set("location", "latitude", None)
-            self.set("location", "longitude", None)
+            with self.batch():
+                self.set("location", "latitude", None)
+                self.set("location", "longitude", None)
             return
         lat, lon = value
         if not (-90.0 <= lat <= 90.0):
             raise ValueError(f"latitude must be in [-90, 90], got {lat}")
         if not (-180.0 <= lon <= 180.0):
             raise ValueError(f"longitude must be in [-180, 180], got {lon}")
-        self.set("location", "latitude", float(lat))
-        self.set("location", "longitude", float(lon))
+        with self.batch():
+            self.set("location", "latitude", float(lat))
+            self.set("location", "longitude", float(lon))
 
     @property
     def horizon(self) -> list[int]:
@@ -424,6 +482,20 @@ class ConfigManager:
     def horizon(self, value: list[int] | None) -> None:
         self.set("horizon", "obscured",
                  list(DEFAULT_HORIZON) if value is None else validate_horizon(value))
+
+    @property
+    def observing(self) -> dict:
+        """Saved sites and equipment and the ones in use (a copy). Change
+        them through evf.config.observing.ObservingLibrary."""
+        with self._lock:
+            return _deep_copy(self._data["observing"])
+
+    @observing.setter
+    def observing(self, value: dict) -> None:
+        with self._lock:
+            if self._data.get("observing") != value:
+                self._data["observing"] = _deep_copy(value)
+                self._changed()
 
     @property
     def observation_log_enabled(self) -> bool:
@@ -493,7 +565,8 @@ class ConfigManager:
 
     @property
     def data(self) -> dict:
-        return _deep_copy(self._data)
+        with self._lock:
+            return _deep_copy(self._data)
 
 
 def _deep_copy(d: dict) -> dict:

@@ -41,6 +41,13 @@ def to_cloud_entry(store: ObservationStore, e: dict) -> dict:
         "latitude": e["latitude"],
         "longitude": e["longitude"],
         "clock": e["clock"],
+        # Site and equipment in use (SPEC_EQUIPMENT_SITES.md §4); extra
+        # fields an older cloud ignores.
+        "siteName": e.get("site_name"),
+        "telescope": e.get("telescope"),
+        "eyepiece": e.get("eyepiece"),
+        "finder": e.get("finder"),
+        "magnification": e.get("magnification"),
     }
 
 

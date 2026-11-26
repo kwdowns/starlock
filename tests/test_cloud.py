@@ -257,7 +257,20 @@ def test_cloud_entry_mapping(tmp_path):
     assert e["startUnix"] == 1795228800.0 and e["endUnix"] == 1795228920.0
     assert e["open"] is False and e["targetName"] == "M31" and e["clock"] == "system"
     assert set(e) == {"entryId", "startUnix", "endUnix", "open", "raJ2000Deg", "decJ2000Deg",
-                      "altDeg", "azDeg", "targetName", "latitude", "longitude", "clock"}
+                      "altDeg", "azDeg", "targetName", "latitude", "longitude", "clock",
+                      "siteName", "telescope", "eyepiece", "finder", "magnification"}
+    assert e["siteName"] is None and e["magnification"] is None
+
+
+def test_cloud_entry_carries_equipment(tmp_path):
+    from evf.engine.observation_log import ObservationStore
+    st = ObservationStore(tmp_path / "obs.sqlite3")
+    st.open_entry(1795228800.0, 10.0, 41.0, equipment={
+        "site_name": "Back yard", "telescope": '8" Dob', "eyepiece": "25 mm",
+        "finder": "Telrad", "magnification": 48.0})
+    e = to_cloud_entry(st, st.pending_cloud(now=0, open_interval_s=300)[0])
+    assert (e["siteName"], e["telescope"], e["eyepiece"], e["finder"], e["magnification"]) == (
+        "Back yard", '8" Dob', "25 mm", "Telrad", 48.0)
 
 
 def test_uploader_success_retry_and_refusal(tmp_path):

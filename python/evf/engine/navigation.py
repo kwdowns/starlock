@@ -47,6 +47,10 @@ ON_TARGET_DEG = 0.15
 # centre, but never more than ON_TARGET_MAX_DEG.
 ON_TARGET_SIZE_FRACTION = 0.3
 ON_TARGET_MAX_DEG = 1.5
+# With an eyepiece in use (its true field known): on target with the object
+# inside the middle 70 % of the field, never tighter than ON_TARGET_MIN_DEG.
+ON_TARGET_FIELD_FRACTION = 0.35
+ON_TARGET_MIN_DEG = 0.05
 
 
 # Once on target, stay on target until this far off: aiming by eye at the
@@ -85,11 +89,22 @@ class OnTargetLatch:
         return self._locked
 
 
-def on_target_radius_deg(size_deg: float | None) -> float:
-    """How close to the target centre counts as on target."""
-    if not size_deg or size_deg <= 0:
+def on_target_radius_deg(
+    size_deg: float | None, true_field_deg: float | None = None,
+) -> float:
+    """How close to the target centre counts as on target.
+
+    With the eyepiece's true field known, the object must be in the middle
+    70 % of the field, or well inside a big object; without it, a fixed
+    radius grown for big objects.
+    """
+    size_term = size_deg * ON_TARGET_SIZE_FRACTION if size_deg and size_deg > 0 else 0.0
+    if true_field_deg and true_field_deg > 0:
+        return min(ON_TARGET_MAX_DEG, max(
+            ON_TARGET_MIN_DEG, true_field_deg * ON_TARGET_FIELD_FRACTION, size_term))
+    if not size_term:
         return ON_TARGET_DEG
-    return min(ON_TARGET_MAX_DEG, max(ON_TARGET_DEG, size_deg * ON_TARGET_SIZE_FRACTION))
+    return min(ON_TARGET_MAX_DEG, max(ON_TARGET_DEG, size_term))
 
 
 def angular_separation(ra1: float, dec1: float, ra2: float, dec2: float) -> float:

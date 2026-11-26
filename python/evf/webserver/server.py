@@ -55,6 +55,7 @@ from evf.engine.navigation import (
     on_target_radius_deg,
 )
 from evf.config.manager import validate_horizon
+from evf.config import observing as observing_lib
 from evf.engine.clock import Clock
 from evf.engine.mount_model import MountModel
 from evf.engine.observation_log import ObservationLogger, entries_to_csv
@@ -109,6 +110,11 @@ class EngineActions(Protocol):
         self, latitude: float | None, longitude: float | None,
     ) -> None: ...
     def set_horizon(self, obscured: list[int] | None) -> None: ...
+    # Saved sites and equipment. ValueError -> 400, observing.NotFound -> 404.
+    def create_observing_item(self, kind: str, body: dict) -> str: ...
+    def update_observing_item(self, kind: str, item_id: str, body: dict) -> None: ...
+    def delete_observing_item(self, kind: str, item_id: str) -> None: ...
+    def set_observing_current(self, body: dict) -> None: ...
 
 
 def _compute_origin(
@@ -301,6 +307,7 @@ class WebServer:
         activity: Callable[[], dict] | None = None,
         stellarium_location: Callable[[], dict | None] | None = None,
         location: Callable[[], dict] | None = None,
+        observing: Callable[[], dict] | None = None,
         dev_mode: bool = False,
         sample_active: Callable[[], str | None] | None = None,
         actions: "EngineActions | None" = None,
@@ -331,6 +338,9 @@ class WebServer:
         self._activity = activity
         self._stellarium_location = stellarium_location
         self._location_fn = location
+        # The /ws "observing" block; built from config when not given.
+        self._observing_fn = observing or (
+            lambda: observing_lib.payload(self._config.observing))
         self._minor_planet_cache = None
         self._wifi = WifiSignal()
         self._on_target = OnTargetLatch()
@@ -448,6 +458,12 @@ class WebServer:
         app.router.add_post("/api/cloud/pair", self._api_cloud_pair)
         app.router.add_delete("/api/cloud", self._api_cloud_unlink)
         app.router.add_post("/api/settings", self._api_settings)
+        # Registered before the {kind} routes; kind is limited to the four lists.
+        app.router.add_post("/api/observing/current", self._api_observing_current)
+        kinds = "{kind:" + "|".join(observing_lib.KINDS) + "}"
+        app.router.add_post(f"/api/observing/{kinds}", self._api_observing_create)
+        app.router.add_put(f"/api/observing/{kinds}/{{id}}", self._api_observing_update)
+        app.router.add_delete(f"/api/observing/{kinds}/{{id}}", self._api_observing_delete)
         app.router.add_post("/api/dev/inject-sample", self._api_dev_inject_sample)
         app.router.add_post("/api/dev/inject-target", self._api_dev_inject_target)
         app.router.add_post("/api/dev/capture-frame", self._api_dev_capture_frame)
@@ -944,6 +960,60 @@ class WebServer:
         await asyncio.to_thread(cloud.unlink)
         return web.Response(status=204)
 
+    # -- saved sites and equipment ------------------------------------------------
+
+    async def _observing_call(self, fn, *, success) -> web.Response:
+        """Run an observing action: ValueError -> 400, NotFound -> 404."""
+        if self._actions is None:
+            return web.Response(status=503, text="No actions wired")
+        try:
+            result = await asyncio.to_thread(fn)
+        except observing_lib.NotFound as exc:
+            return web.Response(status=404, text=str(exc.args[0] if exc.args else "not found"))
+        except ValueError as exc:
+            return web.Response(status=400, text=str(exc))
+        except Exception as exc:
+            logger.exception("Observing action failed: %s", exc)
+            return web.Response(status=500, text=str(exc))
+        return success(result)
+
+    @staticmethod
+    async def _json_body(request: web.Request):
+        try:
+            return await request.json()
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise web.HTTPBadRequest(text="body must be JSON")
+
+    async def _api_observing_create(self, request: web.Request) -> web.Response:
+        kind = request.match_info["kind"]
+        body = await self._json_body(request)
+        return await self._observing_call(
+            lambda: self._actions.create_observing_item(kind, body),
+            success=lambda item_id: web.json_response({"id": item_id}, status=201),
+        )
+
+    async def _api_observing_update(self, request: web.Request) -> web.Response:
+        kind, item_id = request.match_info["kind"], request.match_info["id"]
+        body = await self._json_body(request)
+        return await self._observing_call(
+            lambda: self._actions.update_observing_item(kind, item_id, body),
+            success=lambda _: web.Response(status=204),
+        )
+
+    async def _api_observing_delete(self, request: web.Request) -> web.Response:
+        kind, item_id = request.match_info["kind"], request.match_info["id"]
+        return await self._observing_call(
+            lambda: self._actions.delete_observing_item(kind, item_id),
+            success=lambda _: web.Response(status=204),
+        )
+
+    async def _api_observing_current(self, request: web.Request) -> web.Response:
+        body = await self._json_body(request)
+        return await self._observing_call(
+            lambda: self._actions.set_observing_current(body),
+            success=lambda _: web.Response(status=204),
+        )
+
     async def _api_settings(self, request):
         body = await request.json()
         if "audio_enabled" in body:
@@ -1148,9 +1218,16 @@ class WebServer:
         if self._mount_model is not None:
             mount_blk["model"] = self._mount_model.status(mount_mode, location)
 
+        try:
+            observing_blk = self._observing_fn()
+        except Exception as exc:  # noqa: BLE001 — never lose the whole payload
+            logger.debug("observing block failed: %s", exc)
+            observing_blk = observing_lib.payload(observing_lib.empty())
+        true_field = (observing_blk.get("optics") or {}).get("true_field_deg")
+
         nav_data = self._build_nav(
             snap, target, origin_x, origin_y, dx_off, dy_off, img_w, img_h,
-            mount_mode, location, now, correction,
+            mount_mode, location, now, correction, true_field,
         )
 
         controls = self._camera_controls() if self._camera_controls else []
@@ -1209,6 +1286,7 @@ class WebServer:
             "location": location_blk,
             "clock": self._clock.snapshot(),
             "horizon": {"obscured": self._config.horizon},
+            "observing": observing_blk,
             "dev_mode": self._dev_mode,
             "min_matches": self._config.min_matches,
             "max_prob": self._config.max_prob,
@@ -1220,6 +1298,7 @@ class WebServer:
     def _build_nav(
         self, snap, target, origin_x, origin_y, dx_off, dy_off, img_w, img_h,
         mount_mode="altaz", location=None, now=None, correction=None,
+        true_field_deg=None,
     ) -> dict | None:
         if not target.active:
             return None
@@ -1233,6 +1312,8 @@ class WebServer:
                 obj_name = obj.get("localized-name") or obj.get("name")
 
         size = getattr(target, "size_deg", None)
+        # The eyepiece in use (its true field) sets the radius when known.
+        on_target_deg = on_target_radius_deg(size, true_field_deg)
         base = {
             "active": True,
             "target_name": obj_name,
@@ -1240,8 +1321,8 @@ class WebServer:
             "target_dec_deg": target.dec_j2000,
             "target_size_deg": size,
             # Clients and Starlock Cloud use this for "on target".
-            "on_target_deg": on_target_radius_deg(size),
-            "off_target_deg": off_target_radius_deg(on_target_radius_deg(size)),
+            "on_target_deg": on_target_deg,
+            "off_target_deg": off_target_radius_deg(on_target_deg),
         }
         latch_key = (target.ra_j2000, target.dec_j2000, size)
 
