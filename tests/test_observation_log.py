@@ -366,7 +366,7 @@ async def test_api_delete_and_clock(api):
         async with s.delete(f"{base}/api/observations", params={
                 "start": "2023-11-14T00:00:00Z", "end": "2023-11-15T00:00:00Z"}) as r:
             assert (await r.json())["deleted"] == 1
-        async with s.post(f"{base}/api/clock", json={"unix_ms": 1_000_000_000_000}) as r:
+        async with s.post(f"{base}/api/clock", json={"unix_ms": 1_800_000_000_000}) as r:
             assert (await r.json())["client_clock_used"] is True
         async with s.post(f"{base}/api/clock", json={}) as r:
             assert r.status == 400
