@@ -151,7 +151,7 @@ Top to bottom:
      **Finder**. Each shows the item in use or "None" and offers the saved
      items plus "None". Choosing posts `/api/observing/current` at once.
    - Under them, when `optics.magnification` is set, one line:
-     "48× · 1.08° field · 4.2 mm exit pupil". Magnification with no
+     "48× · 1.1° field · 4.2 mm exit pupil". Magnification with no
      decimals; field with 2 decimals under 1°, else 1 decimal; exit pupil 1
      decimal. Else, muted: "Pick a telescope and an eyepiece to see the
      magnification and field."
