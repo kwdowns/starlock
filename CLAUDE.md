@@ -326,6 +326,7 @@ Detailed design docs live in `specs/start/`:
 - `SPEC_OBSERVING_LOG.md` — certifiable logbook: sessions, sightings, observations, equipment, sync, exports (design)
 - `SPEC_UPDATES.md` — Pi updates: signed apt repo, daily check, owner-installed only (never automatic), rollback (design)
 - `SPEC_HORIZON_MOUNT_MODEL.md` — horizon mask (Settings → Horizon, filters Tonight), clock sync, mount model (experimental)
+- `SPEC_EQUIPMENT_SITES.md` — saved observing sites (location + horizon), telescopes, eyepieces, finders; optics, eyepiece/finder circles, Logbook page
 - `SPEC_PROTOCOL_LX200.md` — LX200 Classic ASCII protocol for SkySafari / Stellarium Mobile / INDI / ASCOM (JNow, port 4030)
 - `SPEC_BUILD_RELEASE.md` — build and release process
 - `ACCEPTANCE_TESTS.md` — acceptance criteria
