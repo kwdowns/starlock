@@ -33,11 +33,16 @@ channel only for night vision; live component reference at `?gallery`):
   vendored from the Stargazing-Buddy site, with client-side visibility math),
   Search (NGC + bright stars) and Manual RA/Dec. Every row has a "Go to"
   button; tapping a row opens a detail sheet.
-- **Settings sheet** (gear in the app bar) — settings, connectivity QR,
-  the manual Location panel and the Horizon editor (16 directions × 10°
-  bands hidden by trees or buildings; Tonight skips what's behind them); observer location feeds visibility math and
-  falls back to Stellarium's reported location when a Stellarium client is
-  connected.
+- **Settings sheet** (gear in the app bar) — settings, connectivity QR and
+  the Logbook (observation log, range picker, CSV).
+- **Equipment sheet** (telescope button left of the gear,
+  `SPEC_EQUIPMENT_SITES.md`) — what's in use (site, telescope, eyepiece,
+  finder; magnification and field), saved sites, each its own location and
+  horizon (the Location panel and the Horizon editor, 16 directions × 10°
+  bands hidden by trees or buildings; Tonight skips what's behind them), and
+  the gear lists. Observer location feeds visibility math and falls back to
+  Stellarium's reported location when a Stellarium client is connected. With
+  an older engine the Location panel and Horizon editor stay in Settings.
 
 ## Build & Run
 
