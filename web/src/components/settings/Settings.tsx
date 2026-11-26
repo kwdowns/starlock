@@ -48,7 +48,9 @@ export function Settings({ state, showStars, setShowStars }: Props) {
         <p className="text-label text-muted-foreground">
           {state.mount.mode === "eq"
             ? "Directions are given as RA east/west and Dec north/south."
-            : "Directions are given as turning the base and raising or lowering the tube. Needs your location (below)."}
+            : `Directions are given as turning the base and raising or lowering the tube. Needs your location (${
+                state.observing ? "Equipment, Site" : "below"
+              }).`}
         </p>
         {state.mount.model && <MountModelBlock model={state.mount.model} mode={state.mount.mode} />}
       </div>

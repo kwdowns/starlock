@@ -4,6 +4,7 @@ import {
   Minimize,
   Settings as SettingsIcon,
   CircleCheck,
+  Telescope,
   TriangleAlert,
   Volume2,
   VolumeX,
@@ -14,6 +15,7 @@ import { useOnTargetSound } from "@/hooks/useOnTargetFeedback";
 import { cn } from "@/lib/utils";
 import { statusBadgeFor } from "@/lib/screen";
 import type { EnginePayload } from "@/lib/types";
+import { EquipmentSheet } from "@/components/equipment/EquipmentSheet";
 import { SettingsSheet } from "./SettingsSheet";
 
 interface Props {
@@ -25,6 +27,7 @@ interface Props {
 export function TopBar({ state, showStars, setShowStars }: Props) {
   const fullscreen = useFullscreen();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [equipmentOpen, setEquipmentOpen] = useState(false);
   const badge = statusBadgeFor(state);
   const [sound, setSound] = useOnTargetSound();
 
@@ -33,8 +36,14 @@ export function TopBar({ state, showStars, setShowStars }: Props) {
       <img
         src={`${import.meta.env.BASE_URL}inapp-title.png`}
         alt="Starlock"
-        // A long badge matters more than the wordmark on a narrow phone.
-        className={cn("h-8 w-auto shrink-0", badge.label.length > 7 && "max-sm:hidden")}
+        // A long badge matters more than the wordmark on a narrow phone. Below
+        // 480 px the wordmark shrinks, and makes way when a full-screen button
+        // (Android) makes four controls beside the status.
+        className={cn(
+          "h-8 w-auto shrink-0 max-[30rem]:h-6",
+          badge.label.length > 7 && "max-sm:hidden",
+          fullscreen.supported && "max-[30rem]:hidden",
+        )}
       />
       <div className="flex flex-1 justify-end">
         {/* Status, not a control: plain icon + text. Borders and fills are
@@ -78,12 +87,22 @@ export function TopBar({ state, showStars, setShowStars }: Props) {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Equipment"
+          title="Equipment"
+          onClick={() => setEquipmentOpen(true)}
+        >
+          <Telescope />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label="Settings"
           onClick={() => setSettingsOpen(true)}
         >
           <SettingsIcon />
         </Button>
       </div>
+      <EquipmentSheet open={equipmentOpen} onOpenChange={setEquipmentOpen} state={state} />
       <SettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}

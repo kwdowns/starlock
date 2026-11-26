@@ -3,12 +3,14 @@ import { CameraOff, OctagonAlert, Pencil } from "lucide-react";
 import { Button } from "@/components/ui";
 import type { EnginePayload } from "@/lib/types";
 import { useLatestFrame } from "@/hooks/useLatestFrame";
+import { useFieldCircle } from "@/hooks/useFieldCircles";
 import { hasNoStars } from "@/lib/screen";
 import { cn } from "@/lib/utils";
 import { StarOverlay } from "./StarOverlay";
 import { NavOverlay } from "./NavOverlay";
 import { SyncCandidatesOverlay } from "./SyncCandidatesOverlay";
 import { AxesOverlay } from "./AxesOverlay";
+import { FieldCircles } from "./FieldCircles";
 
 interface Props {
   state: EnginePayload;
@@ -30,6 +32,8 @@ export function LiveView({ state, showStars, className, editOpen = false, onTogg
   const { image_w, image_h } = state;
   const noStars = hasNoStars(state);
   const frameUrl = useLatestFrame(state.camera?.frame_id);
+  const [eyepieceCircle] = useFieldCircle("eyepiece");
+  const [finderCircle] = useFieldCircle("finder");
   const style = {
     aspectRatio: `${image_w} / ${image_h}`,
     "--frame-ar": String(image_w / image_h),
@@ -66,6 +70,7 @@ export function LiveView({ state, showStars, className, editOpen = false, onTogg
         preserveAspectRatio="xMidYMid slice"
       >
         {showStars && <StarOverlay state={state} />}
+        <FieldCircles state={state} eyepiece={eyepieceCircle} finder={finderCircle} />
         {!noStars && <AxesOverlay state={state} />}
         {!noStars && <NavOverlay state={state} />}
         {state.state === "SYNC_CONFIRM" && <SyncCandidatesOverlay state={state} />}

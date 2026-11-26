@@ -33,14 +33,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** Settings, connectivity, observer location and (dev mode) debug tools. */
+/**
+ * Settings, connectivity, the logbook and (dev mode) debug tools. With an
+ * older engine (no `observing`) the observer location and horizon live here
+ * too; otherwise they are the site's, in the Equipment sheet.
+ */
 export function SettingsSheet({ open, onOpenChange, state, showStars, setShowStars }: Props) {
+  const siteHere = !state.observing;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Settings</SheetTitle>
-          <SheetDescription>Display, connections, location and horizon.</SheetDescription>
+          <SheetDescription>
+            {siteHere ? "Display, connections, location and horizon." : "Display, connections and the logbook."}
+          </SheetDescription>
         </SheetHeader>
         <SheetBody className="gap-5 pb-[max(1rem,var(--safe-bottom))]">
           <Settings state={state} showStars={showStars} setShowStars={setShowStars} />
@@ -49,11 +56,15 @@ export function SettingsSheet({ open, onOpenChange, state, showStars, setShowSta
             <Connectivity state={state} />
           </Section>
           <Separator />
-          {/* LocationPanel brings its own "Location" heading. */}
-          <LocationPanel state={state} />
-          <Separator />
-          <HorizonEditor state={state} />
-          <Separator />
+          {siteHere && (
+            <>
+              {/* LocationPanel brings its own "Location" heading. */}
+              <LocationPanel state={state} />
+              <Separator />
+              <HorizonEditor state={state} />
+              <Separator />
+            </>
+          )}
           <ObservationLog />
           <Separator />
           <CloudLink open={open} />

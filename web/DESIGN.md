@@ -188,10 +188,12 @@ Rules of use:
 One screen, no top-level tabs.
 
 ```
-AppBar      logo · status (icon + text) · audio · full-screen · settings (opens a Sheet)
+AppBar      logo · status (icon + text) · audio · full-screen · equipment · settings
+              (equipment and settings each open a Sheet)
 Camera      live frame + overlays — sticky (top on phone, left column at md+)
               pencil (top-left) toggles camera settings right under the frame:
-              SliderFields (exposure, gain) + solve stats (matches, prob, age);
+              SliderFields (exposure, gain), eyepiece / finder field switches
+              (when the engine knows them) + solve stats (matches, prob, age);
               always shown (no pencil) during setup, folded once tracking
 Step area   depends on engine state:
               SETUP / SYNC / SYNC_CONFIRM / CALIBRATE / WARMING_UP
@@ -206,8 +208,10 @@ Targets     always below the step area; primary content once tracking.
               sets the target without opening anything
 ```
 
-Settings, connectivity (QR code, client status) and observer location live in
-the settings Sheet, not on the main screen.
+Settings, connectivity (QR code, client status) and the logbook live in the
+settings Sheet; saved sites (location + horizon), telescopes, eyepieces and
+finders in the equipment Sheet. Neither is on the main screen. With an older
+engine (no `observing` in the payload) location and horizon stay in settings.
 
 ## Installed app (PWA)
 

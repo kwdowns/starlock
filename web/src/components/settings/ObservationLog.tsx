@@ -13,6 +13,7 @@ import {
   Switch,
 } from "@/components/ui";
 import { api, type ObservationEntry, type ObservationList } from "@/lib/api";
+import { equipmentLine } from "@/lib/equipment";
 import { formatDec, formatRa } from "@/lib/screen";
 
 type Preset = "tonight" | "day" | "week" | "custom";
@@ -69,11 +70,22 @@ function Entry({ e }: { e: ObservationEntry }) {
   const [expanded, setExpanded] = useState(false);
   const where = `${formatRa(e.ra_j2000_deg)} ${formatDec(e.dec_j2000_deg)}`;
   const label = e.target_name ?? where;
+  const when = e.target_name ? `${whenLabel(e)} · ${where}` : whenLabel(e);
+  const gear = equipmentLine(e);
   return (
     <>
       <ListRow
         title={label}
-        subtitle={e.target_name ? `${whenLabel(e)} · ${where}` : whenLabel(e)}
+        subtitle={
+          gear ? (
+            <>
+              <span className="block truncate">{when}</span>
+              <span className="block truncate">{gear}</span>
+            </>
+          ) : (
+            when
+          )
+        }
         meta={formatDuration(e.duration_s)}
         leading={
           e.has_frame ? (
@@ -101,7 +113,7 @@ function Entry({ e }: { e: ObservationEntry }) {
   );
 }
 
-/** What the scope dwelt on, with a time-range picker and a CSV download. */
+/** The logbook: what the scope dwelt on, with a time-range picker and a CSV download. */
 export function ObservationLog() {
   const [preset, setPreset] = useState<Preset>("tonight");
   const [customStart, setCustomStart] = useState(() => toLocalInput(tonightStart(new Date())));
@@ -159,8 +171,8 @@ export function ObservationLog() {
   const entries = data?.entries ?? [];
 
   return (
-    <section className="flex flex-col gap-3" aria-label="Observation log">
-      <h2 className="text-heading">Observation log</h2>
+    <section className="flex flex-col gap-3" aria-label="Logbook">
+      <h2 className="text-heading">Logbook</h2>
       <SettingRow
         label="Record observations"
         description="Logs where the scope rests for about 30 seconds."
