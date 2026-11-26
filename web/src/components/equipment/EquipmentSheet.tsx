@@ -63,7 +63,9 @@ export function EquipmentPage({ state, observing }: { state: EnginePayload; obse
         addLabel="Add telescope"
         inUseId={current.telescope_id}
         onSelect={(id) => select("telescope_id", id)}
-        dialog={(item, close) => <TelescopeDialog item={item} onClose={close} />}
+        dialog={(item, close) => (
+          <TelescopeDialog item={item} onClose={close} onAdded={(id) => !current.telescope_id && select("telescope_id", id)} />
+        )}
       />
       <Separator />
       <GearSection
@@ -75,7 +77,9 @@ export function EquipmentPage({ state, observing }: { state: EnginePayload; obse
         addLabel="Add eyepiece"
         inUseId={current.eyepiece_id}
         onSelect={(id) => select("eyepiece_id", id)}
-        dialog={(item, close) => <EyepieceDialog item={item} onClose={close} />}
+        dialog={(item, close) => (
+          <EyepieceDialog item={item} onClose={close} onAdded={(id) => !current.eyepiece_id && select("eyepiece_id", id)} />
+        )}
       />
       <Separator />
       <GearSection
@@ -87,7 +91,9 @@ export function EquipmentPage({ state, observing }: { state: EnginePayload; obse
         addLabel="Add finder"
         inUseId={current.finder_id}
         onSelect={(id) => select("finder_id", id)}
-        dialog={(item, close) => <FinderDialog item={item} onClose={close} />}
+        dialog={(item, close) => (
+          <FinderDialog item={item} onClose={close} onAdded={(id) => !current.finder_id && select("finder_id", id)} />
+        )}
       />
     </>
   );

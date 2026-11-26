@@ -19,13 +19,15 @@ interface DialogProps<T> {
   /** null: add a new one. */
   item: T | null;
   onClose: () => void;
+  /** Called with the new item's id after an add (to put it in use when none of its kind is). */
+  onAdded?: (id: string) => void;
 }
 
 function removeAction(kind: "telescopes" | "eyepieces" | "finders", item: { id: string; name: string } | null) {
   return item ? { name: item.name, onDelete: () => api.observing.remove(kind, item.id) } : undefined;
 }
 
-export function TelescopeDialog({ item, onClose }: DialogProps<Telescope>) {
+export function TelescopeDialog({ item, onClose, onAdded }: DialogProps<Telescope>) {
   const [name, setName] = useState(item?.name ?? "");
   const [aperture, setAperture] = useState(numText(item?.aperture_mm));
   const [focal, setFocal] = useState(numText(item?.focal_length_mm));
@@ -44,7 +46,7 @@ export function TelescopeDialog({ item, onClose }: DialogProps<Telescope>) {
         if (!n.ok || !a.ok || !f.ok) return;
         const body = { name: n.value, aperture_mm: a.value, focal_length_mm: f.value };
         if (item) await api.observing.update("telescopes", item.id, body);
-        else await api.observing.create("telescopes", body);
+        else onAdded?.((await api.observing.create("telescopes", body)).id);
       }}
     >
       <FormField label="Name" value={name} onChange={setName} parsed={n} placeholder='8" Dob' autoFocus={!item} />
@@ -56,7 +58,7 @@ export function TelescopeDialog({ item, onClose }: DialogProps<Telescope>) {
   );
 }
 
-export function EyepieceDialog({ item, onClose }: DialogProps<Eyepiece>) {
+export function EyepieceDialog({ item, onClose, onAdded }: DialogProps<Eyepiece>) {
   const [name, setName] = useState(item?.name ?? "");
   const [focal, setFocal] = useState(numText(item?.focal_length_mm));
   const [afov, setAfov] = useState(numText(item?.afov_deg ?? DEFAULT_AFOV_DEG));
@@ -75,7 +77,7 @@ export function EyepieceDialog({ item, onClose }: DialogProps<Eyepiece>) {
         if (!n.ok || !f.ok || !a.ok) return;
         const body = { name: n.value, focal_length_mm: f.value, afov_deg: a.value };
         if (item) await api.observing.update("eyepieces", item.id, body);
-        else await api.observing.create("eyepieces", body);
+        else onAdded?.((await api.observing.create("eyepieces", body)).id);
       }}
     >
       <FormField label="Name" value={name} onChange={setName} parsed={n} placeholder="25 mm Plössl" autoFocus={!item} />
@@ -99,7 +101,7 @@ const FINDER_KINDS = [
   { value: "reflex", label: "Reflex" },
 ] as const satisfies readonly { value: FinderKind; label: string }[];
 
-export function FinderDialog({ item, onClose }: DialogProps<Finder>) {
+export function FinderDialog({ item, onClose, onAdded }: DialogProps<Finder>) {
   const [name, setName] = useState(item?.name ?? "");
   const [kind, setKind] = useState<FinderKind>(item?.kind ?? "optical");
   const [field, setField] = useState(numText(item?.field_deg));
@@ -129,7 +131,7 @@ export function FinderDialog({ item, onClose }: DialogProps<Finder>) {
           body = { name: n.value, kind, rings_deg: rd.value };
         }
         if (item) await api.observing.update("finders", item.id, body);
-        else await api.observing.create("finders", body);
+        else onAdded?.((await api.observing.create("finders", body)).id);
       }}
     >
       <FormField

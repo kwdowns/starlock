@@ -141,6 +141,28 @@ describe("Equipment sheet", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Add telescope" })).not.toBeInTheDocument());
   });
 
+  it("an added telescope goes into use only when none is in use", async () => {
+    const addOne = async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Add telescope" }));
+      const dialog = await screen.findByRole("dialog", { name: "Add telescope" });
+      fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Refractor" } });
+      fireEvent.change(within(dialog).getByLabelText("Aperture (mm)"), { target: { value: "80" } });
+      fireEvent.change(within(dialog).getByLabelText("Focal length (mm)"), { target: { value: "480" } });
+      fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+      await waitFor(() => expect(obs.create).toHaveBeenCalled());
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "Add telescope" })).not.toBeInTheDocument());
+    };
+    const view = sheet(withObserving());
+    await addOne();
+    expect(obs.setCurrent).not.toHaveBeenCalled();
+    view.unmount();
+
+    obs.create.mockClear();
+    sheet(withObserving({ current: { ...sampleObserving.current, telescope_id: null } }));
+    await addOne();
+    await waitFor(() => expect(obs.setCurrent).toHaveBeenCalledWith({ telescope_id: "new" }));
+  });
+
   it("shows the engine's reason under the form when it refuses", async () => {
     obs.update.mockRejectedValue(new Error("afov_deg must be 20–120"));
     sheet(withObserving());

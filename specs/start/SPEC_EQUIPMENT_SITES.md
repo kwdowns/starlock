@@ -133,6 +133,13 @@ cloud upload (extra fields; the cloud ignores unknown ones).
   symbol — iOS `binoculars`, Android `Icons.Outlined.Construction` or the
   closest telescope-like icon). In wide windows the Equipment tab is a
   `WidePanel`/wide pane like Logbook (Scope column on the left).
+- **Wide windows (iOS and Android alike):** the tabs stay in the platform's
+  own side navigation on the left (iOS: the `TabView` sidebar; Android: a
+  navigation rail or drawer), never as a segmented switcher above the right
+  pane. Scope shows the step area beside the live frame; Targets, Logbook
+  and Equipment show the Scope column (frame pinned on top, step area under
+  it) on the left and their own screen on the right. On a foldable the two
+  panes meet at the fold with a clear gap on each side.
 - **Web UI:** a new **Equipment** sheet, opened from a top-bar button left
   of the Settings gear (label "Equipment", telescope-like icon from the icon
   set already in use). The Settings sheet's observation log section is
@@ -175,6 +182,14 @@ Top to bottom:
    numeric keyboards, units in the labels) and delete (confirm). A finder
    form has a kind switch (Optical / Reflex); reflex shows the rings as a
    comma-separated field prefilled "0.5, 2, 4".
+   - **Rows behave like the site rows (all three apps):** tapping a row puts
+     that item in use (posts `/api/observing/current`); a check mark marks
+     the one in use. Editing is a visible pencil button at the row's end
+     (plus swipe / long-press menus where the platform has them), and
+     Delete is in the edit form and those menus, always confirmed.
+   - **Adding** a telescope, eyepiece or finder while none of that kind is
+     in use puts the new one in use. Otherwise it is only added. (A new or
+     saved site is always put in use.)
 - Empty lists show one muted line, e.g. "No eyepieces yet."
 - Errors from the engine show inline under the form, short.
 
