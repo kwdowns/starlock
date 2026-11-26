@@ -1,4 +1,12 @@
-import type { MountMode } from "@/lib/types";
+import type {
+  Eyepiece,
+  Finder,
+  MountMode,
+  ObservingCurrent,
+  ObservingKind,
+  ObservingSite,
+  Telescope,
+} from "@/lib/types";
 
 async function post(path: string, body?: unknown): Promise<void> {
   const init: RequestInit = { method: "POST" };
@@ -26,6 +34,12 @@ export interface ObservationEntry {
   clock: "system" | "client";
   /** A downscaled camera frame was kept with the entry (may be trimmed later). */
   has_frame?: boolean;
+  /** Names of the site and equipment in use when the entry opened (older engines: missing). */
+  site_name?: string | null;
+  telescope?: string | null;
+  eyepiece?: string | null;
+  finder?: string | null;
+  magnification?: number | null;
 }
 
 export interface ObservationList {
@@ -54,6 +68,32 @@ async function cloudCall(path: string, init?: RequestInit): Promise<CloudStatus>
   const resp = await fetch(path, init);
   if (resp.status >= 400) throw new Error((await resp.text()) || `HTTP ${resp.status}`);
   return await resp.json();
+}
+
+/** An item as sent to the engine: everything but the id (a site's horizon is optional on create). */
+export type ObservingItemBody<K extends ObservingKind> = K extends "sites"
+  ? Omit<ObservingSite, "id" | "horizon"> & { horizon?: number[] }
+  : K extends "telescopes"
+    ? Omit<Telescope, "id">
+    : K extends "eyepieces"
+      ? Omit<Eyepiece, "id">
+      : Omit<Finder, "id">;
+
+/** The engine's short reason for a refusal ("aperture_mm must be 10–2000"), kept to one line. */
+function shortReason(text: string, status: number): string {
+  const line = text.trim().split(/\r?\n/)[0].slice(0, 160);
+  return line || `HTTP ${status}`;
+}
+
+async function send(method: string, path: string, body?: unknown): Promise<Response> {
+  const init: RequestInit = { method };
+  if (body !== undefined) {
+    init.headers = { "Content-Type": "application/json" };
+    init.body = JSON.stringify(body);
+  }
+  const resp = await fetch(path, init);
+  if (resp.status >= 400) throw new Error(shortReason(await resp.text(), resp.status));
+  return resp;
 }
 
 function rangeQuery(startIso: string, endIso: string): string {
@@ -122,6 +162,21 @@ export const api = {
     /** 16 per-sector bitmasks of hidden 10° bands; null = back to the default (below 20° hidden). */
     horizon?: { obscured: number[] } | null;
   }) => post("/api/settings", s),
+  /** Saved sites and equipment. Errors carry the engine's short reason as their message. */
+  observing: {
+    create: async <K extends ObservingKind>(kind: K, item: ObservingItemBody<K>): Promise<{ id: string }> =>
+      await (await send("POST", `/api/observing/${kind}`, item)).json(),
+    update: async <K extends ObservingKind>(kind: K, id: string, item: ObservingItemBody<K>) => {
+      await send("PUT", `/api/observing/${kind}/${encodeURIComponent(id)}`, item);
+    },
+    remove: async (kind: ObservingKind, id: string) => {
+      await send("DELETE", `/api/observing/${kind}/${encodeURIComponent(id)}`);
+    },
+    /** A missing key leaves that slot; null clears it. */
+    setCurrent: async (current: Partial<ObservingCurrent>) => {
+      await send("POST", "/api/observing/current", current);
+    },
+  },
   /** Forget the mount model's samples and start learning again. */
   resetMountModel: () => post("/api/mount/model/reset"),
   setAdvanced: (s: { min_matches?: number; max_prob?: number }) =>

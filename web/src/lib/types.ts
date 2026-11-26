@@ -158,6 +158,71 @@ export interface MountModel {
   applied: boolean;
 }
 
+// Saved sites and equipment (specs/start/SPEC_EQUIPMENT_SITES.md). ids are
+// made by the engine on create.
+
+export interface ObservingSite {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  /** 16 per-sector bitmasks of hidden 10° bands, as `horizon.obscured`. */
+  horizon: number[];
+}
+
+export interface Telescope {
+  id: string;
+  name: string;
+  aperture_mm: number;
+  focal_length_mm: number;
+}
+
+export interface Eyepiece {
+  id: string;
+  name: string;
+  focal_length_mm: number;
+  /** Apparent field. */
+  afov_deg: number;
+}
+
+export type FinderKind = "optical" | "reflex";
+
+export interface Finder {
+  id: string;
+  name: string;
+  kind: FinderKind;
+  /** Optical finders: true field. */
+  field_deg?: number | null;
+  /** Reflex finders (Telrad, red dot): ring sizes, smallest first. */
+  rings_deg?: number[] | null;
+}
+
+export type ObservingKind = "sites" | "telescopes" | "eyepieces" | "finders";
+
+export interface ObservingCurrent {
+  site_id: string | null;
+  telescope_id: string | null;
+  eyepiece_id: string | null;
+  finder_id: string | null;
+}
+
+/** All null unless a telescope and an eyepiece are in use (finder_rings_deg: a finder). */
+export interface Optics {
+  magnification: number | null;
+  true_field_deg: number | null;
+  exit_pupil_mm: number | null;
+  finder_rings_deg: number[] | null;
+}
+
+export interface ObservingBlock {
+  sites: ObservingSite[];
+  telescopes: Telescope[];
+  eyepieces: Eyepiece[];
+  finders: Finder[];
+  current: ObservingCurrent;
+  optics: Optics;
+}
+
 export interface EnginePayload {
   state: EngineState;
   failures: number;
@@ -207,4 +272,6 @@ export interface EnginePayload {
   horizon?: { obscured: number[] };
   /** "client": the Pi's clock is corrected from a phone or browser; offset_s = client − Pi. Missing from older engines. */
   clock?: { source: "client" | "system"; offset_s: number };
+  /** Saved sites and equipment. Missing from older engines: no Equipment page, Location and Horizon stay in Settings. */
+  observing?: ObservingBlock;
 }

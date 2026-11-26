@@ -70,7 +70,11 @@ import {
   Switch,
 } from "@/components/ui"
 import { HorizonChart } from "@/components/settings/HorizonEditor"
+import { CameraSettings } from "@/components/controls/CameraSettings"
+import { EquipmentSheet } from "@/components/equipment/EquipmentSheet"
+import { LiveView } from "@/components/live-view/LiveView"
 import { DEFAULT_HORIZON, type HorizonMask } from "@/lib/horizon"
+import { payload, sampleObserving } from "@/lib/testPayload"
 import {
   RAMP,
   SEMANTIC_BORDERS,
@@ -96,6 +100,7 @@ const SECTIONS = [
   ["feedback", "Progress · Spinner · EmptyState · Separator"],
   ["overlays", "Sheet · Dialog · Popover"],
   ["horizon", "Horizon chart"],
+  ["equipment", "Equipment · field circles"],
 ] as const
 
 const WIZARD_STEPS = [
@@ -794,6 +799,56 @@ function HorizonSection() {
   )
 }
 
+/* ------------------------------------------------------- equipment */
+
+const EQUIPMENT_ENGINES = [
+  { value: "new", label: "With equipment" },
+  { value: "old", label: "Older engine" },
+] as const
+
+/** Sample engine state: tracking, the back yard and the 8" Dob + 25 mm eyepiece + Telrad in use. */
+function sampleTracking(withEquipment: boolean) {
+  return payload({
+    state: "TRACKING",
+    pointing: { valid: true, ra_deg: 83.8, dec_deg: -5.4, roll_deg: 0, matches: 31, prob: 1e-9, solve_age_s: 0.4 },
+    origin_x: 610,
+    origin_y: 372,
+    fov_h_deg: 8.86,
+    location: { latitude: 40.0149, longitude: -105.2705, source: "manual" },
+    horizon: { obscured: Array(16).fill(3) },
+    observing: withEquipment ? sampleObserving : undefined,
+  })
+}
+
+function EquipmentSection() {
+  const [engine, setEngine] = useState<"new" | "old">("new")
+  const [open, setOpen] = useState(false)
+  const state = sampleTracking(engine === "new")
+  return (
+    <Section id="equipment" title="Equipment · field circles">
+      <p className="text-label text-muted-foreground">
+        Sample data. Picks and edits need an engine, so here they end in an error.
+      </p>
+      <Demo label="Equipment sheet" className="flex flex-col items-start gap-3">
+        <SegmentedControl
+          aria-label="Engine"
+          value={engine}
+          options={EQUIPMENT_ENGINES}
+          onValueChange={setEngine}
+        />
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          <TelescopeIcon /> Open the Equipment sheet
+        </Button>
+        <EquipmentSheet open={open} onOpenChange={setOpen} state={state} />
+      </Demo>
+      <Demo label="Eyepiece and finder fields on the live frame" className="flex max-w-xl flex-col gap-3">
+        <LiveView state={sampleTracking(true)} showStars={false} />
+        <CameraSettings state={sampleTracking(true)} />
+      </Demo>
+    </Section>
+  )
+}
+
 export default function Gallery() {
   return (
     <div className="flex min-h-dvh flex-col">
@@ -832,6 +887,7 @@ export default function Gallery() {
         <FeedbackSection />
         <OverlaySection />
         <HorizonSection />
+        <EquipmentSection />
       </main>
 
       <ActionBar>
